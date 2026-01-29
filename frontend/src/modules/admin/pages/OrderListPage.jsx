@@ -12,18 +12,27 @@ import {
     Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 
 const OrderListPage = () => {
     const navigate = useNavigate();
-    const { orders } = useShop();
+    // Fetch Orders
+    const { data: orders = [] } = useQuery({
+        queryKey: ['orders'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/orders');
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            return res.json();
+        }
+    });
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    // Flatten all orders from all users into a single list
+    // Orders are already a flat list from API
     const allOrders = useMemo(() => {
-        return Object.values(orders).flat().sort((a, b) => new Date(b.date) - new Date(a.date));
+        return [...orders].sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [orders]);
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -32,7 +41,9 @@ const OrderListPage = () => {
     const filteredOrders = useMemo(() => {
         return allOrders.filter(order => {
             const matchesSearch =
-                order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.id?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.userName?.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesStatus = statusFilter === 'All' || order.status === statusFilter;

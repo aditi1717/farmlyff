@@ -9,26 +9,36 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 
 const ComboProductsPage = () => {
     const navigate = useNavigate();
-    const { packs, products, deletePack } = useShop();
+    
+    // Fetch all products
+    const { data: allProducts = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/products');
+            if (!res.ok) throw new Error('Failed to fetch products');
+            return res.json();
+        }
+    });
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCombo, setFilterCombo] = useState('All');
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    // Get all combos
+    // Get all combos (Products that are combos)
     const combos = useMemo(() => {
-        return packs.filter(p =>
+        return allProducts.filter(p =>
             p.category === 'combos-packs' ||
             p.subcategory?.toLowerCase().includes('pack') ||
             p.name?.toLowerCase().includes('combo')
         );
-    }, [packs]);
+    }, [allProducts]);
 
     // Get products that have combo association (with contents array)
     const comboProducts = useMemo(() => {

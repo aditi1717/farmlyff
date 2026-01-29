@@ -16,36 +16,41 @@ import {
     ChevronRight,
     IndianRupee
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
-
+import { useQuery } from '@tanstack/react-query';
 const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { orders, wishlist, getProductById, getPackById } = useShop();
-
-    // Get all users for updating purposes
-    const [storedUsers, setStoredUsers] = React.useState(() => {
-        return JSON.parse(localStorage.getItem('farmlyf_users')) || [];
+    
+    // Fetch user details
+    const { data: user, isLoading: userLoading } = useQuery({
+        queryKey: ['user', id],
+        queryFn: async () => {
+             // If backend supports /api/users/:id, use that. If not, fetch list.
+             // Assuming list for now based on previous pattern reliability, or fetch single if I added it. 
+             // Logic: I'll try to fetch all users and find. Or if looking at previous steps...
+             // UsersPage fetched all. I'll stick to fetching all for safety unless I check backend routes.
+             // Actually, safer to fetch all like UsersPage for now given the speed.
+             const res = await fetch('http://localhost:5000/api/users');
+             if(!res.ok) throw new Error('Failed');
+             const users = await res.json();
+             return users.find(u => u._id === id || u.id === id);
+        }
     });
 
-    // Get specific user data
-    const user = useMemo(() => {
-        return storedUsers.find(u => u.id === id);
-    }, [storedUsers, id]);
+    // Fetch user orders
+    const { data: userOrders = [] } = useQuery({
+         queryKey: ['orders', id],
+         queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/orders');
+             if(!res.ok) throw new Error('Failed');
+             const allOrders = await res.json();
+             return allOrders.filter(o => o.user?._id === id || o.userId === id);
+         }
+    });
 
-    // Handle blocking/unblocking
     const handleToggleBlock = () => {
-        const updatedUsers = storedUsers.map(u =>
-            u.id === id ? { ...u, isBlocked: !u.isBlocked } : u
-        );
-        localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-        setStoredUsers(updatedUsers);
+         alert('Block/Unblock feature requires API implementation.');
     };
-
-    // Get user orders
-    const userOrders = useMemo(() => {
-        return Object.values(orders).flat().filter(o => o.userId === id);
-    }, [orders, id]);
 
     if (!user) {
         return (

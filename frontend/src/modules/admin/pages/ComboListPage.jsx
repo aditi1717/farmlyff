@@ -9,11 +9,30 @@ import {
     EyeOff,
     Upload
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 const ComboListPage = () => {
-    const { categories, subCategories, fetchCategories } = useShop();
+    const queryClient = useQueryClient();
+    
+    // Fetch Categories
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/categories');
+             return res.json();
+        }
+    });
+
+    // Fetch SubCategories
+    const { data: subCategories = [] } = useQuery({
+        queryKey: ['subcategories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/subcategories');
+             return res.json();
+        }
+    });
+
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCombo, setEditingCombo] = useState(null);
@@ -34,6 +53,7 @@ const ComboListPage = () => {
     const comboCategories = useMemo(() => {
         if (!comboParentId) return [];
         return subCategories.filter(s => {
+            if (!s.parent) return false;
             const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
             return pId === comboParentId;
         });
@@ -85,11 +105,12 @@ const ComboListPage = () => {
             });
 
             if (res.ok) {
-                await fetchCategories(); // Refresh Context
+                queryClient.invalidateQueries(['subcategories']); // Refresh Data
                 setShowAddModal(false);
                 setEditingCombo(null);
                 setNewItem({ name: '', image: '', description: '', status: 'Active' });
                 setPreview(null);
+                toast.success(isEdit ? 'Combo updated!' : 'Combo added!');
             } else {
                 toast.error('Failed to save combo category');
             }
@@ -106,7 +127,8 @@ const ComboListPage = () => {
             try {
                 const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    fetchCategories();
+                    queryClient.invalidateQueries(['subcategories']);
+                    toast.success('Combo deleted');
                 } else {
                     toast.error('Failed to delete');
                 }
@@ -124,7 +146,7 @@ const ComboListPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...item, status: newStatus, parent: comboParentId })
             });
-            fetchCategories();
+            queryClient.invalidateQueries(['subcategories']);
         } catch (error) {
             console.error(error);
         }

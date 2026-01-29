@@ -12,11 +12,96 @@ import {
 import { useShop } from '../../../context/ShopContext';
 import toast from 'react-hot-toast';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 const CouponFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { products, categories, subCategories, coupons, addCoupon, updateCoupon } = useShop();
+    const queryClient = useQueryClient();
     const isEdit = Boolean(id);
+
+    // Fetch Products
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/products');
+             return res.json();
+        }
+    });
+
+    // Fetch Categories
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/categories');
+             return res.json();
+        }
+    });
+
+    // Fetch SubCategories
+    const { data: subCategories = [] } = useQuery({
+        queryKey: ['subcategories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/subcategories');
+             return res.json();
+        }
+    });
+
+    // Fetch Single Coupon (if Edit)
+    const { data: editingCoupon } = useQuery({
+        queryKey: ['coupon', id],
+        queryFn: async () => {
+             if (!isEdit) return null;
+             const res = await fetch(`http://localhost:5000/api/coupons/${id}`);
+             if (!res.ok) throw new Error('Failed to fetch coupon');
+             return res.json();
+        },
+        enabled: isEdit
+    });
+
+    // Add Mutation
+    const addMutation = useMutation({
+        mutationFn: async (payload) => {
+             const res = await fetch('http://localhost:5000/api/coupons', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(payload)
+             });
+             if (!res.ok) {
+                 const err = await res.json();
+                 throw new Error(err.message || 'Failed');
+             }
+             return res.json();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries(['coupons']);
+             toast.success('Coupon created!');
+             navigate('/admin/coupons');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+
+    // Update Mutation
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, payload }) => {
+             const res = await fetch(`http://localhost:5000/api/coupons/${id}`, {
+                 method: 'PUT',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(payload)
+             });
+             if (!res.ok) {
+                 const err = await res.json();
+                 throw new Error(err.message || 'Failed');
+             }
+             return res.json();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries(['coupons']);
+             toast.success('Coupon updated!');
+             navigate('/admin/coupons');
+        },
+        onError: (err) => toast.error(err.message)
+    });
 
     const [loading, setLoading] = useState(false);
 
@@ -38,19 +123,16 @@ const CouponFormPage = () => {
     });
 
     useEffect(() => {
-        if (isEdit) {
-            const coupon = coupons.find(c => c.id === id || c._id === id);
-            if (coupon) {
-                setFormData({
-                    ...coupon,
-                    validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '',
-                    validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '',
-                    applicabilityType: coupon.applicabilityType || 'all',
-                    targetItems: coupon.targetItems || []
-                });
-            }
+        if (isEdit && editingCoupon) {
+            setFormData({
+                ...editingCoupon,
+                validFrom: editingCoupon.validFrom ? new Date(editingCoupon.validFrom).toISOString().split('T')[0] : '',
+                validUntil: editingCoupon.validUntil ? new Date(editingCoupon.validUntil).toISOString().split('T')[0] : '',
+                applicabilityType: editingCoupon.applicabilityType || 'all',
+                targetItems: editingCoupon.targetItems || []
+            });
         }
-    }, [id, isEdit, coupons]);
+    }, [isEdit, editingCoupon]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -71,7 +153,7 @@ const CouponFormPage = () => {
         });
     };
 
-    const handleSave = async (e) => {
+    const handleSave = (e) => {
         e.preventDefault();
         setLoading(true);
 
@@ -84,20 +166,14 @@ const CouponFormPage = () => {
             perUserLimit: Number(formData.perUserLimit) || 1
         };
 
-        let result;
         if (isEdit) {
-            result = await updateCoupon(id, payload);
+            updateMutation.mutate({ id, payload }, {
+                onSettled: () => setLoading(false)
+            });
         } else {
-            result = await addCoupon(payload);
-        }
-
-        setLoading(false);
-
-        if (result.success) {
-            toast.success(`Coupon successfully ${isEdit ? 'updated' : 'created'}!`);
-            navigate('/admin/coupons');
-        } else {
-            toast.error(`Error: ${result.error}`);
+            addMutation.mutate(payload, {
+                onSettled: () => setLoading(false)
+            });
         }
     };
 

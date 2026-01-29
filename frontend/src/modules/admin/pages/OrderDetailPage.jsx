@@ -14,26 +14,34 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 const OrderDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { orders, getProductById, getPackById } = useShop();
 
-    // Find the order in the nested orders object
-    const order = useMemo(() => {
-        for (let userId in orders) {
-            const found = orders[userId].find(o => o.id === id);
-            if (found) return { ...found, ownerId: userId };
+    // Fetch single order
+    const { data: order, isLoading } = useQuery({
+        queryKey: ['order', id],
+        queryFn: async () => {
+            // Try fetching single order if endpoint exists, or filter from list
+            // Assuming /api/orders returns all, finding locally for now as it's safer
+            const res = await fetch('http://localhost:5000/api/orders');
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            const allOrders = await res.json();
+            return allOrders.find(o => o._id === id || o.id === id);
         }
-        return null;
-    }, [orders, id]);
+    });
 
-    const [status, setStatus] = useState(order?.status || 'Processing');
+    const [status, setStatus] = useState(null);
 
-    if (!order) {
+    // Sync status when order loads
+    React.useEffect(() => {
+        if (order) setStatus(order.status);
+    }, [order]);
+
+    if (!order && !isLoading) {
         return (
             <div className="p-20 text-center">
                 <h2 className="text-2xl font-bold text-gray-400">Order Not Found</h2>
@@ -43,6 +51,8 @@ const OrderDetailPage = () => {
             </div>
         );
     }
+
+    if (isLoading) return <div className="p-20 text-center">Loading Order...</div>;
 
     const handleUpdateStatus = (newStatus) => {
         setStatus(newStatus);

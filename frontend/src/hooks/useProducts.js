@@ -18,14 +18,9 @@ export const useProduct = (id) => {
     return useQuery({
         queryKey: ['product', id],
         queryFn: async () => {
-            // Fetch logic optimized to find in cache or fetch single
-            // For now, simpler to reuse list or fetch list if not implementing single endpoint completely
-            // NOTE: Backend doesn't have public GET /api/products/:id implemented in task list, only List.
-            // But we typically want single fetch or use cache.
-            const res = await fetch(`${API_URL}/products`);
-            if(!res.ok) throw new Error('Failed');
-            const products = await res.json();
-            return products.find(p => p.id === id);
+            const res = await fetch(`${API_URL}/products/${id}`);
+            if (!res.ok) throw new Error('Failed to fetch product');
+            return res.json();
         },
         enabled: !!id,
     });
@@ -63,9 +58,18 @@ export const useAddProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (productData) => {
-             // Mock POST as per previous context or valid endpoint if available
-             // Simulating success
-             return productData;
+             const res = await fetch(`${API_URL}/products`, {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify(productData),
+             });
+             if (!res.ok) {
+                 const error = await res.json();
+                 throw new Error(error.message || 'Failed to create product');
+             }
+             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });

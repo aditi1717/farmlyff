@@ -11,25 +11,39 @@ import {
     ArrowUpDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 
 const UsersPage = () => {
     const navigate = useNavigate();
-    const { orders } = useShop();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    // Get users from localStorage
-    const [users, setUsers] = useState(() => {
-        return JSON.parse(localStorage.getItem('farmlyf_users')) || [];
+    // Fetch Users
+    const { data: users = [] } = useQuery({
+        queryKey: ['users'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/users');
+            if (!res.ok) throw new Error('Failed to fetch users');
+            return res.json();
+        }
+    });
+
+    // Fetch Orders to calculate stats
+    const { data: orders = [] } = useQuery({
+        queryKey: ['orders'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/orders');
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            return res.json();
+        }
     });
 
     // Calculate user metrics
     const usersWithStats = useMemo(() => {
         return users.map(user => {
-            const userOrders = Object.values(orders).flat().filter(o => o.userId === user.id);
-            const totalSpend = userOrders.reduce((acc, o) => acc + (o.amount || 0), 0);
+            const userOrders = orders.filter(o => o.user?._id === user._id || o.userId === user._id); // flexible match
+            const totalSpend = userOrders.reduce((acc, o) => acc + (o.totalPrice || o.amount || 0), 0);
             return {
                 ...user,
                 totalOrders: userOrders.length,
@@ -66,17 +80,11 @@ const UsersPage = () => {
 
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
-    const handleToggleBlock = (userId) => {
-        const updatedUsers = users.map(u => {
-            if (u.id === userId) {
-                return { ...u, isBlocked: !u.isBlocked };
-            }
-            return u;
-        });
-        setUsers(updatedUsers);
-        localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-        // Force refresh in other tabs if needed (standard event)
-        window.dispatchEvent(new Event('storage'));
+    const handleToggleBlock = async (userId) => {
+        // Placeholder for API call
+        // await axios.put(`http://localhost:5000/api/users/${userId}/block`);
+        // queryClient.invalidateQueries(['users']);
+        alert('Block/Unblock feature requires API implementation.');
     };
 
     const stats = [

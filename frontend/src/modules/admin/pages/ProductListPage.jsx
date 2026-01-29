@@ -14,12 +14,33 @@ import {
     Copy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+import { useProducts, useCategories } from '../../../hooks/useProducts';
+import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
+import toast from 'react-hot-toast';
 
 const ProductListPage = () => {
     const navigate = useNavigate();
-    const { products, deleteProduct } = useShop();
+    const { data: products = [] } = useProducts();
+    const queryClient = useQueryClient();
+    
+    const deleteProductMutation = async (id) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                toast.success('Product deleted successfully');
+                queryClient.invalidateQueries(['products']);
+            } else {
+                toast.error('Failed to delete product');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Error deleting product');
+        }
+    };
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
 
@@ -61,7 +82,7 @@ const ProductListPage = () => {
 
     const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this product?')) {
-            deleteProduct(id);
+            deleteProductMutation(id);
         }
     };
 

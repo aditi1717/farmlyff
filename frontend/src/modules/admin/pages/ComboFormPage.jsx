@@ -13,13 +13,77 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 const ComboFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { packs, products, getPackById, addPack, updatePack, categories, subCategories } = useShop();
+    const queryClient = useQueryClient();
     const fileInputRef = useRef(null);
+
+    // Fetch Products (for selection and finding current combo)
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/products');
+             return res.json();
+        }
+    });
+
+    // Fetch Categories
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/categories');
+             return res.json();
+        }
+    });
+
+    // Fetch SubCategories
+    const { data: subCategories = [] } = useQuery({
+        queryKey: ['subcategories'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/subcategories');
+             return res.json();
+        }
+    });
+
+    // Add Mutation
+    const addMutation = useMutation({
+        mutationFn: async (newCombo) => {
+            const res = await fetch('http://localhost:5000/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCombo)
+            });
+            if (!res.ok) throw new Error('Failed to create combo');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+            toast.success('Combo created successfully!');
+            navigate('/admin/combo-products');
+        }
+    });
+
+    // Update Mutation
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Failed to update combo');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+            toast.success('Combo updated successfully!');
+            navigate('/admin/combo-products');
+        }
+    });
 
     // Get Combo Parent ID
     const comboParentId = useMemo(() => {
@@ -31,8 +95,9 @@ const ComboFormPage = () => {
     const comboCategories = useMemo(() => {
         if (!comboParentId) return [];
         return subCategories.filter(s => {
-            const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
-            return pId === comboParentId;
+             if (!s.parent) return false;
+             const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
+             return pId === comboParentId;
         });
     }, [subCategories, comboParentId]);
 
@@ -74,8 +139,8 @@ const ComboFormPage = () => {
     });
 
     useEffect(() => {
-        if (isEdit) {
-            const combo = getPackById(id);
+        if (isEdit && products.length > 0) {
+            const combo = products.find(p => p.id === id || p._id === id);
             if (combo) {
                 setFormData({
                     ...formData,
@@ -89,7 +154,7 @@ const ComboFormPage = () => {
                 });
             }
         }
-    }, [id, isEdit, getPackById]);
+    }, [id, isEdit, products]);
 
     // Auto-calculate pricing
     const calculatedPricing = useMemo(() => {
@@ -224,12 +289,10 @@ const ComboFormPage = () => {
         };
 
         if (isEdit) {
-            updatePack(id, comboData);
+            updateMutation.mutate({ id, data: comboData });
         } else {
-            addPack(comboData);
+            addMutation.mutate(comboData);
         }
-
-        navigate('/admin/combo-products');
     };
 
     return (

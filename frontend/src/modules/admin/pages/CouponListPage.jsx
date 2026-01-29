@@ -16,9 +16,39 @@ import { useShop } from '../../../context/ShopContext';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 const CouponListPage = () => {
     const navigate = useNavigate();
-    const { coupons, deleteCoupon, fetchCoupons } = useShop();
+    const queryClient = useQueryClient();
+
+    // Fetch Coupons
+    const { data: coupons = [] } = useQuery({
+        queryKey: ['coupons'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/coupons');
+             if (!res.ok) throw new Error('Failed to fetch coupons');
+             return res.json();
+        }
+    });
+
+    // Delete Mutation
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+             const res = await fetch(`http://localhost:5000/api/coupons/${id}`, {
+                 method: 'DELETE'
+             });
+             if (!res.ok) throw new Error('Failed to delete coupon');
+             return res.json();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries(['coupons']);
+             toast.success('Coupon deleted');
+        },
+        onError: () => {
+             toast.error('Failed to delete coupon');
+        }
+    });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -40,14 +70,9 @@ const CouponListPage = () => {
 
     const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
 
-    const handleDelete = async (id) => {
+    const handleDelete = (id) => {
         if (window.confirm('Are you sure you want to delete this coupon?')) {
-            const result = await deleteCoupon(id);
-            if (result.success) {
-                // Toast or notification?
-            } else {
-                toast.error('Failed to delete coupon');
-            }
+            deleteMutation.mutate(id);
         }
     };
 

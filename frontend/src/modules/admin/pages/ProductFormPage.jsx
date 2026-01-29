@@ -12,14 +12,39 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
+import { useProducts, useProduct, useAddProduct } from '../../../hooks/useProducts';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const ProductFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { products, getProductById, addProduct, updateProduct } = useShop();
+    const queryClient = useQueryClient();
+    const { data: products = [] } = useProducts();
+    const { data: productToEdit } = useProduct(id);
+    
+    // Mutations
+    const addProductMutation = useAddProduct();
+    
+    const updateProductMutation = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to update product');
+            return res.json();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries(['products']);
+             queryClient.invalidateQueries(['product', id]);
+             toast.success('Product updated successfully!');
+             navigate('/admin/products');
+        },
+        onError: (err) => toast.error(err.message)
+    });
 
     const isEdit = Boolean(id);
 
@@ -53,28 +78,25 @@ const ProductFormPage = () => {
     });
 
     useEffect(() => {
-        if (isEdit) {
-            const product = getProductById(id);
-            if (product) {
+        if (isEdit && productToEdit) {
                 // Normalize nutrition data if it's an object (legacy format)
-                let normalizedNutrition = product.nutrition;
-                if (product.nutrition && !Array.isArray(product.nutrition)) {
-                    normalizedNutrition = Object.entries(product.nutrition).map(([key, value]) => ({
+                let normalizedNutrition = productToEdit.nutrition;
+                if (productToEdit.nutrition && !Array.isArray(productToEdit.nutrition)) {
+                    normalizedNutrition = Object.entries(productToEdit.nutrition).map(([key, value]) => ({
                         label: key.charAt(0).toUpperCase() + key.slice(1),
                         value
                     }));
                 }
 
                 setFormData({
-                    ...product,
-                    variants: product.variants || [],
+                    ...productToEdit,
+                    variants: productToEdit.variants || [],
                     nutrition: normalizedNutrition || [],
-                    contents: product.contents || [], // Ensure contents is always an array
-                    benefits: product.benefits || [] // Ensure benefits is always an array
+                    contents: productToEdit.contents || [], // Ensure contents is always an array
+                    benefits: productToEdit.benefits || [] // Ensure benefits is always an array
                 });
-            }
         }
-    }, [id, isEdit, getProductById]);
+    }, [isEdit, productToEdit]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -132,13 +154,12 @@ const ProductFormPage = () => {
         };
 
         if (isEdit) {
-            updateProduct(id, finalData);
+            updateProductMutation.mutate({ id, data: finalData });
         } else {
-            addProduct(finalData);
+            addProductMutation.mutate(finalData, {
+                onSuccess: () => navigate('/admin/products')
+            });
         }
-
-        toast.success(`Product ${isEdit ? 'updated' : 'added'} successfully!`);
-        navigate('/admin/products');
     };
 
     return (
