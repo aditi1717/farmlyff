@@ -395,7 +395,7 @@ const CategoriesPage = () => {
                                 <label className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer hover:border-[#2c5336]/30">
                                     <input
                                         type="checkbox"
-                                        checked={editingCategory ? editingCategory.showInShopByCategory : newItem.showInShopByCategory}
+                                        checked={editingCategory ? (editingCategory.showInShopByCategory || false) : (newItem.showInShopByCategory || false)}
                                         onChange={(e) => editingCategory 
                                             ? setEditingCategory({...editingCategory, showInShopByCategory: e.target.checked})
                                             : setNewItem({...newItem, showInShopByCategory: e.target.checked})}

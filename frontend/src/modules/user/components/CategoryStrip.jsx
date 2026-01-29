@@ -70,7 +70,22 @@ const CategoryStrip = () => {
                 {/* ... header content ... */}
                 
                 <div className="text-center mb-4 md:mb-6 space-y-1 md:space-y-2">
-                     {/* ... */}
+                    <motion.span
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        className="text-primary font-bold tracking-[0.3em] uppercase text-[10px] block opacity-80"
+                    >
+                        Fresh from Farm
+                    </motion.span>
+                    <motion.h2
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-3xl md:text-4xl font-['Poppins'] font-bold text-footerBg tracking-tight"
+                    >
+                        Shop By <span className="text-primary">Category</span>
+                    </motion.h2>
+                    <div className="w-12 h-1 bg-primary mx-auto rounded-full mt-1" />
                 </div>
 
                 <div className="relative flex items-center group">
@@ -124,7 +139,7 @@ const CategoryStrip = () => {
                                 >
                                     <motion.img
                                         whileHover={{ scale: 1.15, rotate: 5 }}
-                                        src={cat.image?.startsWith('http') ? cat.image : `http://localhost:5000${cat.image}`}
+                                        src={assetMap[cat.slug] || (cat.image ? (cat.image.startsWith('http') ? cat.image : `http://localhost:5000${cat.image}`) : 'https://cdn-icons-png.flaticon.com/512/3592/3592864.png')}
                                         alt={cat.name}
                                         className="w-full h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.15)] group-hover/item:drop-shadow-[0_20px_30px_rgba(0,0,0,0.25)] transition-all duration-500"
                                         onError={(e) => {
