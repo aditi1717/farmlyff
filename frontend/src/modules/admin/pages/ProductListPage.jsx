@@ -14,7 +14,7 @@ import {
     Copy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useProducts, useCategories } from '../../../hooks/useProducts';
+import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
@@ -24,20 +24,11 @@ const ProductListPage = () => {
     const { data: products = [] } = useProducts();
     const queryClient = useQueryClient();
     
-    const deleteProductMutation = async (id) => {
-        try {
-            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
-                method: 'DELETE',
-            });
-            if (res.ok) {
-                toast.success('Product deleted successfully');
-                queryClient.invalidateQueries(['products']);
-            } else {
-                toast.error('Failed to delete product');
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Error deleting product');
+    const deleteProductMutation = useDeleteProduct();
+    
+    const handleDelete = (id) => {
+        if (window.confirm('Are you sure you want to delete this product?')) {
+            deleteProductMutation.mutate(id);
         }
     };
 
@@ -80,11 +71,7 @@ const ProductListPage = () => {
         return { label: 'In Stock', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' };
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            deleteProductMutation(id);
-        }
-    };
+
 
     return (
         <div className="space-y-8">

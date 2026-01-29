@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
 // import { useShop } from '../../../context/ShopContext'; // Removed
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     ChevronRight,
     Filter,
@@ -22,7 +22,8 @@ const staticCategoriesData = []; // Placeholder if needed, or just remove
 
 const CatalogPage = () => {
     const navigate = useNavigate();
-    const { category } = useParams();
+    const { category, subCategory } = useParams();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
     
     // React Query Hooks
@@ -54,7 +55,24 @@ const CatalogPage = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        if (category) {
+        // Sync search query from URL
+        const searchVal = searchParams.get('search');
+        if (searchVal) {
+            setSearchQuery(searchVal);
+        } else {
+            setSearchQuery('');
+        }
+
+        if (subCategory) {
+           // Direct subcategory match
+           const mainCat = categoriesData.find(c => c.id === category || c.id === category.toLowerCase());
+           if (mainCat) {
+               setSelectedCategory(mainCat.id);
+               // Find subcategory by slug or name
+               const sub = mainCat.subcategories.find(s => s.toLowerCase().replace(/ /g, '-') === subCategory);
+               setSelectedSubcategory(sub || 'all');
+           }
+        } else if (category) {
             const mainCat = categoriesData.find(c => c.id === category || c.name.toLowerCase().replace(/ /g, '-') === category);
             if (mainCat) {
                 setSelectedCategory(mainCat.id);
@@ -76,7 +94,7 @@ const CatalogPage = () => {
             setSelectedCategory('all');
             setSelectedSubcategory('all');
         }
-    }, [category]);
+    }, [category, searchParams, categoriesData]);
 
     const filteredProducts = useMemo(() => {
         const allItems = products; // Use fetched products

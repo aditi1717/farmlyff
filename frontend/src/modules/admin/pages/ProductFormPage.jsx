@@ -12,8 +12,8 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
-import { useProducts, useProduct, useAddProduct } from '../../../hooks/useProducts';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -26,25 +26,10 @@ const ProductFormPage = () => {
     
     // Mutations
     const addProductMutation = useAddProduct();
-    
-    const updateProductMutation = useMutation({
-        mutationFn: async ({ id, data }) => {
-            const res = await fetch(`http://localhost:5000/api/products/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error('Failed to update product');
-            return res.json();
-        },
-        onSuccess: () => {
-             queryClient.invalidateQueries(['products']);
-             queryClient.invalidateQueries(['product', id]);
-             toast.success('Product updated successfully!');
-             navigate('/admin/products');
-        },
-        onError: (err) => toast.error(err.message)
-    });
+    const updateProductMutation = useUpdateProduct();
+    const uploadImageMutation = useUploadImage();
+    const { data: dbCategories = [] } = useCategories();
+    const { data: dbSubCategories = [] } = useSubCategories();
 
     const isEdit = Boolean(id);
 
@@ -147,14 +132,26 @@ const ProductFormPage = () => {
     const handleSave = (e) => {
         e.preventDefault();
 
+        // Basic Validation
+        if (!formData.name.trim()) {
+            toast.error('Product name is required');
+            return;
+        }
+        if (!formData.category) {
+            toast.error('Parent category is required');
+            return;
+        }
+
         const finalData = {
             ...formData,
-            id: isEdit ? id : formData.name.toLowerCase().replace(/\s+/g, '-'),
+            id: isEdit ? id : `prod_${Date.now()}`, // Consistent prefix + unique timestamp
             updatedAt: Date.now()
         };
 
         if (isEdit) {
-            updateProductMutation.mutate({ id, data: finalData });
+            updateProductMutation.mutate({ id, data: finalData }, {
+                onSuccess: () => navigate('/admin/products')
+            });
         } else {
             addProductMutation.mutate(finalData, {
                 onSuccess: () => navigate('/admin/products')
@@ -523,6 +520,12 @@ const ProductFormPage = () => {
                         </h3>
 
                         <div className="aspect-square bg-gray-50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center p-6 relative group overflow-hidden">
+                            {uploadImageMutation.isPending && (
+                                <div className="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center space-y-3">
+                                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">Uploading...</p>
+                                </div>
+                            )}
                             {formData.image ? (
                                 <>
                                     <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
@@ -537,23 +540,40 @@ const ProductFormPage = () => {
                                     </div>
                                 </>
                             ) : (
-                                <div className="text-center space-y-2">
-                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-300 mx-auto shadow-sm">
-                                        <ImageIcon size={24} />
+                                <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-all group/label">
+                                    <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const res = await uploadImageMutation.mutateAsync(file);
+                                                if (res?.url) {
+                                                    setFormData(prev => ({ ...prev, image: res.url }));
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <div className="text-center space-y-2">
+                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-300 mx-auto shadow-sm group-hover/label:scale-110 transition-transform">
+                                            <ImageIcon size={24} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Click to Upload</p>
+                                        <p className="text-[8px] text-gray-300">Max size 5MB</p>
                                     </div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Preview Mode</p>
-                                </div>
+                                </label>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Image URL</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Internal Image Path / URL</label>
                             <input
                                 type="text"
                                 name="image"
                                 value={formData.image}
                                 onChange={handleChange}
-                                placeholder="Paste image path or URL..."
+                                placeholder="Auto-fills on upload or paste path..."
                                 className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-xs font-bold outline-none focus:bg-white focus:border-footerBg transition-all"
                             />
                         </div>
@@ -575,22 +595,32 @@ const ProductFormPage = () => {
                                     onChange={handleChange}
                                     className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-xs font-bold outline-none focus:bg-white focus:border-footerBg transition-all cursor-pointer"
                                 >
-                                    <option value="nuts">Nuts & Kernels</option>
-                                    <option value="dried-fruits">Dried Fruits</option>
-                                    <option value="combos-packs">Combos & Packs</option>
-                                    <option value="seeds">Seeds & Spices</option>
+                                    <option value="">Select Category</option>
+                                    {dbCategories.filter(c => c.status === 'Active').map(cat => (
+                                        <option key={cat.id || cat._id} value={cat.slug}>{cat.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Sub-Category</label>
-                                <input
-                                    type="text"
+                                <select
                                     name="subcategory"
                                     value={formData.subcategory}
                                     onChange={handleChange}
-                                    placeholder="e.g., Almonds / Dates"
-                                    className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-xs font-bold outline-none focus:bg-white focus:border-footerBg transition-all"
-                                />
+                                    className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-xs font-bold outline-none focus:bg-white focus:border-footerBg transition-all cursor-pointer"
+                                >
+                                    <option value="">Select Sub-Category</option>
+                                    {dbSubCategories
+                                        .filter(sub => {
+                                            const parentId = sub.parent?._id || sub.parent;
+                                            const parentSlug = dbCategories.find(c => String(c._id || c.id) === String(parentId))?.slug;
+                                            return parentSlug === formData.category && sub.status === 'Active';
+                                        })
+                                        .map(sub => (
+                                            <option key={sub.id || sub._id} value={sub.name}>{sub.name}</option>
+                                        ))
+                                    }
+                                </select>
                             </div>
                         </div>
                     </div>

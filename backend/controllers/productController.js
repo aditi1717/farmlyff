@@ -65,13 +65,16 @@ export const updateProduct = async (req, res) => {
     try {
         const product = await Product.findOne({ id: req.params.id });
         if (product) {
-            Object.assign(product, req.body);
+            // Strip fields that shouldn't be manually updated
+            const { _id, __v, createdAt, ...updateData } = req.body;
+            Object.assign(product, updateData);
             const updatedProduct = await product.save();
             res.json(updatedProduct);
         } else {
             res.status(404).json({ message: 'Product not found' });
         }
     } catch (error) {
+        console.error('Update product error:', error);
         res.status(400).json({ message: error.message });
     }
 };

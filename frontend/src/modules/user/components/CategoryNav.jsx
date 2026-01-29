@@ -102,7 +102,8 @@ const CategoryNav = () => {
             
             return {
                 title: cat.name,
-                items: subs.map(s => s.name) // Using name string as per previous structure, or could be object
+                slug: cat.slug,
+                items: subs.map(s => ({ name: s.name, slug: s.slug }))
             };
         });
     }, [categoriesDB, rawSubCategories]);
@@ -140,7 +141,7 @@ const CategoryNav = () => {
     }, [categoriesDB, shopMenuData]);
 
     return (
-        <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg px-4 lg:px-12 relative z-[100]">
+        <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg px-4 lg:px-12 relative" style={{ zIndex: 10000 }}>
             <div className="flex justify-between items-center text-[10px] lg:text-[11px] font-black tracking-widest uppercase items-center">
                 {navItems.map((cat, index) => {
                     const Icon = cat.icon;
@@ -178,7 +179,8 @@ const CategoryNav = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 w-full z-[110] bg-white shadow-[0_45px_100px_-20px_rgba(0,0,0,0.3)] rounded-b-[2rem] border-t border-gray-100 overflow-hidden"
+                        className="absolute top-full left-0 w-full bg-white shadow-[0_45px_100px_-20px_rgba(0,0,0,0.3)] rounded-b-[2rem] border-t border-gray-100 overflow-hidden"
+                        style={{ zIndex: 10001 }}
                         onMouseEnter={() => setActiveMenu(activeMenu)}
                         onMouseLeave={() => setActiveMenu(null)}
                     >
@@ -195,11 +197,11 @@ const CategoryNav = () => {
                                                     <div className="flex items-start gap-2.5">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] mt-[6px] flex-shrink-0" />
                                                         <Link
-                                                            to={`/category/${section.title.toLowerCase().replace(/ /g, '-')}/${(item.label || item).toLowerCase().replace(/ /g, '-')}`}
+                                                            to={`/category/${section.slug}/${item.slug}`}
                                                             onClick={() => setActiveMenu(null)}
                                                             className="text-[#374151] group-hover/item:text-primary font-black text-[12px] leading-tight transition-all duration-200 tracking-wide uppercase"
                                                         >
-                                                            {item.label || item}
+                                                            {item.name}
                                                         </Link>
                                                     </div>
                                                 </li>

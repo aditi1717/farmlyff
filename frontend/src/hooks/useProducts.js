@@ -79,6 +79,74 @@ export const useAddProduct = () => {
     });
 };
 
+export const useUpdateProduct = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`${API_URL}/products/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Failed to update product');
+            }
+            return res.json();
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['product', variables.id] });
+            toast.success('Product updated successfully!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+export const useDeleteProduct = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_URL}/products/${id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Failed to delete product');
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            toast.success('Product deleted successfully!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+export const useUploadImage = () => {
+    return useMutation({
+        mutationFn: async (file) => {
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const res = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+            
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Upload failed');
+            }
+            return res.json();
+        },
+        onError: (err) => toast.error(`Upload error: ${err.message}`)
+    });
+};
+
 // Helper to replace getPackById logic
 // We can't really do sync helper easily with React Query unless we access cache directly or use useQuery
 export const usePack = (id, products) => {

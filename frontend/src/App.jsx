@@ -63,6 +63,7 @@ function App() {
               <Route path="product/:id" element={<ProductDetailPage />} />
               <Route path="shop" element={<div className="p-20 text-center">Shop Page Coming Soon</div>} />
               <Route path="category/:category" element={<CatalogPage />} />
+              <Route path="category/:category/:subCategory" element={<CatalogPage />} />
               <Route path="cart" element={<CartPage />} />
               <Route path="checkout" element={<CheckoutPage />} />
               <Route path="order-success/:orderId" element={<OrderSuccessPage />} />
