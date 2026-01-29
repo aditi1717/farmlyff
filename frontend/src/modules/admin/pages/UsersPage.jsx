@@ -24,7 +24,7 @@ const UsersPage = () => {
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/users');
+            const res = await fetch('http://localhost:5000/api/users', { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch users');
             return res.json();
         }
@@ -34,7 +34,7 @@ const UsersPage = () => {
     const { data: orders = [] } = useQuery({
         queryKey: ['orders'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/orders');
+            const res = await fetch('http://localhost:5000/api/orders', { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch orders');
             return res.json();
         }

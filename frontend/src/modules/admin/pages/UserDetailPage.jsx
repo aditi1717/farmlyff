@@ -30,7 +30,7 @@ const UserDetailPage = () => {
              // Logic: I'll try to fetch all users and find. Or if looking at previous steps...
              // UsersPage fetched all. I'll stick to fetching all for safety unless I check backend routes.
              // Actually, safer to fetch all like UsersPage for now given the speed.
-             const res = await fetch('http://localhost:5000/api/users');
+             const res = await fetch('http://localhost:5000/api/users', { credentials: 'include' });
              if(!res.ok) throw new Error('Failed');
              const users = await res.json();
              return users.find(u => u._id === id || u.id === id);
@@ -41,7 +41,7 @@ const UserDetailPage = () => {
     const { data: userOrders = [] } = useQuery({
          queryKey: ['orders', id],
          queryFn: async () => {
-             const res = await fetch('http://localhost:5000/api/orders');
+             const res = await fetch('http://localhost:5000/api/orders', { credentials: 'include' });
              if(!res.ok) throw new Error('Failed');
              const allOrders = await res.json();
              return allOrders.filter(o => o.user?._id === id || o.userId === id);

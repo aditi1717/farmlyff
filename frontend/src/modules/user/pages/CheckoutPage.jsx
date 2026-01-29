@@ -79,6 +79,7 @@ const CheckoutPage = () => {
                 mrp: variantData.mrp,
                 image: variantData.product.image,
                 category: variantData.product.category,
+                subcategory: variantData.product.subcategory,
                 productId: variantData.product.id
             };
         }
@@ -163,6 +164,25 @@ const CheckoutPage = () => {
     }, [user]);
 
     const total = subtotal - couponDiscount;
+
+    const getActiveCoupons = () => {
+        if (!activeCoupons) return [];
+        return activeCoupons.filter(coupon => {
+             if (coupon.applicabilityType === 'all') return true;
+             return enrichedCart.some(item => {
+                 if (coupon.applicabilityType === 'product') {
+                     return coupon.targetItems.includes(item.id) || coupon.targetItems.includes(item.productId);
+                 }
+                 if (coupon.applicabilityType === 'category') {
+                     return coupon.targetItems.includes(item.category);
+                 }
+                 if (coupon.applicabilityType === 'subcategory') {
+                     return item.subcategory && coupon.targetItems.includes(item.subcategory);
+                 }
+                 return false;
+             });
+        });
+    };
     const availableCoupons = getActiveCoupons();
 
     const handleInputChange = (e) => {
