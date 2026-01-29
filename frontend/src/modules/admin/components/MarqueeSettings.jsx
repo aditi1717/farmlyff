@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Plus, Save, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { useSetting, useUpdateSetting } from '../../../hooks/useSettings';
 
 const MarqueeSettings = () => {
@@ -23,22 +22,7 @@ const MarqueeSettings = () => {
 
     const handleUpdate = () => {
         updateMutation.mutate(
-            { key: 'marquee_text', value: localItems.filter(i => i.trim() !== '') },
-            {
-                onSuccess: () => {
-                    toast.success('Announcement strip updated successfully!', {
-                        icon: '🎊',
-                        style: {
-                            borderRadius: '15px',
-                            background: '#333',
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            textTransform: 'uppercase'
-                        },
-                    });
-                }
-            }
+            { key: 'marquee_text', value: localItems.filter(i => i.trim() !== '') }
         );
     };
 

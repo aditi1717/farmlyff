@@ -86,13 +86,11 @@ const BannerListPage = () => {
                     id: editId,
                     data: formData
                 });
-                toast.success('Slide updated successfully!');
             } else {
                 await addBannerMutation.mutateAsync({
                     ...formData,
                     order: banners.length + 1
                 });
-                toast.success('Slide published successfully!');
             }
             resetForm();
         } catch (error) {

@@ -13,9 +13,6 @@ import {
 import { useAllOrders, useAllReturns } from '../../../hooks/useOrders';
 import { useProducts } from '../../../hooks/useProducts';
 import { useUsers } from '../../../hooks/useUsers';
-import { useSetting, useUpdateSetting } from '../../../hooks/useSettings';
-import MarqueeSettings from '../components/MarqueeSettings';
-import OfferStrip from '../../user/components/OfferStrip';
 
 const DashboardPage = () => {
     const { data: orders = [] } = useAllOrders();
@@ -46,20 +43,6 @@ const DashboardPage = () => {
 
     return (
         <div className="space-y-10">
-            {/* Live Preview Strip */}
-            <div className="-mx-8 -mt-8 mb-10 border-b border-gray-100 overflow-hidden rounded-t-[2rem]">
-                <div className="bg-gray-50 px-8 py-2 flex items-center justify-between border-b border-gray-100">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Homepage Preview</span>
-                    <button 
-                        onClick={() => window.location.href='/admin/settings?tab=announcements'}
-                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
-                    >
-                        Edit Strip
-                    </button>
-                </div>
-                <OfferStrip />
-            </div>
-
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
@@ -142,9 +125,6 @@ const DashboardPage = () => {
                             </table>
                         </div>
                     </div>
-
-                    {/* Marquee Settings Widget */}
-                    <MarqueeSettings />
                 </div>
 
                 {/* Low Stock Alerts Widget */}

@@ -153,14 +153,12 @@ const ProductFormPage = () => {
         if (isEdit) {
             updateProductMutation.mutate({ id, data: finalData }, {
                 onSuccess: () => {
-                    toast.success('Product updated successfully!');
                     navigate('/admin/products');
                 }
             });
         } else {
             addProductMutation.mutate(finalData, {
                 onSuccess: () => {
-                    toast.success('Product created successfully!');
                     navigate('/admin/products');
                 }
             });
