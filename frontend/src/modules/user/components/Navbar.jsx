@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-// import { useShop } from '../../../context/ShopContext'; // Deprecated
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';

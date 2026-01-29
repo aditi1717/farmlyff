@@ -111,7 +111,6 @@ const ProductCard = ({ product }) => {
                                 // But here we don't have the full variant object easily if it's deeper.
                                 // Actually we do.
                                 addItemToCart(user.id, { ...itemToAdd, id: itemId }); // Passing object
-                                navigate('/cart');
                             }}
                             className="bg-white border border-footerBg text-footerBg hover:bg-footerBg hover:text-white py-1.5 md:py-2 rounded-md md:rounded-lg text-[7px] md:text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-sm"
                         >

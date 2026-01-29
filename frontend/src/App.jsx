@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
-import { ShopProvider } from './context/ShopContext';
 import UserLayout from './modules/user/layouts/UserLayout';
 import HomePage from './modules/user/pages/HomePage';
 import CatalogPage from './modules/user/pages/CatalogPage';
@@ -52,10 +51,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ShopProvider>
           <Router>
             <ScrollToTop />
-            <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff' } }} />
+            <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#fff', color: '#333' } }} />
             <Routes>
               {/* User Routes */}
               <Route path="/" element={<UserLayout />}>
@@ -116,7 +114,6 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
-        </ShopProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

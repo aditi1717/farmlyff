@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, User, ChevronDown, Package, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
+import { useOrders } from '../../../hooks/useOrders';
+import { useReturns } from '../../../hooks/useReturns';
 import { Link } from 'react-router-dom';
 
 const AdminHeader = () => {
     const { user } = useAuth();
-    const { orders, returns } = useShop();
+    // Using React Query Hooks directly
+    const { data: orders = [] } = useOrders(); 
+    const { data: returns = [] } = useReturns();
+    
     const [showNotifications, setShowNotifications] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -25,7 +29,10 @@ const AdminHeader = () => {
     const allNotifications = [];
 
     // 1. Pending Orders
-    Object.values(orders || {}).flat().forEach(order => {
+    // Note: API returns array of orders directly, not map by userId
+    const orderList = Array.isArray(orders) ? orders : Object.values(orders).flat();
+    
+    orderList.forEach(order => {
         if (order && order.status === 'Processing') {
             allNotifications.push({
                 type: 'order',
@@ -39,7 +46,9 @@ const AdminHeader = () => {
     });
 
     // 2. Pending Returns
-    Object.values(returns || {}).flat().forEach(ret => {
+    const returnList = Array.isArray(returns) ? returns : Object.values(returns).flat();
+
+    returnList.forEach(ret => {
         if (ret && ret.status === 'Pending') {
             allNotifications.push({
                 type: 'return',

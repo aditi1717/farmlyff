@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import useCartStore from '../store/useCartStore';
+import useUserStore from '../store/useUserStore';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -101,6 +103,13 @@ export const AuthProvider = ({ children }) => {
             console.error("Logout error:", error);
             toast.error('Logout failed');
         }
+        
+        // Clear Zustand Stores
+        if (user) {
+            useCartStore.getState().clearCart(user.id);
+            useUserStore.getState().clearUserPrefs(user.id);
+        }
+
         setUser(null);
         localStorage.removeItem('farmlyf_current_user');
     };

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-// import { useShop } from '../../../context/ShopContext'; // Removed
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useProducts } from '../../../hooks/useProducts';
@@ -246,7 +245,6 @@ const ProductDetailPage = () => {
                                         onClick={() => {
                                             if (!user) return navigate('/login');
                                             addToCart(user.id, product.id, 1);
-                                            navigate('/cart');
                                         }}
                                         className="flex-1 bg-footerBg text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-footerBg/20 flex items-center justify-center gap-2"
                                     >
@@ -256,7 +254,6 @@ const ProductDetailPage = () => {
                                         onClick={() => {
                                             if (!user) return navigate('/login');
                                             addToCart(user.id, product.id, 1);
-                                            navigate('/cart');
                                         }}
                                         className="flex-1 bg-primary text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
                                     >
@@ -630,7 +627,6 @@ const ProductDetailPage = () => {
                                         if (!user) return navigate('/login');
                                         const skuId = isGroupProduct ? selectedVariant.id : product.id;
                                         addToCart(user.id, skuId, quantity);
-                                        navigate('/cart');
                                     }}
                                     className="flex-[2] bg-primary text-white h-[42px] rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primaryHover transition-all flex items-center justify-center gap-2"
                                 >
@@ -641,7 +637,6 @@ const ProductDetailPage = () => {
                                         if (!user) return navigate('/login');
                                         const skuId = isGroupProduct ? selectedVariant.id : product.id;
                                         addToCart(user.id, skuId, quantity);
-                                        navigate('/cart');
                                     }}
                                     className="flex-[2] bg-footerBg text-white h-[42px] rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-footerBg/20 hover:bg-black transition-all"
                                 >

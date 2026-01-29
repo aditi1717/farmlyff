@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
-// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     ChevronRight,

@@ -65,6 +65,18 @@ const useUserStore = create(
                     set({ saveForLater: { ...allSaved, [userId]: userSaved } });
                 }
             },
+
+            clearUserPrefs: (userId) => {
+                const allWishlist = get().wishlist;
+                const allRecent = get().recentlyViewed;
+                const allSaved = get().saveForLater;
+
+                set({
+                    wishlist: { ...allWishlist, [userId]: [] },
+                    recentlyViewed: { ...allRecent, [userId]: [] },
+                    saveForLater: { ...allSaved, [userId]: [] }
+                });
+            },
             
             // Helper to move from saved to cart (Logic partially here, component usually bridges)
             // But we can just have a function to remove it, and component calls cartStore.add
