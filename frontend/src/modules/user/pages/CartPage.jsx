@@ -57,7 +57,7 @@ const CartPage = () => {
     const { user } = useAuth();
 
     // Zustand Stores
-    const { getCart, removeFromCart, updateCartQty, addToCart, clearCart } = useCartStore();
+    const { getCart, removeFromCart, updateCartQty, addToCart, clearCart, applyCoupon, removeCoupon, getAppliedCoupon } = useCartStore();
     const { getSaveForLater, saveForLater, addToSaved: saveForLaterAction, removeFromSaved } = useUserStore();
     
     // Data Hooks
@@ -122,6 +122,10 @@ const CartPage = () => {
         navigate('/checkout');
     };
 
+    const [couponCode, setCouponCode] = React.useState('');
+    const [couponError, setCouponError] = React.useState('');
+    const appliedCoupon = user ? getAppliedCoupon(user.id) : null;
+
     const cartItems = user ? getCart(user.id) : [];
 
     // Enrich cart items with product details
@@ -174,6 +178,22 @@ const CartPage = () => {
     }).filter(Boolean);
 
     const subtotal = enrichedCart.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0);
+
+    const calculateDiscount = (coupon, amount) => {
+        if (!coupon) return 0;
+        let discount = 0;
+        if (coupon.type === 'percent') {
+            discount = Math.round((amount * coupon.value) / 100);
+            if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+        } else {
+            discount = coupon.value;
+        }
+        return discount;
+    };
+
+    const couponDiscount = appliedCoupon ? calculateDiscount(appliedCoupon, subtotal) : 0;
+    const total = subtotal - couponDiscount;
+
     const cartCategories = [...new Set(enrichedCart.map(item => item.category))];
     const availableCoupons = getActiveCoupons().filter(c => {
         // Simple filter for coupons that are theoretically applicable (min order value check)
@@ -279,11 +299,68 @@ const CartPage = () => {
                                     <span>Shipping</span>
                                     <span className="text-emerald-500 font-bold italic">FREE</span>
                                 </div>
+                                {couponDiscount > 0 && (
+                                    <div className="flex justify-between text-emerald-500 font-bold">
+                                        <span>Discount ({appliedCoupon.code})</span>
+                                        <span>-₹{couponDiscount}</span>
+                                    </div>
+                                )}
                                 <div className="pt-2 md:pt-4 border-t border-gray-100 flex justify-between text-base md:text-xl font-black text-footerBg">
                                     <span>Total Amount</span>
-                                    <span>₹{subtotal}</span>
+                                    <span>₹{total}</span>
                                 </div>
                             </div>
+
+                            {/* Promo Code Input */}
+                            <div className="pt-4 border-t border-gray-100">
+                                {!appliedCoupon ? (
+                                    <div className="space-y-2">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Promo Code"
+                                                value={couponCode}
+                                                onChange={(e) => {
+                                                    setCouponCode(e.target.value.toUpperCase());
+                                                    setCouponError('');
+                                                }}
+                                                className="flex-1 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:border-primary transition-all uppercase"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const coupon = activeCoupons.find(c => c.code === couponCode);
+                                                    if (!coupon) {
+                                                        setCouponError('Invalid code');
+                                                    } else if (subtotal < coupon.minOrderValue) {
+                                                        setCouponError(`Min order ₹${coupon.minOrderValue} required`);
+                                                    } else {
+                                                        applyCoupon(user.id, coupon);
+                                                        setCouponCode('');
+                                                    }
+                                                }}
+                                                className="bg-footerBg text-white px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all shadow-sm"
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {couponError && <p className="text-[10px] text-red-500 font-bold ml-1">{couponError}</p>}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-2 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <Tag size={12} className="text-emerald-500" />
+                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{appliedCoupon.code}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeCoupon(user.id)}
+                                            className="text-[10px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             <button
                                 onClick={() => navigate('/checkout')}
                                 className="w-full bg-footerBg text-white py-2.5 md:py-4 rounded-lg md:rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg active:scale-95"

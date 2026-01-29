@@ -57,7 +57,7 @@ export const createProduct = async (req, res) => {
     try {
         const productData = { ...req.body };
         if (productData.name && !productData.slug) {
-            productData.slug = productData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
+            productData.slug = productData.name.trim().toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
         }
         const product = new Product(productData);
         const createdProduct = await product.save();
@@ -79,7 +79,7 @@ export const updateProduct = async (req, res) => {
             
             // Auto-update slug if name changes and NO slug is provided in updateData
             if (updateData.name && !updateData.slug) {
-                updateData.slug = updateData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
+                updateData.slug = updateData.name.trim().toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
             }
 
             Object.assign(product, updateData);

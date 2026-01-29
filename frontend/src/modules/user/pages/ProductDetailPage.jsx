@@ -49,7 +49,22 @@ const ProductDetailPage = () => {
     // Helpers
     const getProductById = (id) => products.find(p => p.id === id);
     const getProductBySlug = (s) => products.find(p => p.slug === s || p.id === s);
-    const getActiveCoupons = () => activeCoupons;
+    const getActiveCoupons = () => {
+        if (!product || !activeCoupons) return [];
+        return activeCoupons.filter(coupon => {
+            if (coupon.applicabilityType === 'all') return true;
+            if (coupon.applicabilityType === 'product') {
+                return coupon.targetItems.includes(product.id) || coupon.targetItems.includes(product.slug);
+            }
+            if (coupon.applicabilityType === 'category') {
+                return coupon.targetItems.includes(product.category);
+            }
+            if (coupon.applicabilityType === 'subcategory') {
+                return coupon.targetItems.includes(product.subcategory);
+            }
+            return false;
+        });
+    };
     const isInWishlist = (userId, pid) => getWishlist(userId).includes(pid);
     const getRecommendations = (userId, limit) => products.slice(0, limit); // Simple mock
 
@@ -59,6 +74,9 @@ const ProductDetailPage = () => {
     const [pincode, setPincode] = useState('');
     const [activeTab, setActiveTab] = useState('Description');
     const [copiedCouponId, setCopiedCouponId] = useState(null);
+    const [previewCouponCode, setPreviewCouponCode] = useState('');
+    const [previewDiscount, setPreviewDiscount] = useState(0);
+    const [previewError, setPreviewError] = useState('');
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [newReview, setNewReview] = useState({ rating: 5, title: '', text: '' });
     const [reviewsList, setReviewsList] = useState([
@@ -515,6 +533,53 @@ const ProductDetailPage = () => {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Promo Code Preview Input */}
+                            <div className="mt-4 pt-4 border-t border-[#F5E6A3]/50">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Have a promo code?"
+                                        value={previewCouponCode}
+                                        onChange={(e) => {
+                                            setPreviewCouponCode(e.target.value.toUpperCase());
+                                            setPreviewError('');
+                                            setPreviewDiscount(0);
+                                        }}
+                                        className="flex-1 bg-white border border-[#F5E6A3] rounded-lg px-3 py-2 text-[10px] font-bold outline-none focus:border-primary transition-all uppercase placeholder:italic"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const coupon = activeCoupons.find(c => c.code === previewCouponCode);
+                                            if (!coupon) {
+                                                setPreviewError('Invalid code');
+                                            } else if (currentPrice < coupon.minOrderValue) {
+                                                setPreviewError(`Min order ₹${coupon.minOrderValue} required`);
+                                            } else {
+                                                let discount = 0;
+                                                if (coupon.type === 'percent') {
+                                                    discount = Math.round((currentPrice * coupon.value) / 100);
+                                                    if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+                                                } else {
+                                                    discount = coupon.value;
+                                                }
+                                                setPreviewDiscount(discount);
+                                                setPreviewError('');
+                                            }
+                                        }}
+                                        className="bg-primary text-white px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-opacity-90 transition-all shadow-sm"
+                                    >
+                                        Check
+                                    </button>
+                                </div>
+                                {previewError && <p className="text-[9px] text-red-500 font-bold mt-1 ml-1">{previewError}</p>}
+                                {previewDiscount > 0 && (
+                                    <div className="mt-2 bg-emerald-50 border border-emerald-100 p-2 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Potential Price:</span>
+                                        <span className="text-[11px] font-black text-emerald-600">₹{currentPrice - previewDiscount}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

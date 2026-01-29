@@ -51,6 +51,7 @@ const ProductListPage = () => {
                 const matchesSearch =
                     product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     product.subcategory?.toLowerCase().includes(searchTerm.toLowerCase());
 

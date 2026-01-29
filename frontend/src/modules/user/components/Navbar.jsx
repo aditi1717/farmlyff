@@ -65,7 +65,8 @@ const Navbar = () => {
         
         let fp = products.filter(p => 
             (p.name?.toLowerCase().includes(q) || 
-            p.description?.toLowerCase().includes(q)) &&
+            p.description?.toLowerCase().includes(q) ||
+            p.id?.toLowerCase().includes(q)) &&
             p.status !== 'Inactive'
         );
 

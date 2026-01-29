@@ -6,6 +6,7 @@ const useCartStore = create(
     persist(
         (set, get) => ({
             cartItems: {}, // { userId: [{ packId, qty }] }
+            appliedCoupons: {}, // { userId: couponData }
 
             getCart: (userId) => get().cartItems[userId] || [],
 
@@ -57,8 +58,26 @@ const useCartStore = create(
 
             clearCart: (userId) => {
                 const cart = get().cartItems;
-                set({ cartItems: { ...cart, [userId]: [] } });
-            }
+                const coupons = get().appliedCoupons;
+                set({ 
+                    cartItems: { ...cart, [userId]: [] },
+                    appliedCoupons: { ...coupons, [userId]: null }
+                });
+            },
+
+            applyCoupon: (userId, coupon) => {
+                const coupons = get().appliedCoupons;
+                set({ appliedCoupons: { ...coupons, [userId]: coupon } });
+                toast.success(`Coupon ${coupon.code} applied!`);
+            },
+
+            removeCoupon: (userId) => {
+                const coupons = get().appliedCoupons;
+                set({ appliedCoupons: { ...coupons, [userId]: null } });
+                toast.success("Coupon removed");
+            },
+
+            getAppliedCoupon: (userId) => get().appliedCoupons[userId] || null
         }),
         {
             name: 'farmlyf_cart', // unique name

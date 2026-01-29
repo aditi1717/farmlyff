@@ -19,7 +19,7 @@ const CheckoutPage = () => {
     const { user } = useAuth();
     
     // Hooks
-    const { getCart, clearCart } = useCartStore(); // Added clearCart destructuring logic if needed implicitly by placeOrder in old context? 
+    const { getCart, clearCart, getAppliedCoupon, removeCoupon, applyCoupon } = useCartStore(); // Added clearCart destructuring logic if needed implicitly by placeOrder in old context? 
     // Old context placeOrder likely cleared cart. We need to do it manually or via mutation onSuccess.
     
     // Data
@@ -115,10 +115,24 @@ const CheckoutPage = () => {
 
     // Coupon management state
     const [couponCode, setCouponCode] = useState('');
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const globalAppliedCoupon = user ? getAppliedCoupon(user.id) : null;
+    const [appliedCoupon, setAppliedCoupon] = useState(globalAppliedCoupon);
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [couponError, setCouponError] = useState('');
     const [showCouponsModal, setShowCouponsModal] = useState(false);
+
+    useEffect(() => {
+        if (appliedCoupon) {
+            const result = validateCoupon(user.id, appliedCoupon.code, subtotal, enrichedCart);
+            if (result.valid) {
+                setCouponDiscount(result.discount);
+            } else {
+                setAppliedCoupon(null);
+                setCouponDiscount(0);
+                if (user) removeCoupon(user.id);
+            }
+        }
+    }, [appliedCoupon, subtotal, enrichedCart, user]);
 
     useEffect(() => {
         if (user) {
@@ -168,10 +182,12 @@ const CheckoutPage = () => {
             setAppliedCoupon(result.coupon);
             setCouponDiscount(result.discount);
             setCouponError('');
+            if (user) applyCoupon(user.id, result.coupon);
         } else {
             setCouponError(result.error);
             setAppliedCoupon(null);
             setCouponDiscount(0);
+            if (user) removeCoupon(user.id);
         }
     };
 
@@ -180,6 +196,7 @@ const CheckoutPage = () => {
         setCouponDiscount(0);
         setCouponCode('');
         setCouponError('');
+        if (user) removeCoupon(user.id);
     };
 
     const handleSubmit = async (e) => {
