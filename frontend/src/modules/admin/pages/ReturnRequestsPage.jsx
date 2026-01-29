@@ -14,20 +14,63 @@ import {
     Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 const ReturnRequestsPage = () => {
     const navigate = useNavigate();
-    const { returns, getPackById } = useShop();
+    const queryClient = useQueryClient();
+    
+    // Fetch Returns
+    const { data: returnsData = [] } = useQuery({
+        queryKey: ['returns'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/returns');
+             if (!res.ok) throw new Error('Failed to fetch returns');
+             return res.json();
+        }
+    });
+
+    // Fetch Products (to lookup names)
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/products');
+             return res.json();
+        }
+    });
+
+    // Update Status Mutation
+    const updateReturnStatus = useMutation({
+        mutationFn: async ({ id, status }) => {
+             const res = await fetch(`http://localhost:5000/api/returns/${id}`, {
+                 method: 'PUT',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ status })
+             });
+             if (!res.ok) throw new Error('Failed to update return status');
+             return res.json();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries(['returns']);
+             toast.success('Return status updated');
+        },
+        onError: () => toast.error('Failed to update status')
+    });
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    // Flatten all returns from all users
+    // Flatten all returns if they come as struct, or use directly if array
+    // Assuming API returns array of returns
     const allReturns = useMemo(() => {
-        return Object.values(returns).flat().sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate));
-    }, [returns]);
+        if (Array.isArray(returnsData)) {
+            return returnsData.sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate));
+        }
+        return [];
+    }, [returnsData]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -63,8 +106,7 @@ const ReturnRequestsPage = () => {
     };
 
     const handleAction = (retId, action) => {
-        toast.success(`Request ${retId} ${action}! (Mock Action)`);
-        // In real app, this would update the return status in context
+        updateReturnStatus.mutate({ id: retId, status: action });
     };
 
     return (
@@ -143,7 +185,7 @@ const ReturnRequestsPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {paginatedReturns.map((ret) => {
-                                const prod = getPackById(ret.packId);
+                                const prod = products.find(p => p.id === ret.packId || p._id === ret.packId);
                                 return (
                                     <tr key={ret.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-3.5">

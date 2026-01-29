@@ -1,30 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { useShop } from '../../../context/ShopContext';
 import { Plus, Trash2, Video, ExternalLink, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 const ReelsPage = () => {
-    const { reels, addReel, deleteReel, updateReel } = useShop();
+    const queryClient = useQueryClient();
     const [localReels, setLocalReels] = useState([]);
     const [isDirty, setIsDirty] = useState(false);
+    const [deletedReelIds, setDeletedReelIds] = useState([]);
 
-    // Sync local state with global state on mount
-    useEffect(() => {
-        if (reels) {
-            setLocalReels(JSON.parse(JSON.stringify(reels)));
-            setIsDirty(false);
+    // Fetch Reels
+    const { data: serverReels = [] } = useQuery({
+        queryKey: ['reels'],
+        queryFn: async () => {
+             const res = await fetch('http://localhost:5000/api/reels');
+             if (!res.ok) throw new Error('Failed to fetch reels');
+             return res.json();
         }
-    }, [reels]);
+    });
+
+    // Validates if it's a fresh load to reset local state
+    useEffect(() => {
+        if (serverReels && !isDirty) {
+            setLocalReels(JSON.parse(JSON.stringify(serverReels)));
+            setDeletedReelIds([]);
+        }
+    }, [serverReels, isDirty]);
+
+    const createMutation = useMutation({
+        mutationFn: async (reel) => {
+            const res = await fetch('http://localhost:5000/api/reels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reel)
+            });
+            return res.json();
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: async (reel) => {
+            const res = await fetch(`http://localhost:5000/api/reels/${reel._id || reel.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reel)
+            });
+            return res.json();
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id) => {
+            await fetch(`http://localhost:5000/api/reels/${id}`, { method: 'DELETE' });
+        }
+    });
 
     const handleAddReel = () => {
         setLocalReels([
             ...localReels,
-            { id: null, video: '', link: '', title: '' }
+            { id: null, video: '', link: '', title: '' } // Uses 'id: null' to mark new
         ]);
         setIsDirty(true);
     };
 
     const handleRemoveReel = (index) => {
+        const reelToRemove = localReels[index];
+        if (reelToRemove._id || reelToRemove.id) {
+            setDeletedReelIds([...deletedReelIds, reelToRemove._id || reelToRemove.id]);
+        }
         const newReels = [...localReels];
         newReels.splice(index, 1);
         setLocalReels(newReels);
@@ -49,44 +93,32 @@ const ReelsPage = () => {
         }
     };
 
-    const handleSave = () => {
-        // We'll implemented a bulk update function in context or loop through updates
-        // For simplicity in this step, let's assume we replace the whole list
-        // Since useShop might not have a setReels function yet, we might need to add one.
-        // Assuming we will add 'setAllReels' to context.
-        // For now, let's just log or alert if function missing, but we will add it next.
-        if (window.confirm('Save all changes to Reels?')) {
-            /* 
-               We need to implement setAllReels in ShopContext or 
-               manually sync. Since we are creating this page, 
-               we will ensure ShopContext supports it.
-            */
-            // Using a hypothetical setAllReels function that we will add immediately after
-            const { setAllReels } = require('../../../context/ShopContext').useShop();
-            if (setAllReels) {
-                setAllReels(localReels);
-                toast.success('Reels updated successfully!');
-                setIsDirty(false);
-            } else {
-                console.error("setAllReels not found in context");
-            }
+    const handleSaveClick = async () => {
+        const toastId = toast.loading('Saving changes...');
+        try {
+            // 1. Delete removed reels
+            await Promise.all(deletedReelIds.map(id => deleteMutation.mutateAsync(id)));
+
+            // 2. Create/Update reels
+            await Promise.all(localReels.map(reel => {
+                if (reel._id || reel.id) {
+                    return updateMutation.mutateAsync(reel);
+                } else {
+                    return createMutation.mutateAsync(reel);
+                }
+            }));
+
+            toast.success('Reels updated successfully!', { id: toastId });
+            setIsDirty(false);
+            setDeletedReelIds([]);
+            queryClient.invalidateQueries(['reels']);
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to save changes', { id: toastId });
         }
     };
-
-    // Need to access context to call setAllReels, but can't require inside component easily without hook.
-    // So let's just use the hook properly.
-    const { setAllReels } = useShop();
-
-    const handleSaveClick = () => {
-        if (setAllReels) {
-            setAllReels(localReels);
-            toast.success('Reels updated successfully!');
-            setIsDirty(false);
-        } else {
-            toast.error('Error: Save function not available yet. Please refresh.');
-        }
-    }
-
+    
+    // Unused in this refactor but kept to avoid destructuring error if old code references it
     const [viewReel, setViewReel] = useState(null);
 
     return (

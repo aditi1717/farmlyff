@@ -11,6 +11,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import subCategoryRoutes from './routes/subCategoryRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
+import reelRoutes from './routes/reelRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -34,5 +35,6 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/reels', reelRoutes);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useShop } from '../../../context/ShopContext';
 import { useAuth } from '../../../context/AuthContext';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, Percent, Tag, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';

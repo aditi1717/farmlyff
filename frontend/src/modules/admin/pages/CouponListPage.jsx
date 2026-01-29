@@ -12,7 +12,6 @@ import {
     Percent
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 
