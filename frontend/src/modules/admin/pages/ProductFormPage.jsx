@@ -550,7 +550,7 @@ const ProductFormPage = () => {
                                     <input 
                                         type="file" 
                                         className="hidden" 
-                                        accept="image/*"
+                                        accept="image/*,.avif"
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {

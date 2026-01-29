@@ -24,6 +24,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Debug middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
@@ -39,5 +45,16 @@ app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/reels', reelRoutes);
 app.use('/api/settings', settingsRoutes);
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: err.message || 'Internal Server Error' });
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

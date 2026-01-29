@@ -30,12 +30,26 @@ const BannerListPage = () => {
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setPreview(URL.createObjectURL(file));
+            // Internal preview for immediate feedback
+            const localPreview = URL.createObjectURL(file);
+            setPreview(localPreview);
+            
             try {
                 const res = await uploadImageMutation.mutateAsync(file);
-                setFormData(prev => ({ ...prev, image: res.url, publicId: res.publicId }));
+                if (res?.url) {
+                    setFormData(prev => ({ 
+                        ...prev, 
+                        image: res.url, 
+                        publicId: res.publicId || prev.publicId 
+                    }));
+                    setPreview(res.url); // Sync preview with actual remote URL
+                } else {
+                    throw new Error('No URL in response');
+                }
             } catch (error) {
-                toast.error('Image upload failed');
+                toast.error('Image upload failed. Please try again.');
+                // Revert preview if upload fails
+                setPreview(formData.image || null);
             }
         }
     };
@@ -65,11 +79,12 @@ const BannerListPage = () => {
             section: banner.section || 'hero',
             image: banner.image || '',
             publicId: banner.publicId || '',
-            isActive: banner.isActive !== false
+            isActive: banner.isActive !== false,
+            order: banner.order || 0
         });
         setPreview(banner.image);
         setIsEditing(true);
-        setEditId(banner._id);
+        setEditId(banner._id || banner.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -200,11 +215,11 @@ const BannerListPage = () => {
 
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Background Image <span className="text-primary">*</span></label>
-                                <div className="border-2 border-dashed border-gray-100 rounded-2xl p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group overflow-hidden">
+                                <div className="border-2 border-dashed border-gray-100 rounded-2xl p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group overflow-hidden mb-3">
                                     <input 
                                         type="file" 
                                         onChange={handleFileChange}
-                                        accept="image/*"
+                                        accept="image/*,.avif"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
                                     {preview ? (
@@ -224,6 +239,20 @@ const BannerListPage = () => {
                                             <span className="text-[10px] font-black uppercase tracking-widest">Select Visual Asset</span>
                                         </div>
                                     )}
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Or Paste Image URL</label>
+                                    <input 
+                                        type="text"
+                                        value={formData.image}
+                                        onChange={(e) => {
+                                            const url = e.target.value;
+                                            setFormData(prev => ({ ...prev, image: url }));
+                                            setPreview(url);
+                                        }}
+                                        className="w-full bg-gray-50 border border-transparent rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:bg-white focus:border-primary transition-all"
+                                        placeholder="https://cloudinary.com/..."
+                                    />
                                 </div>
                             </div>
 

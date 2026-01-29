@@ -138,8 +138,16 @@ export const useUploadImage = () => {
             });
             
             if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.message || 'Upload failed');
+                const text = await res.text();
+                let errorMessage = 'Upload failed';
+                try {
+                    const error = JSON.parse(text);
+                    errorMessage = error.message || errorMessage;
+                } catch (e) {
+                    // It's HTML, use the text
+                    errorMessage = text.substring(0, 100);
+                }
+                throw new Error(errorMessage);
             }
             return res.json();
         },
