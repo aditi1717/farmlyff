@@ -18,11 +18,13 @@ const contentSchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
   id: { type: String, unique: true }, // Custom ID: "prod_001"
+  slug: { type: String, unique: true },
   brand: String,
   name: String,
   category: String,
   subcategory: String,
   image: String,
+  images: [String],
   description: String,
   rating: { type: Number, default: 4.5 },
   reviews: { type: Number, default: 0 },

@@ -36,7 +36,7 @@ import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProductDetailPage = () => {
-    const { id } = useParams();
+    const { slug } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     
@@ -47,8 +47,7 @@ const ProductDetailPage = () => {
     const activeCoupons = useActiveCoupons();
 
     // Helpers
-    const getProductById = (pid) => products.find(p => p.id === pid);
-    const getPackById = (pid) => products.find(p => p.id === pid); // Assuming generic structure now
+    const getProductBySlug = (s) => products.find(p => p.slug === s || p.id === s);
     const getActiveCoupons = () => activeCoupons;
     const isInWishlist = (userId, pid) => getWishlist(userId).includes(pid);
     const getRecommendations = (userId, limit) => products.slice(0, limit); // Simple mock
@@ -81,27 +80,18 @@ const ProductDetailPage = () => {
 
     useEffect(() => {
         // Try to find in group products first
-        const foundProduct = getProductById(id);
+        const foundProduct = getProductBySlug(slug);
         if (foundProduct) {
             setProduct(foundProduct);
-            setSelectedVariant(foundProduct.variants[0]);
+            setSelectedVariant(foundProduct.variants?.[0]);
 
             // Track view
             if (user) {
                 addToRecentlyViewed(user.id, foundProduct.id);
             }
-        } else {
-            // Fallback for legacy packs
-            const foundPack = getPackById(id);
-            if (foundPack) {
-                setProduct(foundPack);
-                if (user && foundPack.productId) {
-                    addToRecentlyViewed(user.id, foundPack.productId);
-                }
-            }
         }
         window.scrollTo(0, 0);
-    }, [id, user, products]); // Added products to dependency
+    }, [slug, user, products]); // Added products to dependency
 
     if (!product) {
         return (

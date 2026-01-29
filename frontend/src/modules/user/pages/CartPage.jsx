@@ -138,7 +138,8 @@ const CartPage = () => {
                 mrp: variantData.mrp,
                 image: variantData.product.image,
                 category: variantData.product.category,
-                productId: variantData.product.id
+                productId: variantData.product.id,
+                slug: variantData.product.slug
             };
         }
 
@@ -163,7 +164,8 @@ const CartPage = () => {
                 mrp: variantData.mrp,
                 image: variantData.product.image,
                 category: variantData.product.category,
-                productId: variantData.product.id
+                productId: variantData.product.id,
+                slug: variantData.product.slug
             };
         }
         const pack = getPackById(item.packId);
@@ -209,7 +211,7 @@ const CartPage = () => {
                         {enrichedCart.map((item) => (
                             <div key={item.id} className="bg-white p-2 md:p-6 rounded-lg md:rounded-2xl border border-gray-100 flex gap-2 md:gap-6 shadow-sm group">
                                 <div
-                                    onClick={() => navigate(`/product/${item.id}`)}
+                                    onClick={() => navigate(`/product/${item.slug || item.productId || item.id}`)}
                                     className="w-16 h-16 md:w-24 md:h-24 rounded-md md:rounded-xl overflow-hidden bg-gray-50 shrink-0 cursor-pointer"
                                 >
                                     <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -217,7 +219,7 @@ const CartPage = () => {
                                 <div className="flex-1 flex flex-col justify-between min-w-0">
                                     <div className="flex justify-between items-start">
                                         <div
-                                            onClick={() => navigate(`/product/${item.productId || item.id}`)}
+                                            onClick={() => navigate(`/product/${item.slug || item.productId || item.id}`)}
                                             className="cursor-pointer min-w-0"
                                         >
                                             <h3 className="font-bold text-footerBg text-[13px] md:text-lg group-hover:text-primary transition-colors line-clamp-2 pr-1">{item.name}</h3>

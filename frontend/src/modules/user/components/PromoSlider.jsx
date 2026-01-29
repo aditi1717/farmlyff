@@ -42,6 +42,9 @@ const PromoSlider = () => {
                             src={banners[currentIndex].image}
                             alt={banners[currentIndex].title}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                                e.target.src = 'https://images.unsplash.com/photo-1596727147705-61a532a659bd?auto=format&fit=crop&w=800&q=80';
+                            }}
                         />
 
                         <div className="absolute inset-0 z-20 flex flex-col justify-center px-5 md:px-16 text-white pointer-events-none">

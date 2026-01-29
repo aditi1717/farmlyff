@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     Save,
     User,
@@ -12,16 +13,32 @@ import {
     Zap,
     Lock,
     Eye,
-    EyeOff
+    EyeOff,
+    MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MarqueeSettings from '../components/MarqueeSettings';
 
 const SettingsPage = () => {
-    const [activeTab, setActiveTab] = useState('general');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'general');
     const [showPassword, setShowPassword] = useState(false);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && tab !== activeTab) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (id) => {
+        setActiveTab(id);
+        setSearchParams({ tab: id });
+    };
 
     const tabs = [
         { id: 'general', label: 'General', icon: Globe },
+        { id: 'announcements', label: 'Announcements', icon: MessageSquare },
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'account', label: 'Account', icon: User },
@@ -39,12 +56,14 @@ const SettingsPage = () => {
                     <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Control Center</h1>
                     <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Configure your administrator preferences</p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    className="bg-footerBg text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-xl shadow-footerBg/20"
-                >
-                    <Save size={18} /> Update Configurations
-                </button>
+                {activeTab !== 'announcements' && (
+                    <button
+                        onClick={handleSave}
+                        className="bg-footerBg text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-xl shadow-footerBg/20"
+                    >
+                        <Save size={18} /> Update Configurations
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -53,7 +72,7 @@ const SettingsPage = () => {
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleTabChange(tab.id)}
                             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] transition-all ${activeTab === tab.id
                                 ? 'bg-footerBg text-white shadow-lg'
                                 : 'bg-white text-gray-400 hover:bg-gray-50'
@@ -95,6 +114,12 @@ const SettingsPage = () => {
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'announcements' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <MarqueeSettings />
                             </div>
                         )}
 

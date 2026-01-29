@@ -4,6 +4,7 @@ import {
     Copy, ExternalLink, Calendar, DollarSign, Percent, MoreHorizontal,
     Twitter, Instagram, Youtube, Filter, Eye, ArrowRight
 } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const DUMMY_INFLUENCERS = [
     {
@@ -149,6 +150,7 @@ const InfluencerReferralPage = () => {
 
         setIsAddingPayout(false);
         setPayoutAmount('');
+        toast.success(`Payout of ₹${amount} added successfully!`);
     };
 
     const handleSave = (e) => {
@@ -166,6 +168,7 @@ const InfluencerReferralPage = () => {
             setInfluencers(prev => [newItem, ...prev]);
         }
         setShowModal(false);
+        toast.success(editingItem ? 'Influencer updated successfully!' : 'Influencer added successfully!');
     };
 
     const toggleStatus = (id) => {
@@ -180,6 +183,7 @@ const InfluencerReferralPage = () => {
 
     return (
         <div className="space-y-8 font-['Inter']">
+            <Toaster position="top-right" />
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

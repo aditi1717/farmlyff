@@ -180,7 +180,7 @@ const Navbar = () => {
                                             {filteredProducts.slice(0, 5).map(p => (
                                                 <Link 
                                                     key={p.id} 
-                                                    to={`/product/${p.id}`} 
+                                                    to={`/product/${p.slug || p.id}`} 
                                                     onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
                                                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors"
                                                 >

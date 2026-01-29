@@ -40,6 +40,7 @@ const ProductFormPage = () => {
         subcategory: '',
         tag: '',
         image: '',
+        images: [],
         description: '',
         rating: 4.5,
         variants: [
@@ -78,7 +79,8 @@ const ProductFormPage = () => {
                     variants: productToEdit.variants || [],
                     nutrition: normalizedNutrition || [],
                     contents: productToEdit.contents || [], // Ensure contents is always an array
-                    benefits: productToEdit.benefits || [] // Ensure benefits is always an array
+                    benefits: productToEdit.benefits || [], // Ensure benefits is always an array
+                    images: productToEdit.images || []
                 });
         }
     }, [isEdit, productToEdit]);
@@ -150,11 +152,17 @@ const ProductFormPage = () => {
 
         if (isEdit) {
             updateProductMutation.mutate({ id, data: finalData }, {
-                onSuccess: () => navigate('/admin/products')
+                onSuccess: () => {
+                    toast.success('Product updated successfully!');
+                    navigate('/admin/products');
+                }
             });
         } else {
             addProductMutation.mutate(finalData, {
-                onSuccess: () => navigate('/admin/products')
+                onSuccess: () => {
+                    toast.success('Product created successfully!');
+                    navigate('/admin/products');
+                }
             });
         }
     };
@@ -576,6 +584,52 @@ const ProductFormPage = () => {
                                 placeholder="Auto-fills on upload or paste path..."
                                 className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-xs font-bold outline-none focus:bg-white focus:border-footerBg transition-all"
                             />
+                        </div>
+
+                        {/* Product Gallery */}
+                        <div className="pt-6 border-t border-gray-50">
+                            <h3 className="text-[10px] font-black text-footerBg uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <Search size={14} className="text-gray-400" />
+                                Product Gallery
+                            </h3>
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                                {formData.images?.map((img, idx) => (
+                                    <div key={idx} className="aspect-square bg-gray-50 rounded-2xl border border-gray-100 relative group overflow-hidden">
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem('images', idx)}
+                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                                
+                                <label className="aspect-square bg-gray-50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-all group/gallery">
+                                    <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        accept="image/*"
+                                        multiple
+                                        onChange={async (e) => {
+                                            const files = Array.from(e.target.files || []);
+                                            for (const file of files) {
+                                                const res = await uploadImageMutation.mutateAsync(file);
+                                                if (res?.url) {
+                                                    setFormData(prev => ({ 
+                                                        ...prev, 
+                                                        images: [...(prev.images || []), res.url] 
+                                                    }));
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <Plus size={16} className="text-gray-300 group-hover/gallery:text-primary transition-colors" />
+                                    <span className="text-[8px] font-black text-gray-400 uppercase mt-1">Add</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

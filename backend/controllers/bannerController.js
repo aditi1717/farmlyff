@@ -5,7 +5,7 @@ import Banner from '../models/Banner.js';
 // @access  Public
 export const getBanners = async (req, res) => {
   try {
-    const banners = await Banner.find({ isActive: true }).sort({ order: 1 });
+    const banners = await Banner.find({}).sort({ order: 1 });
     res.json(banners);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -16,19 +16,41 @@ export const getBanners = async (req, res) => {
 // @route   POST /api/banners
 // @access  Private (Admin)
 export const createBanner = async (req, res) => {
-  const { title, image, publicId, link, order } = req.body;
-
+  const { title, subtitle, badgeText, image, publicId, link, section, order } = req.body;
+  
   try {
     const banner = new Banner({
       title,
+      subtitle,
+      badgeText,
       image,
       publicId,
       link,
+      section,
       order,
     });
 
     const createdBanner = await banner.save();
     res.status(201).json(createdBanner);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Update a banner
+// @route   PUT /api/banners/:id
+// @access  Private (Admin)
+export const updateBanner = async (req, res) => {
+  try {
+    const banner = await Banner.findById(req.params.id);
+
+    if (banner) {
+      Object.assign(banner, req.body);
+      const updatedBanner = await banner.save();
+      res.json(updatedBanner);
+    } else {
+      res.status(404).json({ message: 'Banner not found' });
+    }
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

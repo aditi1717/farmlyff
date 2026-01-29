@@ -43,7 +43,7 @@ const ProductCard = ({ product }) => {
     return (
         <motion.div
             layout
-            onClick={() => navigate(`/product/${product.id}`)}
+            onClick={() => navigate(`/product/${product.slug || product.id}`)}
             className="group relative bg-white border border-gray-100 rounded-[0.7rem] md:rounded-[1rem] overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full"
         >
             {/* Image Header - Shorter Aspect Ratio to reduce overall card height */}

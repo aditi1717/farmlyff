@@ -60,7 +60,7 @@ function App() {
             <Route path="/" element={<UserLayout />}>
               <Route index element={<HomePage />} />
               <Route path="catalog" element={<CatalogPage />} />
-              <Route path="product/:id" element={<ProductDetailPage />} />
+              <Route path="product/:slug" element={<ProductDetailPage />} />
               <Route path="shop" element={<div className="p-20 text-center">Shop Page Coming Soon</div>} />
               <Route path="category/:category" element={<CatalogPage />} />
               <Route path="category/:category/:subCategory" element={<CatalogPage />} />

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import toast, { Toaster } from 'react-hot-toast';
 import Pagination from '../components/Pagination';
 
 const UsersPage = () => {
@@ -84,7 +85,7 @@ const UsersPage = () => {
         // Placeholder for API call
         // await axios.put(`http://localhost:5000/api/users/${userId}/block`);
         // queryClient.invalidateQueries(['users']);
-        alert('Block/Unblock feature requires API implementation.');
+        toast.error('Block/Unblock feature requires API implementation.');
     };
 
     const stats = [
@@ -95,6 +96,7 @@ const UsersPage = () => {
 
     return (
         <div className="space-y-8 text-left">
+            <Toaster position="top-right" />
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
                 <div>

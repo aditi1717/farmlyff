@@ -1,7 +1,34 @@
-
 import React from 'react';
+import { useSetting } from '../../../hooks/useSettings';
 
 const OfferStrip = () => {
+    const { data: marqueeSetting, isLoading } = useSetting('marquee_text');
+    
+    // Default text if not set in DB
+    const defaultText = [
+        "✨ REPUBLIC DAY SALE: UP TO 60% OFF ✨",
+        "PREMIUM DRY FRUITS FOR YOUR FAMILY",
+        "🥜 EXTRA 10% OFF ON JUMBO NUTS 🥜",
+        "100% ORGANIC & FRESH"
+    ];
+
+    const marqueeItems = marqueeSetting?.value?.length > 0 ? marqueeSetting.value : defaultText;
+
+    if (isLoading) return <div className="h-10 bg-amber-50/20" />;
+
+    const renderItems = () => (
+        <div className="flex gap-16 md:gap-28 items-center px-4">
+            {marqueeItems.map((item, index) => (
+                <React.Fragment key={index}>
+                    <span className="flex items-center gap-2">{item}</span>
+                    {index < marqueeItems.length - 1 && (
+                        <span className="text-amber-300 font-light">|</span>
+                    )}
+                </React.Fragment>
+            ))}
+        </div>
+    );
+
     return (
         <div className="bg-amber-50/40 backdrop-blur-sm text-amber-900 text-[10px] md:text-xs py-2.5 overflow-hidden font-bold tracking-[0.2em] relative w-full">
             {/* Soft Edge Fades */}
@@ -9,25 +36,9 @@ const OfferStrip = () => {
             <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-amber-50 to-transparent z-10 pointer-events-none" />
 
             <div className="inline-flex whitespace-nowrap animate-marquee-infinite">
-                <div className="flex gap-16 md:gap-28 items-center px-4">
-                    <span className="flex items-center gap-2">✨ REPUBLIC DAY SALE: UP TO 60% OFF ✨</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span>PREMIUM DRY FRUITS FOR YOUR FAMILY</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span className="flex items-center gap-2">🥜 EXTRA 10% OFF ON JUMBO NUTS 🥜</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span>100% ORGANIC & FRESH</span>
-                </div>
+                {renderItems()}
                 {/* Duplicate for seamless loop */}
-                <div className="flex gap-16 md:gap-28 items-center px-4">
-                    <span className="flex items-center gap-2">✨ REPUBLIC DAY SALE: UP TO 60% OFF ✨</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span>PREMIUM DRY FRUITS FOR YOUR FAMILY</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span className="flex items-center gap-2">🥜 EXTRA 10% OFF ON JUMBO NUTS 🥜</span>
-                    <span className="text-amber-300 font-light">|</span>
-                    <span>100% ORGANIC & FRESH</span>
-                </div>
+                {renderItems()}
             </div>
             <style>{`
                 .animate-marquee-infinite {

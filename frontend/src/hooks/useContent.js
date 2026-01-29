@@ -41,20 +41,73 @@ export const useBanners = () => {
     return useQuery({
         queryKey: ['banners'],
         queryFn: async () => {
-             // Mimic fetch
-             // const res = await fetch(`${API_URL}/banners`);
-             // return res.json();
-             
-             // Returning local storage or default for now to keep app working
-             const stored = localStorage.getItem('farmlyf_banners');
-             return stored ? JSON.parse(stored) : defaultBanners;
+            const res = await fetch(`${API_URL}/banners`);
+            if (!res.ok) throw new Error('Failed to fetch banners');
+            return res.json();
+        }
+    });
+};
+
+export const useAddBanner = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data) => {
+            const res = await fetch(`${API_URL}/banners`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to add banner');
+            return res.json();
         },
-        initialData: defaultBanners
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['banners'] });
+            toast.success('Banner added successfully!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+export const useUpdateBanner = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`${API_URL}/banners/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to update banner');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['banners'] });
+            toast.success('Banner updated successfully!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+export const useDeleteBanner = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_URL}/banners/${id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Failed to delete banner');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['banners'] });
+            toast.success('Banner deleted successfully!');
+        },
+        onError: (err) => toast.error(err.message)
     });
 };
 
 // Helper hook to filter locally
 export const useBannersBySection = (section) => {
-    const { data: banners } = useBanners();
-    return banners.filter(b => b.section === section);
+    const { data: banners = [] } = useBanners();
+    return banners.filter(b => (b.section || 'hero') === section && b.isActive !== false);
 };

@@ -12,12 +12,17 @@ export const getProducts = async (req, res) => {
     }
 };
 
-// @desc    Fetch single product
+// @desc    Fetch single product by ID or Slug
 // @route   GET /api/products/:id
 // @access  Public
 export const getProductById = async (req, res) => {
     try {
-        const product = await Product.findOne({ id: req.params.id });
+        // Try finding by ID first, then by slug
+        let product = await Product.findOne({ id: req.params.id });
+        if (!product) {
+            product = await Product.findOne({ slug: req.params.id });
+        }
+
         if (product) {
             res.json(product);
         } else {
@@ -50,7 +55,11 @@ export const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 export const createProduct = async (req, res) => {
     try {
-        const product = new Product(req.body);
+        const productData = { ...req.body };
+        if (productData.name && !productData.slug) {
+            productData.slug = productData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
+        }
+        const product = new Product(productData);
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
     } catch (error) {
@@ -67,6 +76,12 @@ export const updateProduct = async (req, res) => {
         if (product) {
             // Strip fields that shouldn't be manually updated
             const { _id, __v, createdAt, ...updateData } = req.body;
+            
+            // Auto-update slug if name changes and NO slug is provided in updateData
+            if (updateData.name && !updateData.slug) {
+                updateData.slug = updateData.name.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
+            }
+
             Object.assign(product, updateData);
             const updatedProduct = await product.save();
             res.json(updatedProduct);

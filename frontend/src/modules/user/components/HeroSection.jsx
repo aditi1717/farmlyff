@@ -53,6 +53,9 @@ const HeroSection = () => {
                                     src={currentSlide.image}
                                     alt={currentSlide.title}
                                     className="w-full h-full object-cover object-center"
+                                    onError={(e) => {
+                                        e.target.src = 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?auto=format&fit=crop&q=80&w=1600';
+                                    }}
                                 />
                                 <div className="absolute inset-0 bg-black/20" /> {/* Slight overlay for text readability */}
                             </div>
