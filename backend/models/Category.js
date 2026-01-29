@@ -6,9 +6,7 @@ const categorySchema = new mongoose.Schema({
   image: { type: String }, // URL from Cloudinary
   status: { type: String, enum: ['Active', 'Hidden'], default: 'Active' },
   showInNavbar: { type: Boolean, default: false },
-  // showInShopByCategory removed from Parent? Or kept for flexibility? 
-  // Plan said "Categories are now always top-level".
-  // Let's keep general visibility flags if needed, but primary strip logic moves to SubCategory.
+  showInShopByCategory: { type: Boolean, default: false },
   order: { type: Number, default: 0 }
 }, { timestamps: true,  toJSON: { virtuals: true }, toObject: { virtuals: true } });
 

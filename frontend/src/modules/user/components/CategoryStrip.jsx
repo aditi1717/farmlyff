@@ -124,7 +124,7 @@ const CategoryStrip = () => {
                                 >
                                     <motion.img
                                         whileHover={{ scale: 1.15, rotate: 5 }}
-                                        src={assetMap[cat.slug] || cat.image}
+                                        src={cat.image?.startsWith('http') ? cat.image : `http://localhost:5000${cat.image}`}
                                         alt={cat.name}
                                         className="w-full h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.15)] group-hover/item:drop-shadow-[0_20px_30px_rgba(0,0,0,0.25)] transition-all duration-500"
                                         onError={(e) => {

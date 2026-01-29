@@ -401,17 +401,17 @@ const CategoriesPage = () => {
                                             : setNewItem({...newItem, showInShopByCategory: e.target.checked})}
                                         className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
                                     />
-                                    <span className="text-[8px] font-black text-footerBg uppercase">Tiles</span>
+                                    <span className="text-[8px] font-black text-footerBg uppercase">Show in Shop Strip</span>
                                 </label>
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={submitLoading}
-                                className="w-full bg-[#2c5336] disabled:opacity-70 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-[#2c5336]/20 hover:bg-[#1f3b26] transition-all flex justify-center gap-2 items-center"
-                            >
-                                {submitLoading && <Loader size={14} className="animate-spin" />}
-                                {editingCategory ? 'Update Category' : 'Create Category'}
+                                className="w-full bg-[#2c5336] text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#1f3b26] transition-all flex items-center justify-center gap-2 group shadow-lg shadow-[#2c5336]/20"
+                            > 
+                                {submitLoading && <Loader size={12} className="animate-spin text-white/50" />}
+                                {editingCategory ? 'Save Changes' : 'Create Category'}
                             </button>
                         </form>
                     </div>
