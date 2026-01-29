@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
-// import { ShopProvider } from './context/ShopContext'; // Removed
+import { ShopProvider } from './context/ShopContext';
 import UserLayout from './modules/user/layouts/UserLayout';
 import HomePage from './modules/user/pages/HomePage';
 import CatalogPage from './modules/user/pages/CatalogPage';
@@ -52,69 +52,71 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff' } }} />
-          <Routes>
-            {/* User Routes */}
-            <Route path="/" element={<UserLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="catalog" element={<CatalogPage />} />
-              <Route path="product/:slug" element={<ProductDetailPage />} />
-              <Route path="shop" element={<div className="p-20 text-center">Shop Page Coming Soon</div>} />
-              <Route path="category/:category" element={<CatalogPage />} />
-              <Route path="category/:category/:subCategory" element={<CatalogPage />} />
-              <Route path="cart" element={<CartPage />} />
-              <Route path="checkout" element={<CheckoutPage />} />
-              <Route path="order-success/:orderId" element={<OrderSuccessPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="order/:orderId" element={<OrderDetailPage />} />
-              <Route path="returns" element={<ReturnsPage />} />
-              <Route path="return/:returnId" element={<ReturnDetailPage />} />
-              <Route path="replacement/:returnId" element={<ReturnDetailPage />} />
-              <Route path="request-return/:orderId" element={<ReturnRequestPage />} />
-              <Route path="wishlist" element={<WishlistPage />} />
-              <Route path="vault" element={<VaultPage />} />
-              <Route path="profile/:tab?" element={<ProfilePage />} />
-              <Route path="about-us" element={<InfoPage type="about" />} />
-              <Route path="privacy-policy" element={<InfoPage type="privacy" />} />
-              <Route path="contact-us" element={<InfoPage type="contact" />} />
-              <Route path="login" element={<AuthPage />} />
-            </Route>
-
-            <Route path="/admin/login" element={<LoginPage />} />
-
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="users/:id" element={<UserDetailPage />} />
-              <Route path="categories" element={<CategoriesPage />} />
-              <Route path="sub-categories" element={<SubCategoriesPage />} />
-              <Route path="products" element={<ProductListPage />} />
-              <Route path="products/add" element={<ProductFormPage />} />
-              <Route path="products/edit/:id" element={<ProductFormPage />} />
-              <Route path="banners" element={<BannerListPage />} />
-              <Route path="combo-categories" element={<ComboListPage />} />
-              <Route path="combo-products" element={<ComboProductsPage />} />
-              <Route path="combo-products/add" element={<ComboFormPage />} />
-              <Route path="combos/add" element={<ComboFormPage />} />
-              <Route path="combos/edit/:id" element={<ComboFormPage />} />
-              <Route path="orders" element={<OrderListPage />} />
-              <Route path="orders/:id" element={<AdminOrderDetailPage />} />
-              <Route path="returns" element={<ReturnRequestsPage />} />
-              <Route path="coupons" element={<CouponListPage />} />
-              <Route path="coupons/add" element={<CouponFormPage />} />
-              <Route path="coupons/edit/:id" element={<CouponFormPage />} />
-              <Route path="referrals" element={<InfluencerReferralPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="reels" element={<ReelsPage />} />
-            </Route>
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+        <ShopProvider>
+          <Router>
+            <ScrollToTop />
+            <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff' } }} />
+            <Routes>
+              {/* User Routes */}
+              <Route path="/" element={<UserLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="catalog" element={<CatalogPage />} />
+                <Route path="product/:slug" element={<ProductDetailPage />} />
+                <Route path="shop" element={<div className="p-20 text-center">Shop Page Coming Soon</div>} />
+                <Route path="category/:category" element={<CatalogPage />} />
+                <Route path="category/:category/:subCategory" element={<CatalogPage />} />
+                <Route path="cart" element={<CartPage />} />
+                <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="order-success/:orderId" element={<OrderSuccessPage />} />
+                <Route path="orders" element={<OrdersPage />} />
+                <Route path="order/:orderId" element={<OrderDetailPage />} />
+                <Route path="returns" element={<ReturnsPage />} />
+                <Route path="return/:returnId" element={<ReturnDetailPage />} />
+                <Route path="replacement/:returnId" element={<ReturnDetailPage />} />
+                <Route path="request-return/:orderId" element={<ReturnRequestPage />} />
+                <Route path="wishlist" element={<WishlistPage />} />
+                <Route path="vault" element={<VaultPage />} />
+                <Route path="profile/:tab?" element={<ProfilePage />} />
+                <Route path="about-us" element={<InfoPage type="about" />} />
+                <Route path="privacy-policy" element={<InfoPage type="privacy" />} />
+                <Route path="contact-us" element={<InfoPage type="contact" />} />
+                <Route path="login" element={<AuthPage />} />
+              </Route>
+  
+              <Route path="/admin/login" element={<LoginPage />} />
+  
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="users/:id" element={<UserDetailPage />} />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="sub-categories" element={<SubCategoriesPage />} />
+                <Route path="products" element={<ProductListPage />} />
+                <Route path="products/add" element={<ProductFormPage />} />
+                <Route path="products/edit/:id" element={<ProductFormPage />} />
+                <Route path="banners" element={<BannerListPage />} />
+                <Route path="combo-categories" element={<ComboListPage />} />
+                <Route path="combo-products" element={<ComboProductsPage />} />
+                <Route path="combo-products/add" element={<ComboFormPage />} />
+                <Route path="combos/add" element={<ComboFormPage />} />
+                <Route path="combos/edit/:id" element={<ComboFormPage />} />
+                <Route path="orders" element={<OrderListPage />} />
+                <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+                <Route path="returns" element={<ReturnRequestsPage />} />
+                <Route path="coupons" element={<CouponListPage />} />
+                <Route path="coupons/add" element={<CouponFormPage />} />
+                <Route path="coupons/edit/:id" element={<CouponFormPage />} />
+                <Route path="referrals" element={<InfluencerReferralPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="reels" element={<ReelsPage />} />
+              </Route>
+  
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </ShopProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
