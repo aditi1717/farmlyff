@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const response = await fetch('http://localhost:5000/api/users/profile', {
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
                 });
                 if (response.ok) {
                     const data = await response.json();
@@ -46,6 +48,7 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -54,12 +57,15 @@ export const AuthProvider = ({ children }) => {
                 const userObj = { ...data, id: data._id }; 
                 setUser(userObj);
                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                toast.success('Logged in successfully!');
                 return { success: true };
             } else {
+                toast.error(data.message || 'Login failed');
                 return { success: false, message: data.message || 'Login failed' };
             }
         } catch (error) {
             console.error("Login Error:", error);
+            toast.error('Network error, please try again');
             return { success: false, message: 'Network error, please try again' };
         }
     };
@@ -70,6 +76,7 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -78,21 +85,26 @@ export const AuthProvider = ({ children }) => {
                  const userObj = { ...data, id: data._id };
                  setUser(userObj);
                  localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                 toast.success('Account created successfully!');
                  return { success: true };
             } else {
+                 toast.error(data.message || 'Signup failed');
                  return { success: false, message: data.message || 'Signup failed' };
             }
         } catch (error) {
              console.error("Signup Error:", error);
+             toast.error('Network error, please try again');
              return { success: false, message: 'Network error, please try again' };
         }
     };
 
     const logout = async () => {
         try {
-            await fetch('http://localhost:5000/api/users/logout', { method: 'POST' });
+            await fetch('http://localhost:5000/api/users/logout', { method: 'POST', credentials: 'include' });
+            toast.success('Logged out successfully');
         } catch (error) {
             console.error("Logout error:", error);
+            toast.error('Logout failed');
         }
         setUser(null);
         localStorage.removeItem('farmlyf_current_user');
