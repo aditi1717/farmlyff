@@ -42,7 +42,7 @@ const ProductDetailPage = () => {
     
     // Hooks
     const { addToCart } = useCartStore();
-    const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist } = useUserStore();
+    const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist, getRecentlyViewed } = useUserStore();
     const { data: products = [] } = useProducts();
     const activeCoupons = useActiveCoupons();
 
@@ -846,6 +846,7 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* Recently Viewed Section */}
+                {/* Recently Viewed Section */}
                 {
                     user && getRecentlyViewed(user.id).length > 0 && (
                         <div className="mt-12 pt-10 bg-[#FDFCF6] -mx-4 md:-mx-12 px-4 md:px-12 pb-6 rounded-t-[32px] border-x border-t border-orange-100/30">
@@ -853,7 +854,10 @@ const ProductDetailPage = () => {
                                 <h3 className="text-lg font-bold text-footerBg font-['Poppins']">Recently Viewed</h3>
                             </div>
                             <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-none">
-                                {getRecentlyViewed(user.id).filter(p => p.id !== product.id).map((item) => (
+                                {getRecentlyViewed(user.id)
+                                    .map(pid => getProductById(pid))
+                                    .filter(p => p && p.id !== product.id)
+                                    .map((item) => (
                                     <div key={item.id} className="min-w-[160px] md:min-w-[260px] w-[160px] md:w-[260px]">
                                         <ProductCard product={item} />
                                     </div>

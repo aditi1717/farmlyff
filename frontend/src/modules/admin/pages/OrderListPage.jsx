@@ -17,7 +17,8 @@ import Pagination from '../components/Pagination';
 
 const OrderListPage = () => {
     const navigate = useNavigate();
-    // Fetch Orders
+    // Fetch Orders - Force Refresh 2024
+    console.log('OrderListPage rendering');
     const { data: orders = [] } = useQuery({
         queryKey: ['orders'],
         queryFn: async () => {

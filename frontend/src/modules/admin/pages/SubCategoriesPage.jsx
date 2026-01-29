@@ -249,7 +249,7 @@ const SubCategoriesPage = () => {
             <div className="space-y-6">
                 {Object.values(groupedSubs).map(({ category, subs }) => (
                     subs.length > 0 || parentFilter !== 'All' ? ( // Hide empty parents in general view to reduce clutter, optional
-                    <div key={category.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:border-[#2c5336]/20">
+                    <div key={category._id || category.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:border-[#2c5336]/20">
                         <div className="bg-gray-50/50 px-6 py-4 flex items-center justify-between border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white rounded-xl border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
@@ -282,7 +282,7 @@ const SubCategoriesPage = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {subs.map((sub) => (
-                                        <tr key={sub.id} className="group hover:bg-gray-50/30 transition-all">
+                                        <tr key={sub._id || sub.id} className="group hover:bg-gray-50/30 transition-all">
                                             <td className="px-6 py-2.5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
