@@ -177,9 +177,9 @@ const ProductDetailPage = () => {
                                     )}
                                     <button
                                         onClick={() => toggleWishlist(user.id, product.id)}
-                                        className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                        className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all group"
                                     >
-                                        <Heart size={18} fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
+                                        <Heart size={18} className="group-hover:fill-current" fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
                                     </button>
                                 </div>
                                 {/* Thumbnails for Combos */}
@@ -420,10 +420,10 @@ const ProductDetailPage = () => {
                                 }}
                                 className={`absolute top-2 right-2 p-2 bg-white rounded-full border shadow-sm transition-all z-20 ${user && isInWishlist(user.id, product.id)
                                     ? 'text-red-500 border-red-100 bg-red-50'
-                                    : 'text-gray-400 border-gray-100 hover:text-red-500 hover:border-red-100 hover:bg-red-50'
+                                    : 'text-gray-400 border-gray-100 hover:text-red-500 hover:border-red-100 hover:bg-red-50 group'
                                     }`}
                             >
-                                <Heart size={16} fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
+                                <Heart size={16} className="group-hover:fill-current" fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
                             </button>
                         </div>
                         {/* Thumbnails */}

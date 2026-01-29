@@ -308,9 +308,9 @@ const Navbar = () => {
                         </span>
                     </Link>
 
-                    <Link to="/wishlist" className="relative flex flex-col items-center gap-0.5 text-textPrimary hover:text-primary transition-colors group">
+                    <Link to="/wishlist" className="relative flex flex-col items-center gap-0.5 text-textPrimary hover:text-red-500 transition-colors group">
                         <div className="relative">
-                            <Heart size={22} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
+                            <Heart size={22} strokeWidth={1.5} className="group-hover:scale-110 group-hover:fill-current transition-transform" />
                             {wishlistCount > 0 && (
                                 <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black h-4 w-4 rounded-full flex items-center justify-center border-2 border-white">
                                     {wishlistCount}
