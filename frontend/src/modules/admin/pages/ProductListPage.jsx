@@ -14,6 +14,7 @@ import {
     Copy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
@@ -36,14 +37,22 @@ const ProductListPage = () => {
     const [filterCategory, setFilterCategory] = useState('All');
 
     const [currentPage, setCurrentPage] = useState(1);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const itemsPerPage = 8;
+
+    // Reset to page 1 when search or filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterCategory]);
 
     const filteredProducts = useMemo(() => {
         return products
             .filter(product => {
                 const matchesSearch =
                     product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    product.brand?.toLowerCase().includes(searchTerm.toLowerCase());
+                    product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.subcategory?.toLowerCase().includes(searchTerm.toLowerCase());
 
                 const matchesCategory = filterCategory === 'All' || product.category === filterCategory;
 
@@ -51,6 +60,16 @@ const ProductListPage = () => {
             })
             .sort((a, b) => (b.id?.localeCompare(a.id) || 0)); // Assuming higher ID is newer
     }, [products, searchTerm, filterCategory]);
+
+    const suggestions = useMemo(() => {
+        if (searchTerm.length < 2) return [];
+        return products
+            .filter(p => 
+                p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .slice(0, 6);
+    }, [products, searchTerm]);
 
     const paginatedProducts = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -128,9 +147,51 @@ const ProductListPage = () => {
                         type="text"
                         placeholder="Search products, brands..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setShowSuggestions(true);
+                        } }
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                         className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
                     />
+
+                    {/* Suggestions Dropdown */}
+                    <AnimatePresence>
+                        {showSuggestions && suggestions.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+                            >
+                                <div className="p-2">
+                                    {suggestions.map((suggestion) => (
+                                        <button
+                                            key={suggestion.id}
+                                            onClick={() => {
+                                                setSearchTerm(suggestion.name);
+                                                setShowSuggestions(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors text-left group"
+                                        >
+                                            <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 p-1 shrink-0">
+                                                <img src={suggestion.image} alt="" className="w-full h-full object-contain" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-black text-primary uppercase tracking-tighter leading-none mb-1">{suggestion.brand}</p>
+                                                <p className="text-xs font-bold text-footerBg truncate">{suggestion.name}</p>
+                                            </div>
+                                            <ChevronRight size={14} className="text-gray-300 group-hover:text-primary transition-colors" />
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="bg-gray-50 px-4 py-2 border-t border-gray-100">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Press Enter to see all results</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <select
@@ -232,6 +293,24 @@ const ProductListPage = () => {
                                     </tr>
                                 );
                             })}
+                            {filteredProducts.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-20 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-dashed border-gray-200">
+                                                <Search size={32} />
+                                            </div>
+                                            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No products found matching your criteria</p>
+                                            <button 
+                                                onClick={() => { setSearchTerm(''); setFilterCategory('All'); }}
+                                                className="mt-4 text-primary font-black text-[10px] uppercase tracking-widest hover:underline"
+                                            >
+                                                Clear all filters
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

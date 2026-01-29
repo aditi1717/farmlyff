@@ -47,6 +47,7 @@ const ProductDetailPage = () => {
     const activeCoupons = useActiveCoupons();
 
     // Helpers
+    const getProductById = (id) => products.find(p => p.id === id);
     const getProductBySlug = (s) => products.find(p => p.slug === s || p.id === s);
     const getActiveCoupons = () => activeCoupons;
     const isInWishlist = (userId, pid) => getWishlist(userId).includes(pid);
