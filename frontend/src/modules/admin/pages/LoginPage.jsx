@@ -20,11 +20,11 @@ const LoginPage = () => {
         setError('');
         setIsSubmitting(true);
 
-        // Simulate a slight delay for "Processing" feel
-        setTimeout(() => {
-            const res = login(email, password);
+        try {
+            const res = await login(email, password);
             if (res.success) {
                 // Double check if the logged in user is actually an admin
+                // Note: AuthContext should ideally handle this storage update before returning
                 const user = JSON.parse(localStorage.getItem('farmlyf_current_user'));
                 if (user && user.role === 'admin') {
                     navigate('/admin/dashboard');
@@ -36,7 +36,10 @@ const LoginPage = () => {
                 setError(res.message || 'Invalid administrative credentials');
                 setIsSubmitting(false);
             }
-        }, 1000);
+        } catch (err) {
+            setError(err.message || 'Login failed');
+            setIsSubmitting(false);
+        }
     };
 
     return (

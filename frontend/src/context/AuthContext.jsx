@@ -14,19 +14,8 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = (email, password) => {
-        // In a real app, verify password hash. Here we mock it by checking the users list.
-        const users = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-        const validUser = users.find(u => u.email === email && u.password === password);
-
-        if (validUser) {
-            const { password, ...userWithoutPass } = validUser;
-            setUser(userWithoutPass);
-            localStorage.setItem('farmlyf_current_user', JSON.stringify(userWithoutPass));
-            return { success: true };
-        }
-
-        // Admin Backdoor for testing
+    const login = async (email, password) => {
+        // Admin Backdoor
         if (email === 'admin@farmlyf.com' && password === 'admin') {
             const adminUser = { id: 'admin_01', name: 'Super Admin', email, role: 'admin' };
             setUser(adminUser);
@@ -34,38 +23,59 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         }
 
-        return { success: false, message: 'Invalid credentials' };
+        try {
+            const response = await fetch('http://localhost:5000/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const userObj = { ...data, id: data._id, role: 'user' }; // Map _id to id, default role
+                setUser(userObj);
+                localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                localStorage.setItem('farmlyf_token', data.token);
+                return { success: true };
+            } else {
+                return { success: false, message: data.message || 'Login failed' };
+            }
+        } catch (error) {
+            console.error("Login Error:", error);
+            return { success: false, message: 'Network error, please try again' };
+        }
     };
 
-    const signup = (userData) => {
-        const users = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
+    const signup = async (userData) => {
+        try {
+            const response = await fetch('http://localhost:5000/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData),
+            });
 
-        if (users.find(u => u.email === userData.email)) {
-            return { success: false, message: 'User already exists' };
+            const data = await response.json();
+
+            if (response.ok) {
+                 const userObj = { ...data, id: data._id, role: 'user' };
+                 setUser(userObj);
+                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                 localStorage.setItem('farmlyf_token', data.token);
+                 return { success: true };
+            } else {
+                 return { success: false, message: data.message || 'Signup failed' };
+            }
+        } catch (error) {
+             console.error("Signup Error:", error);
+             return { success: false, message: 'Network error, please try again' };
         }
-
-        const newUser = {
-            id: `user_${Date.now()}`,
-            role: 'user',
-            points: 0,
-            usedCoupons: [],
-            ...userData
-        };
-
-        users.push(newUser);
-        localStorage.setItem('farmlyf_users', JSON.stringify(users));
-
-        // Auto login after signup
-        const { password, ...userWithoutPass } = newUser;
-        setUser(userWithoutPass);
-        localStorage.setItem('farmlyf_current_user', JSON.stringify(userWithoutPass));
-
-        return { success: true };
     };
 
     const logout = () => {
         setUser(null);
         localStorage.removeItem('farmlyf_current_user');
+        localStorage.removeItem('farmlyf_token');
     };
 
     return (

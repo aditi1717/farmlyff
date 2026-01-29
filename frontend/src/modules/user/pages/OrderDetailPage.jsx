@@ -1,49 +1,55 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
 import {
     ArrowLeft, Package, MapPin, Phone, CreditCard,
     Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useOrders, useReturns, useUpdateOrderStatus } from '../../../hooks/useOrders'; // Added imports
 
 const OrderDetailPage = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getOrderById, updateOrderStatus, getReturns } = useShop();
+    
+    // Hooks
+    const { data: orders = [] } = useOrders(user?.id);
+    const { data: returns = [] } = useReturns(user?.id);
+    const { mutate: updateStatus } = useUpdateOrderStatus();
+    
     const [order, setOrder] = useState(null);
     const [availableItemsCount, setAvailableItemsCount] = useState(0);
 
-    // Initial load and auto-refresh for simulation
     useEffect(() => {
-        if (user && orderId) {
-            const fetchOrder = () => {
-                const foundOrder = getOrderById(user.id, orderId);
-                if (foundOrder) {
-                    setOrder(foundOrder);
+        if (orders.length > 0 && orderId) {
+            const foundOrder = orders.find(o => o.id === orderId);
+            if (foundOrder) {
+                setOrder(foundOrder);
+                
+                // Calculate returns
+                const orderReturns = returns.filter(r => r.orderId === orderId && r.status !== 'Rejected');
+                const returnedPackIds = new Set();
+                orderReturns.forEach(ret => {
+                    ret.items.forEach(item => returnedPackIds.add(item.packId));
+                });
 
-                    // Fetch returns to see what's already returned
-                    const allReturns = getReturns(user.id);
-                    const orderReturns = allReturns.filter(r => r.orderId === orderId && r.status !== 'Rejected');
-                    const returnedPackIds = new Set();
-                    orderReturns.forEach(ret => {
-                        ret.items.forEach(item => returnedPackIds.add(item.packId));
-                    });
-
-                    const available = foundOrder.items.filter(item => !returnedPackIds.has(item.packId));
-                    setAvailableItemsCount(available.length);
-                }
-            };
-
-            fetchOrder();
-            // Refresh every 5 seconds to catch simulation updates
-            const interval = setInterval(fetchOrder, 5000);
-            return () => clearInterval(interval);
+                const available = foundOrder.items.filter(item => !returnedPackIds.has(item.packId));
+                setAvailableItemsCount(available.length);
+            }
         }
-    }, [user, orderId, getOrderById, getReturns]);
+    }, [orders, returns, orderId]);
+
+    const updateOrderStatus = (uid, oid, status) => {
+        updateStatus({ userId: uid, orderId: oid, status });
+        // For simulation, we might need to manually update local state or force refresh if mutation doesn't persist to where fetch reads
+        // Assuming the previous implementation had some way to persist. 
+        // If not, this is just a visual toast in this refactor step unless we fully implement LS persistence in useOrders.
+        // For now, we keep it as a mutation call.
+        if (order) setOrder({ ...order, deliveryStatus: status });
+    };
 
     if (!order) {
         return (

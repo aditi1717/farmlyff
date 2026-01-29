@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
+import { useReturns } from '../../../hooks/useOrders'; // Assuming useReturns is exported from useOrders or useReturns file
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,9 +10,7 @@ import { motion } from 'framer-motion';
 const ReturnsPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getReturns } = useShop();
-
-    const returns = user ? getReturns(user.id) : [];
+    const { data: returns = [] } = useReturns(user?.id);
 
     if (returns.length === 0) {
         return (

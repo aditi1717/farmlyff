@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext';
+import { useBannersBySection } from '../../../hooks/useContent';
 
 const PromoSlider = () => {
-    const { getBannersBySection } = useShop();
-    const banners = getBannersBySection('promo');
+    // const { getBannersBySection } = useShop();
+    const banners = useBannersBySection('promo');
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {

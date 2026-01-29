@@ -1,21 +1,42 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
 import { ArrowLeft, RefreshCw, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useOrders, useReturns, useCreateReturn } from '../../../hooks/useOrders';
+import { useProducts } from '../../../hooks/useProducts';
 
 const ReturnRequestPage = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getOrderById, createReturnRequest, getReturns } = useShop();
+    
+    const { data: orders = [] } = useOrders(user?.id);
+    const { data: returns = [] } = useReturns(user?.id);
+    const { mutate: createReturn } = useCreateReturn();
+    const { data: products = [] } = useProducts();
 
-    const order = user ? getOrderById(user.id, orderId) : null;
+    const order = orders.find(o => o.id === orderId);
+    
+    // Helper helpers
+    const getVariantById = (variantId) => {
+         for(let p of products) {
+            const v = p.variants?.find(v => v.id === variantId);
+            if(v) return { ...v, product: p };
+        }
+        return null;
+    };
+    
+    // Create wrapper for createReturnRequest
+    const createReturnRequest = (uid, data) => {
+        createReturn({ userId: uid, returnData: data });
+    };
 
     // Get items already returned for this order
-    const orderReturns = user ? getReturns(user.id).filter(r => r.orderId === orderId && r.status !== 'Rejected') : [];
+    const orderReturns = returns.filter(r => r.orderId === orderId && r.status !== 'Rejected');
     const returnedPackIds = new Set();
     orderReturns.forEach(ret => {
         ret.items.forEach(item => returnedPackIds.add(item.packId));
@@ -31,7 +52,7 @@ const ReturnRequestPage = () => {
     const [loading, setLoading] = useState(false);
     const fileInputRef = React.useRef(null);
 
-    const { getProductById, getVariantById } = useShop();
+    // const { getProductById, getVariantById } = useShop(); // Removed
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
@@ -80,7 +101,7 @@ const ReturnRequestPage = () => {
         e.preventDefault();
 
         if (selectedItems.length === 0) {
-            alert('Please select at least one item to return');
+            toast.error('Please select at least one item to return');
             return;
         }
 

@@ -10,18 +10,21 @@ import {
     TrendingUp,
     AlertTriangle
 } from 'lucide-react';
-import { useShop } from '../../../context/ShopContext';
+import { useAllOrders, useAllReturns } from '../../../hooks/useOrders';
+import { useProducts } from '../../../hooks/useProducts';
 
 const DashboardPage = () => {
-    const { orders, products, returns } = useShop();
+    const { data: orders = [] } = useAllOrders();
+    const { data: returns = [] } = useAllReturns();
+    const { data: products = [] } = useProducts();
 
     // Calculate Stats
     const stats = useMemo(() => {
         const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
 
-        // Flatten all orders from all users
-        const allOrders = Object.values(orders).flat();
-        const allReturns = Object.values(returns).flat();
+        // Data is already flat from API
+        const allOrders = orders;
+        const allReturns = returns;
 
         const totalRevenue = allOrders.reduce((acc, order) => acc + (order.amount || 0), 0);
         const activeOrders = allOrders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).length;
@@ -88,7 +91,7 @@ const DashboardPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {Object.values(orders).flat().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map((order) => (
+                                {orders.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map((order) => (
                                     <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-8 py-4">
                                             <p className="font-bold text-footerBg text-xs">#{order.id.slice(-8)}</p>

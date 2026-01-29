@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     ChevronRight,
@@ -13,36 +13,40 @@ import {
     ChevronDown,
     Sparkles
 } from 'lucide-react';
-import { PRODUCTS as productsData, PACKS as packsData } from '../../../mockData/data'; // Import grouped products with variants
+// import { PRODUCTS as productsData, PACKS as packsData } from '../../../mockData/data'; // Removed
+import { useProducts, useCategories, useSubCategories } from '../../../hooks/useProducts';
 import ProductCard from '../components/ProductCard';
 
-const categoriesData = [
-    {
-        id: 'nuts',
-        name: 'Nuts',
-        subcategories: ['Walnuts (Akhrot)', 'Almonds (Badam)', 'Cashew (Kaju)', 'Pistachio (Pista)', 'Hazelnuts', 'Macadamia Nuts', 'Pecan Nuts']
-    },
-    {
-        id: 'dried-fruits',
-        name: 'Dried Fruits',
-        subcategories: ['Raisins (Kishmish)', 'Dried Figs (Anjeer)', 'Dried Apricots (Khubani)', 'Dried Kiwi', 'Dried Prunes', 'Wet Dates', 'Dry Dates']
-    },
-    {
-        id: 'seeds-mixes',
-        name: 'Seeds & Mixes',
-        subcategories: ['Chia Seeds', 'Pumpkin Seeds', 'Flax Seeds', 'Sunflower Seeds', 'Berries Mix', 'Nut Mix', 'Trail Mix']
-    },
-    {
-        id: 'combos-packs',
-        name: 'Combos & Packs',
-        subcategories: ['Daily Packs', 'Family Packs', 'Party Packs', 'Festival Packs', 'Health & Fitness Packs', 'Wedding Gifting Packs']
-    }
-];
+// Static data removed in favor of dynamic context
+const staticCategoriesData = []; // Placeholder if needed, or just remove
 
 const CatalogPage = () => {
     const navigate = useNavigate();
     const { category } = useParams();
     const { user } = useAuth();
+    
+    // React Query Hooks
+    const { data: products = [] } = useProducts();
+    const { data: categories = [] } = useCategories();
+    // Assuming useCategories might return {categories, subcategories} or just list. 
+    // My previous implementation of useCategories returned categories.
+    // I also added useSubCategories hook.
+    const { data: subCategories = [] } = useSubCategories();
+
+    // Derived Categories Data matching the structure the page expects
+    const categoriesData = useMemo(() => {
+        if (!categories || categories.length === 0) return [];
+        // Parents are already filtered by API to be top-level only basically
+        const parents = categories.filter(c => c.status === 'Active');
+        
+        return parents.map(p => ({
+            id: p.slug,
+            name: p.name,
+            subcategories: subCategories
+                .filter(s => (s.parent === p._id || s.parent?._id === p._id || s.parent === p.id) && s.status === 'Active')
+                .map(s => s.name)
+        }));
+    }, [categories, subCategories]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedSubcategory, setSelectedSubcategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +79,7 @@ const CatalogPage = () => {
     }, [category]);
 
     const filteredProducts = useMemo(() => {
-        const allItems = [...productsData, ...packsData];
+        const allItems = products; // Use fetched products
         return allItems.filter(product => {
             const catIdMap = {
                 'Nuts': 'nuts',

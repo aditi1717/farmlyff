@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { PACKS, SKUS, PRODUCTS, COUPONS } from '../mockData/data';
 import bannerMix from '../assets/banner_mix.jpg';
 import authShowcase from '../assets/auth_showcase.jpg';
+import toast from 'react-hot-toast';
 
 const ShopContext = createContext();
 
@@ -15,125 +16,105 @@ export const ShopProvider = ({ children }) => {
     const [wishlist, setWishlist] = useState({}); // { userId: [packId/productId] }
     const [orders, setOrders] = useState({}); // { userId: [orderObj] }
     const [returns, setReturns] = useState({}); // { userId: [returnObj] }
-    const [recentlyViewed, setRecentlyViewed] = useState({}); // { userId: [productId] }
+    const [recentlyViewed, setRecentlyViewed] = useState({}); // { userId: [product_id] }
     const [saveForLater, setSaveForLater] = useState({}); // { userId: [{ packId, qty }] }
+    const [categories, setCategories] = useState([]); // Parent Categories
+    const [subCategories, setSubCategories] = useState([]); // Child SubCategories
+    const [coupons, setCoupons] = useState([]); // Coupons State
+
+    const fetchCategories = async () => {
+        try {
+            const catRes = await fetch('http://localhost:5000/api/categories');
+            const catData = await catRes.json();
+            if (Array.isArray(catData)) {
+                setCategories(catData);
+            } else {
+                console.error("Categories fetch returned non-array:", catData);
+                setCategories([]);
+            }
+            
+            const subRes = await fetch('http://localhost:5000/api/subcategories');
+            const subData = await subRes.json();
+            if (Array.isArray(subData)) {
+                setSubCategories(subData);
+            } else {
+                console.error("SubCategories fetch returned non-array:", subData);
+                setSubCategories([]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch categories", error);
+        }
+    };
 
     useEffect(() => {
         // Load initial data
         const storedCart = JSON.parse(localStorage.getItem('farmlyf_cart')) || {};
         const storedWishlist = JSON.parse(localStorage.getItem('farmlyf_wishlist')) || {};
-        let storedOrders = JSON.parse(localStorage.getItem('farmlyf_orders')) || {};
-        const storedReturns = JSON.parse(localStorage.getItem('farmlyf_returns')) || {};
-        const storedRecentlyViewed = JSON.parse(localStorage.getItem('farmlyf_recently_viewed')) || {};
-        const storedSaveForLater = JSON.parse(localStorage.getItem('farmlyf_save_for_later')) || {};
-        let storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
+        
+        // Load from API
+        const fetchData = async () => {
+            try {
+                // Fetch Products
+                const productRes = await fetch('http://localhost:5000/api/products');
+                const productsData = await productRes.json();
+                setProducts(productsData.length > 0 ? productsData : PRODUCTS);
 
-        // Seed Dummy Wishlist if empty
-        if (Object.keys(storedWishlist).length === 0) {
-            const dummyWishlist = {
-                'user-1': ['1', '3', '5'],
-                'user-2': ['2', '4']
-            };
-            localStorage.setItem('farmlyf_wishlist', JSON.stringify(dummyWishlist));
-            Object.assign(storedWishlist, dummyWishlist);
-        }
+                // Fetch Users
+                const userRes = await fetch('http://localhost:5000/api/users');
+                const usersData = await userRes.json();
+                
+                // Fetch Orders
+                const orderRes = await fetch('http://localhost:5000/api/orders');
+                const ordersData = await orderRes.json();
 
-        // Seed Dummy Users if they don't exist
-        const dummyUserIds = ['user-1', 'user-2', 'user-3', 'user-4', 'user-5'];
-        const hasDummyUsers = dummyUserIds.every(id => storedUsers.some(u => u.id === id));
+                // Group Orders by User ID
+                const ordersMap = {};
+                ordersData.forEach(order => {
+                    if (!ordersMap[order.userId]) ordersMap[order.userId] = [];
+                    ordersMap[order.userId].push(order);
+                });
+                setOrders(ordersMap);
 
-        if (!hasDummyUsers) {
-            const newDummies = [
-                { id: 'user-1', name: 'Aditya Raj', email: 'aditya@example.com', phone: '9876543210', isBlocked: false, addresses: [{ type: 'Home', fullName: 'Aditya Raj', address: '123 Sky Tower', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', isDefault: true }], usedCoupons: [] },
-                { id: 'user-2', name: 'Priya Sharma', email: 'priya@example.com', phone: '9988776655', isBlocked: false, addresses: [{ type: 'Work', fullName: 'Priya Sharma', address: 'Office 404, Tech Park', city: 'Bangalore', state: 'Karnataka', pincode: '560001', isDefault: true }], usedCoupons: [] },
-                { id: 'user-3', name: 'Rohan Gupta', email: 'rohan@example.com', phone: '9123456789', isBlocked: true, addresses: [], usedCoupons: [] },
-                { id: 'user-4', name: 'Sneha Patel', email: 'sneha@example.com', phone: '8877665544', isBlocked: false, addresses: [], usedCoupons: [] },
-                { id: 'user-5', name: 'Vikram Singh', email: 'vikram@example.com', phone: '7766554433', isBlocked: false, addresses: [], usedCoupons: [] }
-            ];
+                // Fetch Returns
+                const returnRes = await fetch('http://localhost:5000/api/returns');
+                const returnsData = await returnRes.json();
 
-            // Merge only those that aren't present
-            newDummies.forEach(d => {
-                if (!storedUsers.some(u => u.id === d.id)) {
-                    storedUsers.push(d);
-                }
-            });
-            localStorage.setItem('farmlyf_users', JSON.stringify(storedUsers));
-        }
+                // Group Returns by User ID
+                const returnsMap = {};
+                returnsData.forEach(ret => {
+                    if (!returnsMap[ret.userId]) returnsMap[ret.userId] = [];
+                    returnsMap[ret.userId].push(ret);
+                });
+                setReturns(returnsMap);
 
-        // Seed Dummy Orders if relevant dummy orders are missing
-        const hasDummyOrders = storedOrders['user-1'] && storedOrders['user-1'].length > 0;
-        if (!hasDummyOrders) {
-            const dummyOrders = {
-                'user-1': [
-                    {
-                        id: 'ORD-1001',
-                        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-                        status: 'Delivered',
-                        amount: 2540,
-                        userName: 'Aditya Raj',
-                        userId: 'user-1',
-                        paymentMethod: 'Online',
-                        items: [
-                            { packId: '1', weight: '500g', price: 782, quantity: 2 },
-                            { packId: '2', weight: '500g', price: 980, quantity: 1 }
-                        ],
-                        address: (storedUsers.find(u => u.id === 'user-1')?.addresses[0]) || {}
-                    },
-                    {
-                        id: 'ORD-1003',
-                        date: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-                        status: 'Shipped',
-                        amount: 399,
-                        userName: 'Aditya Raj',
-                        userId: 'user-1',
-                        paymentMethod: 'COD',
-                        items: [
-                            { packId: '3', weight: '250g', price: 399, quantity: 1 }
-                        ],
-                        address: (storedUsers.find(u => u.id === 'user-1')?.addresses[0]) || {}
-                    }
-                ],
-                'user-2': [
-                    {
-                        id: 'ORD-1002',
-                        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-                        status: 'Processing',
-                        amount: 1499,
-                        userName: 'Priya Sharma',
-                        userId: 'user-2',
-                        paymentMethod: 'Online',
-                        items: [
-                            { packId: '4', weight: '500g', price: 1450, quantity: 1 }
-                        ],
-                        address: (storedUsers.find(u => u.id === 'user-2')?.addresses[0]) || {}
-                    }
-                ]
-            };
+                // Fetch Categories
+                await fetchCategories();
+                
+                // Fetch Coupons
+                const couponRes = await fetch('http://localhost:5000/api/coupons');
+                const couponData = await couponRes.json();
+                if (Array.isArray(couponData)) setCoupons(couponData);
 
-            // Merge into storedOrders
-            Object.assign(storedOrders, dummyOrders);
-            localStorage.setItem('farmlyf_orders', JSON.stringify(storedOrders));
-        }
+            } catch (error) {
+                console.error("Failed to fetch data from backend", error);
+                // Fallback to local storage or mocks if backend fails
+                setProducts(PRODUCTS);
+                setOrders(JSON.parse(localStorage.getItem('farmlyf_orders')) || {});
+            }
+        };
+
+        fetchData();
 
         setCart(storedCart);
         setWishlist(storedWishlist);
-        setOrders(storedOrders);
-        setReturns(storedReturns);
-        setRecentlyViewed(storedRecentlyViewed);
-        setSaveForLater(storedSaveForLater);
 
         // Always sync product catalog from code to localStorage to ensure latest data
         setPacks(PACKS);
-        setProducts(PRODUCTS);
+        // setProducts(PRODUCTS); // Now set by fetch
         localStorage.setItem('farmlyf_packs', JSON.stringify(PACKS));
-        localStorage.setItem('farmlyf_products', JSON.stringify(PRODUCTS));
-
+        
         setSkus(SKUS);
         localStorage.setItem('farmlyf_skus', JSON.stringify(SKUS));
-
-        // Simulate progress on load
-        simulateDeliveryProgress(storedOrders);
-        simulateReturnProgress(storedReturns);
     }, []);
 
     // --- Product/SKU Helpers ---
@@ -408,7 +389,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const addToCart = (userId, packId, qty = 1) => {
-        if (!userId) return alert("Please login to add to cart");
+        if (!userId) return toast.error("Please login to add to cart");
 
         const allCarts = JSON.parse(localStorage.getItem('farmlyf_cart')) || {};
         const userCart = allCarts[userId] || [];
@@ -474,7 +455,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const toggleWishlist = (userId, packId) => {
-        if (!userId) return alert("Please login to manage wishlist");
+        if (!userId) return toast.error("Please login to manage wishlist");
         const allWishlists = JSON.parse(localStorage.getItem('farmlyf_wishlist')) || {};
         let userWishlist = allWishlists[userId] || [];
         if (userWishlist.includes(packId)) {
@@ -575,7 +556,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const addToSaved = (userId, packId, qty = 1) => {
-        if (!userId) return alert("Please login to save items");
+        if (!userId) return toast.error("Please login to save items");
         const allSaved = JSON.parse(localStorage.getItem('farmlyf_save_for_later')) || {};
         const userSaved = allSaved[userId] || [];
 
@@ -720,10 +701,15 @@ export const ShopProvider = ({ children }) => {
         return banners.filter(b => b.section === section);
     };
 
+
+
     return (
         <ShopContext.Provider value={{
             packs,
             products,
+            categories, // Parent Categories
+            subCategories, // Child SubCategories
+            fetchCategories, // Expose this function
             skus,
             getProductById,
             getVariantById,
@@ -752,109 +738,89 @@ export const ShopProvider = ({ children }) => {
             addProduct,
             updateProduct,
             deleteProduct,
+
             // Coupon functions
+            coupons, 
+            fetchCoupons: async () => {
+                try {
+                    const res = await fetch('http://localhost:5000/api/coupons');
+                    const data = await res.json();
+                    if(Array.isArray(data)) setCoupons(data);
+                } catch (error) {
+                    console.error("Failed to fetch coupons", error);
+                }
+            },
+            addCoupon: async (couponData) => {
+                try {
+                    const res = await fetch('http://localhost:5000/api/coupons', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(couponData)
+                    });
+                    if (res.ok) {
+                        const newCoupon = await res.json();
+                        setCoupons(prev => [newCoupon, ...prev]);
+                        return { success: true };
+                    } else {
+                        const err = await res.json();
+                        return { success: false, error: err.message };
+                    }
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            updateCoupon: async (id, updates) => {
+                try {
+                    const res = await fetch(`http://localhost:5000/api/coupons/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updates)
+                    });
+                    if (res.ok) {
+                        const updated = await res.json();
+                        setCoupons(prev => prev.map(c => (c.id === id || c._id === id) ? updated : c));
+                        return { success: true };
+                    } else {
+                        return { success: false, error: 'Update failed' };
+                    }
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            deleteCoupon: async (id) => {
+                try {
+                    const res = await fetch(`http://localhost:5000/api/coupons/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        setCoupons(prev => prev.filter(c => c.id !== id && c._id !== id));
+                        return { success: true };
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+                return { success: false };
+            },
             getActiveCoupons: () => {
-                const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || COUPONS;
                 const now = new Date();
-                return storedCoupons.filter(c =>
+                return coupons.filter(c =>
                     c.active &&
                     new Date(c.validUntil) > now &&
-                    c.usageCount < c.usageLimit
+                    (!c.usageLimit || c.usageCount < c.usageLimit)
                 );
             },
-            validateCoupon: (userId, code, cartTotal, cartItems = []) => {
-                const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || COUPONS;
-                const coupon = storedCoupons.find(c => c.code.toUpperCase() === code.toUpperCase());
-
-                if (!coupon) return { valid: false, error: 'Invalid coupon code' };
-                if (!coupon.active) return { valid: false, error: 'Coupon is no longer active' };
-                if (new Date(coupon.validUntil) < new Date()) return { valid: false, error: 'Coupon has expired' };
-                if (coupon.usageCount >= coupon.usageLimit) return { valid: false, error: 'Coupon usage limit reached' };
-                if (cartTotal < coupon.minOrderValue) return { valid: false, error: `Minimum order value ₹${coupon.minOrderValue} required` };
-
-                // Check user-specific limits
-                const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-                const user = storedUsers.find(u => u.id === userId);
-                if (user && user.usedCoupons && user.usedCoupons.filter(c => c === coupon.id).length >= coupon.perUserLimit) {
-                    return { valid: false, error: 'You have already used this coupon' };
-                }
-
-                // Check User Eligibility
-                if (coupon.userEligibility === 'new') {
-                    const userOrders = orders[userId] || [];
-                    if (userOrders.length > 0) return { valid: false, error: 'For new users only' };
-                }
-
-                // Check Granular Applicability
-                const applicabilityType = coupon.applicabilityType || 'all';
-                const targetItems = coupon.targetItems || [];
-
-                let eligibleItems = [];
-                if (applicabilityType === 'all') {
-                    eligibleItems = cartItems;
-                } else {
-                    eligibleItems = cartItems.filter(item => {
-                        const product = products.find(p => p.id === item.id) || item;
-                        if (applicabilityType === 'product') {
-                            return targetItems.includes(product.id);
-                        }
-                        if (applicabilityType === 'category') {
-                            return targetItems.includes(product.category);
-                        }
-                        if (applicabilityType === 'subcategory') {
-                            return targetItems.includes(product.subcategory);
-                        }
-                        return false;
+            validateCoupon: async (userId, code, cartTotal, cartItems = []) => {
+                try {
+                    const res = await fetch('http://localhost:5000/api/coupons/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, code, cartTotal, cartItems })
                     });
-                    if (eligibleItems.length === 0) {
-                        return { valid: false, error: `Coupon not applicable to items in your cart` };
-                    }
+                    const data = await res.json();
+                    return data; 
+                } catch (error) {
+                    return { valid: false, error: 'Validation service unavailable' };
                 }
-
-                // Calculate Discount
-                let discountAmount = 0;
-                // Calculate total of ELIGIBLE items only
-                let eligibleTotal = 0;
-                if (cartItems.length > 0 && cartItems[0].price) {
-                    eligibleTotal = eligibleItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
-                } else {
-                    // Fallback if cartItems doesn't have price (shouldn't happen in updated CartPage)
-                    eligibleTotal = cartTotal;
-                }
-
-                if (coupon.type === 'percentage') {
-                    discountAmount = (eligibleTotal * coupon.value) / 100;
-                    if (coupon.maxDiscount) discountAmount = Math.min(discountAmount, coupon.maxDiscount);
-                } else if (coupon.type === 'flat') {
-                    discountAmount = Math.min(coupon.value, eligibleTotal);
-                }
-
-                return { valid: true, discount: Math.round(discountAmount), coupon };
             },
-            recordCouponUsage: (userId, couponId) => {
-                // Update coupon usage count
-                const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || COUPONS;
-                const updatedCoupons = storedCoupons.map(c =>
-                    c.id === couponId ? { ...c, usageCount: c.usageCount + 1 } : c
-                );
-                localStorage.setItem('farmlyf_coupons', JSON.stringify(updatedCoupons));
 
-                // Add to user's used coupons
-                const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-                const updatedUsers = storedUsers.map(u => {
-                    if (u.id === userId) {
-                        const used = u.usedCoupons || [];
-                        return { ...u, usedCoupons: [...used, couponId] };
-                    }
-                    return u;
-                });
-                localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-            },
-            deleteCoupon: (id) => {
-                const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || COUPONS;
-                const updatedCoupons = storedCoupons.filter(c => c.id !== id);
-                localStorage.setItem('farmlyf_coupons', JSON.stringify(updatedCoupons));
-            },
             // Advanced Features
             addToRecentlyViewed,
             getRecentlyViewed,

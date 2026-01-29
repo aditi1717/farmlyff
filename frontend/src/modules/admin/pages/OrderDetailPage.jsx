@@ -15,6 +15,7 @@ import {
     Search
 } from 'lucide-react';
 import { useShop } from '../../../context/ShopContext';
+import toast from 'react-hot-toast';
 
 const OrderDetailPage = () => {
     const { id } = useParams();
@@ -45,7 +46,7 @@ const OrderDetailPage = () => {
 
     const handleUpdateStatus = (newStatus) => {
         setStatus(newStatus);
-        alert(`Order status updated to ${newStatus}! (Mock Update)`);
+        toast.success(`Order status updated to ${newStatus}! (Mock Update)`);
         // In real app: call updateOrder(order.ownerId, order.id, { status: newStatus })
     };
 

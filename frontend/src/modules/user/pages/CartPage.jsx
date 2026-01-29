@@ -48,24 +48,67 @@ const DUMMY_PRODUCTS = [
     }
 ];
 
+import useCartStore from '../../../store/useCartStore';
+import useUserStore from '../../../store/useUserStore';
+import { useProducts, usePack } from '../../../hooks/useProducts';
+import { useActiveCoupons } from '../../../hooks/useCoupons';
+
 const CartPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const {
-        getCart,
-        removeFromCart,
-        updateCartQty,
-        packs,
-        getVariantById,
-        getPackById,
-        getActiveCoupons,
-        saveForLater,
-        moveToSaveForLater,
-        moveToCartFromSaved,
-        removeFromSaved,
-        getRecommendations,
-        addToCart
-    } = useShop();
+
+    // Zustand Stores
+    const { getCart, removeFromCart, updateCartQty, addToCart, clearCart } = useCartStore();
+    const { getSaveForLater, saveForLater, addToSaved: saveForLaterAction, removeFromSaved } = useUserStore();
+    
+    // Data Hooks
+    const { data: products = [] } = useProducts();
+    const activeCoupons = useActiveCoupons();
+    
+    // Helpers (moved from Context or re-implemented)
+    // We need to implement getRecommendations locally or via new hook if complex
+    // For now, simple random or dummy
+    const getRecommendations = (userId, limit) => {
+         // Simple recommendation logic using products list
+         if(!products.length) return [];
+         return products.slice(0, limit);
+    };
+
+    // Helper functions for CartPage logic
+    const moveToSaveForLater = (userId, packId) => {
+        // Find item qty from cart
+        const cartItem = getCart(userId).find(i => i.packId === packId);
+        if(cartItem) {
+            saveForLaterAction(userId, packId, cartItem.qty);
+            removeFromCart(userId, packId);
+        }
+    };
+
+    const moveToCartFromSaved = (userId, packId) => {
+        // Find item qty from saved
+        const savedItem = saveForLater(userId).find(i => i.packId === packId);
+        if(savedItem) {
+            addToCart(userId, packId, savedItem.qty);
+            removeFromSaved(userId, packId);
+        }
+    };
+    
+    // Legacy helpers to resolve product data
+    const getVariantById = (variantId) => {
+        // Loop products
+        for(let p of products) {
+            const v = p.variants?.find(v => v.id === variantId);
+            if(v) return { ...v, product: p };
+        }
+        return null;
+    };
+
+    const getPackById = (packId) => {
+        // Assuming packs are variants or handled similarly
+        return getVariantById(packId);
+    };
+
+    const getActiveCoupons = () => activeCoupons;
 
     const handleAddToCart = (e, item) => {
         e.stopPropagation();
@@ -108,7 +151,7 @@ const CartPage = () => {
         return null;
     }).filter(Boolean);
 
-    const savedItems = user ? saveForLater(user.id) : [];
+    const savedItems = user ? getSaveForLater(user.id) : [];
     const enrichedSaved = savedItems.map(item => {
         const variantData = getVariantById(item.packId);
         if (variantData) {

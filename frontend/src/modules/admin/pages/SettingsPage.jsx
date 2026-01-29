@@ -14,6 +14,7 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
     const [activeTab, setActiveTab] = useState('general');
@@ -27,7 +28,7 @@ const SettingsPage = () => {
     ];
 
     const handleSave = () => {
-        alert("Settings preferences saved! (Simulated)");
+        toast.success("Settings preferences saved! (Simulated)");
     };
 
     return (

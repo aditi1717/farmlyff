@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
+import { useOrders } from '../../../hooks/useOrders';
 import { Link, useNavigate } from 'react-router-dom';
 import { Package, ChevronRight, Clock, MapPin, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,9 +10,7 @@ import { motion } from 'framer-motion';
 const OrdersPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getOrders } = useShop();
-
-    const orders = user ? getOrders(user.id) : [];
+    const { data: orders = [] } = useOrders(user?.id); // useOrders hook
 
     if (orders.length === 0) {
         return (

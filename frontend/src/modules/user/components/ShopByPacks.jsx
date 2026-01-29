@@ -9,52 +9,62 @@ import familyPackImg from '../../../assets/family_pack.png';
 import fitnessPackImg from '../../../assets/fitness_pack.png';
 import partyPackImg from '../../../assets/party_pack.png';
 
-const packs = [
+const packAssetMap = {
+    'daily-packs': dailyPackImg,
+    'family-packs': familyPackImg, // Seed slug might vary, let's cover bases
+    'grand-family-packs': familyPackImg,
+    'health-fitness': fitnessPackImg,
+    'daily-health-fitness-pack': fitnessPackImg,
+    'party-packs': partyPackImg,
+    'vibrant-party-packs': partyPackImg,
+    // Add these for the seeded data:
+    'festival-combos': 'https://images.pexels.com/photos/5702927/pexels-photo-5702927.jpeg?auto=compress&cs=tinysrgb&w=800', // Hardcoded fallback from original file
+};
+
+// Static colors removed/unused
+// const colors...
+
+const defaultPacks = [
     {
         title: 'Daily Health Packs',
         subtitle: 'Portion-controlled daily nutrition',
         image: dailyPackImg,
-        path: '/category/daily-packs',
+        id: 'static-1',
+        slug: 'daily-packs',
         tag: 'BESTSELLER'
     },
-    {
-        title: 'Grand Family Packs',
-        subtitle: 'Abundant variety for the whole home',
-        image: familyPackImg,
-        path: '/category/family-packs',
-        tag: 'POPULAR'
-    },
-    {
-        title: 'Energy & Fitness',
-        subtitle: 'High-protein fuel for active lives',
-        image: fitnessPackImg,
-        path: '/category/health-fitness',
-        tag: 'HEALTHY'
-    },
-    {
-        title: 'Vibrant Party Packs',
-        subtitle: 'Flavorful snacks for every social',
-        image: partyPackImg,
-        path: '/category/party-packs',
-        tag: 'NEW'
-    },
-    {
-        title: 'Traditional Festival Packs',
-        subtitle: 'Celebrate with authentic richness',
-        image: 'https://images.pexels.com/photos/5702927/pexels-photo-5702927.jpeg?auto=compress&cs=tinysrgb&w=800',
-        path: '/category/festival-packs',
-        tag: 'SEASONAL'
-    },
-    {
-        title: 'Executive Gifting',
-        subtitle: 'Luxury hampers for special moments',
-        image: 'https://images.pexels.com/photos/264771/pexels-photo-264771.jpeg?auto=compress&cs=tinysrgb&w=800',
-        path: '/category/gifting-packs',
-        tag: 'LUXURY'
-    }
+    // ... Any other defaults if DB is empty
 ];
 
+// import { useShop } from '../../../context/ShopContext'; // Removed
+import { useCategories, useSubCategories } from '../../../hooks/useProducts';
+
 const ShopByPacks = () => {
+    const { data: categories = [] } = useCategories();
+    const { data: subCategories = [] } = useSubCategories();
+
+    // Find "Combos & Packs" parent category first
+    const comboParent = categories.find(c => (c.slug === 'combos-packs' || c.name === 'Combos & Packs'));
+    
+    const packs = React.useMemo(() => {
+        if (!comboParent) return defaultPacks;
+        
+        // Find children in SubCategories
+        const dbPacks = subCategories.filter(c => 
+            (c.parent === comboParent._id || c.parent === comboParent.id || c.parent?._id === comboParent._id) && c.status === 'Active'
+        );
+
+        if (dbPacks.length === 0) return defaultPacks;
+
+        return dbPacks.map(p => ({
+            title: p.name,
+            subtitle: p.description || 'Curated collection',
+            image: packAssetMap[p.slug] || p.image || dailyPackImg,
+            path: `/category/${p.slug}`,
+            tag: 'SPECIAL', // Dynamic capability can be added later
+            id: p._id || p.id
+        }));
+    }, [categories, comboParent]);
     return (
         <section className="bg-[#FFFBEB] py-8 md:py-20 px-3 md:px-12 relative overflow-hidden">
             <div className="container mx-auto relative z-10">

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useShop } from '../../../context/ShopContext';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const ProductFormPage = () => {
     const { id } = useParams();
@@ -68,7 +69,8 @@ const ProductFormPage = () => {
                     ...product,
                     variants: product.variants || [],
                     nutrition: normalizedNutrition || [],
-                    contents: product.contents || [] // Ensure contents is always an array
+                    contents: product.contents || [], // Ensure contents is always an array
+                    benefits: product.benefits || [] // Ensure benefits is always an array
                 });
             }
         }
@@ -135,7 +137,7 @@ const ProductFormPage = () => {
             addProduct(finalData);
         }
 
-        alert(`Product ${isEdit ? 'updated' : 'added'} successfully!`);
+        toast.success(`Product ${isEdit ? 'updated' : 'added'} successfully!`);
         navigate('/admin/products');
     };
 
@@ -321,7 +323,7 @@ const ProductFormPage = () => {
                                 <button type="button" onClick={() => addItem('benefits', '')} className="text-[9px] font-black text-primary uppercase">+ Add</button>
                             </div>
                             <div className="space-y-3">
-                                {formData.benefits.map((benefit, idx) => (
+                                {formData.benefits?.map((benefit, idx) => (
                                     <div key={idx} className="flex gap-2">
                                         <input
                                             value={benefit}

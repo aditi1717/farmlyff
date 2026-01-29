@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { useShop } from '../../../context/ShopContext';
+import useUserStore from '../../../store/useUserStore';
+import { useProducts } from '../../../hooks/useProducts';
 import { useAuth } from '../../../context/AuthContext';
 import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,18 +9,25 @@ import ProductCard from '../components/ProductCard';
 const WishlistPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getWishlist, getPackById } = useShop();
-
-    const wishlistIds = user ? getWishlist(user.id) : [];
+    
+    // Stores
+    const { getWishlist } = useUserStore(); // Actually useUserStore default export is the hook.
+    // Wait, import was `import useUserStore from ...`?
+    // In Navbar I successfully used: `import useUserStore from '../../../store/useUserStore';`
+    // And `useUserStore(state => state.getWishlist(...))`.
+    // Here I will use the hook directly.
+    const wishlistIds = user ? useUserStore(state => state.getWishlist(state.user?.id || user.id)) : [];
+    
+    // Data
+    const { data: products = [] } = useProducts();
+    
     const wishlistItems = wishlistIds.map(id => {
-        const packData = getPackById(id);
-        if (!packData) return null;
-        // Handle variant structure (merge parent product info)
-        return packData.product ? {
-            ...packData.product,
-            ...packData,
-            id: packData.product.id
-        } : packData;
+        const product = products.find(p => p.id === id); // assuming packId/productId matches id
+        if (!product) return null;
+        
+        // Handle variant structure if needed, or if product is pack
+        // For simplified logic:
+        return product;
     }).filter(Boolean);
 
     if (wishlistItems.length === 0) {

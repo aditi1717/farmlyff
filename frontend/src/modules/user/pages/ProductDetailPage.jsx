@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
-import { PACKS } from '../../../mockData/data';
+// import { useShop } from '../../../context/ShopContext'; // Removed
+import useCartStore from '../../../store/useCartStore';
+import useUserStore from '../../../store/useUserStore';
+import { useProducts } from '../../../hooks/useProducts';
+import { useActiveCoupons } from '../../../hooks/useCoupons';
+
+// import { PACKS } from '../../../mockData/data'; // Removed if unused
+
 import {
     Star,
     ArrowLeft,
@@ -33,19 +39,19 @@ const ProductDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const {
-        addToCart,
-        toggleWishlist,
-        isInWishlist,
-        getProductById,
-        getPackById,
-        getActiveCoupons,
-        addToRecentlyViewed,
-        getRecentlyViewed,
-        getRecommendations,
-        addToSaved,
-        products
-    } = useShop();
+    
+    // Hooks
+    const { addToCart } = useCartStore();
+    const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist } = useUserStore();
+    const { data: products = [] } = useProducts();
+    const activeCoupons = useActiveCoupons();
+
+    // Helpers
+    const getProductById = (pid) => products.find(p => p.id === pid);
+    const getPackById = (pid) => products.find(p => p.id === pid); // Assuming generic structure now
+    const getActiveCoupons = () => activeCoupons;
+    const isInWishlist = (userId, pid) => getWishlist(userId).includes(pid);
+    const getRecommendations = (userId, limit) => products.slice(0, limit); // Simple mock
 
     const [product, setProduct] = useState(null);
     const [selectedVariant, setSelectedVariant] = useState(null);
@@ -95,7 +101,7 @@ const ProductDetailPage = () => {
             }
         }
         window.scrollTo(0, 0);
-    }, [id, user]);
+    }, [id, user, products]); // Added products to dependency
 
     if (!product) {
         return (

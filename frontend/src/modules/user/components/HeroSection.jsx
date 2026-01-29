@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext';
+import { useBannersBySection } from '../../../hooks/useContent';
 import logo from '../../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
-    const { getBannersBySection } = useShop();
-    const banners = getBannersBySection('hero');
+    // const { getBannersBySection } = useShop();
+    const banners = useBannersBySection('hero');
     const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
 

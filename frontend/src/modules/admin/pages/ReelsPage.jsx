@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useShop } from '../../../context/ShopContext';
 import { Plus, Trash2, Video, ExternalLink, Play } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const ReelsPage = () => {
     const { reels, addReel, deleteReel, updateReel } = useShop();
@@ -64,7 +65,7 @@ const ReelsPage = () => {
             const { setAllReels } = require('../../../context/ShopContext').useShop();
             if (setAllReels) {
                 setAllReels(localReels);
-                alert('Reels updated successfully!');
+                toast.success('Reels updated successfully!');
                 setIsDirty(false);
             } else {
                 console.error("setAllReels not found in context");
@@ -79,10 +80,10 @@ const ReelsPage = () => {
     const handleSaveClick = () => {
         if (setAllReels) {
             setAllReels(localReels);
-            alert('Reels updated successfully!');
+            toast.success('Reels updated successfully!');
             setIsDirty(false);
         } else {
-            alert('Error: Save function not available yet. Please refresh.');
+            toast.error('Error: Save function not available yet. Please refresh.');
         }
     }
 

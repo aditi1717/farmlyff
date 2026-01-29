@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
-import { ShopProvider } from './context/ShopContext';
+// import { ShopProvider } from './context/ShopContext'; // Removed
 import UserLayout from './modules/user/layouts/UserLayout';
 import HomePage from './modules/user/pages/HomePage';
 import CatalogPage from './modules/user/pages/CatalogPage';
@@ -40,12 +41,19 @@ import InfluencerReferralPage from './modules/admin/pages/InfluencerReferralPage
 import LoginPage from './modules/admin/pages/LoginPage';
 import BannerListPage from './modules/admin/pages/BannerListPage';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+// import { Provider } from 'react-redux'; // Removed
+// import store from './redux/store'; // Removed
+
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <AuthProvider>
-      <ShopProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <Router>
           <ScrollToTop />
+          <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff' } }} />
           <Routes>
             {/* User Routes */}
             <Route path="/" element={<UserLayout />}>
@@ -104,8 +112,8 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
-      </ShopProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

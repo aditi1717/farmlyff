@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useShop } from '../../../context/ShopContext';
 import Pagination from '../components/Pagination';
+import toast from 'react-hot-toast';
 
 const ReturnRequestsPage = () => {
     const navigate = useNavigate();
@@ -62,7 +63,7 @@ const ReturnRequestsPage = () => {
     };
 
     const handleAction = (retId, action) => {
-        alert(`Request ${retId} ${action}! (Mock Action)`);
+        toast.success(`Request ${retId} ${action}! (Mock Action)`);
         // In real app, this would update the return status in context
     };
 

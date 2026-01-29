@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Import images from assets
+
+// Import generated images from project assets
 import cashewImg from '../../../assets/cashew.png';
 import pistaImg from '../../../assets/pista.png';
 import walnutImg from '../../../assets/walnut.png';
@@ -13,55 +14,47 @@ import almondImg from '../../../assets/baadaam.png';
 import anjeerImg from '../../../assets/anjeer.png';
 import raisinImg from '../../../assets/raisin.png';
 
+// Asset Mapping for seeded categories
+const assetMap = {
+    'cashew-(kaju)': cashewImg, // Old slug format support
+    'cashews': cashewImg,
+    'pistachio-(pista)': pistaImg,
+    'pistachios': pistaImg,
+    'walnut-(akhrot)': walnutImg,
+    'walnuts': walnutImg,
+    'dates-(khajur)': datesImg,
+    'wet-dates-(khajur)': datesImg,
+    'dates': datesImg,
+    'badam-(almond)': almondImg,
+    'almonds-(badam)': almondImg,
+    'almonds': almondImg,
+    'anjeer-(figs)': anjeerImg,
+    'dried-figs-(anjeer)': anjeerImg, // Matches seed name 'Dried Figs (Anjeer)' -> slug might be generated differently if not hardcoded? Seed slug was 'figs'
+    'figs': anjeerImg,
+    'raisin-(kishmish)': raisinImg,
+    'raisins-(kishmish)': raisinImg,
+    'raisins': raisinImg
+};
 
-const categories = [
-    {
-        name: 'Cashew (Kaju)',
-        color: 'bg-[#006071]',
-        image: cashewImg,
-        path: '/category/cashew-(kaju)'
-    },
-    {
-        name: 'Pista (Pistachio)',
-        color: 'bg-[#67705B]',
-        image: pistaImg,
-        path: '/category/pistachio-(pista)'
-    },
-    {
-        name: 'Walnut (Akhrot)',
-        color: 'bg-[#902D45]',
-        image: walnutImg,
-        path: '/category/walnuts-(akhrot)'
-    },
-    {
-        name: 'Dates (Khajur)',
-        color: 'bg-[#7E3021]',
-        image: datesImg,
-        path: '/category/wet-dates-(khajur)'
-    },
-    {
-        name: 'Badam (Almond)',
-        color: 'bg-[#C08552]',
-        image: almondImg,
-        path: '/category/almonds-(badam)'
-    },
-    {
-        name: 'Anjeer (Figs)',
-        color: 'bg-[#7D5A5A]',
-        image: anjeerImg,
-        path: '/category/dried-figs-(anjeer)'
-    },
-    {
-        name: 'Raisin (Kishmish)',
-        color: 'bg-[#A68966]',
-        image: raisinImg,
-        path: '/category/raisins-(kishmish)'
-    }
+
+// Static colors for dynamic assignment
+const colors = [
+    'bg-[#006071]', 'bg-[#67705B]', 'bg-[#902D45]', 
+    'bg-[#7E3021]', 'bg-[#C08552]', 'bg-[#7D5A5A]', 'bg-[#A68966]'
 ];
 
+import { useSubCategories } from '../../../hooks/useProducts';
+
 const CategoryStrip = () => {
+    const { data: subCategories = [] } = useSubCategories(); // Use separate state
     const scrollRef = useRef(null);
     const navigate = useNavigate();
+    
+    console.log("CategoryStrip subCategories:", subCategories);
+
+    // Filter categories that are marked to show in the shop strip
+    const displayCategories = subCategories.filter(c => c.showInShopByCategory && c.status === 'Active');
+    console.log("CategoryStrip displayCategories:", displayCategories);
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -119,22 +112,19 @@ const CategoryStrip = () => {
 
                     <motion.div
                         ref={scrollRef}
-                        variants={containerVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-12 py-1 md:py-10 items-center w-full"
+                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-12 py-1 md:py-10 items-center w-full min-h-[150px]"
                     >
-                        {categories.map((cat, index) => (
+                        {displayCategories.length === 0 ? <p className="text-gray-400 text-sm">Loading categories...</p> : 
+                        displayCategories.map((cat, index) => (
                             <motion.div
-                                key={index}
-                                variants={itemVariants}
+                                key={cat._id || cat.id}
                                 whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                                onClick={() => navigate(cat.path)}
+                                // Navigate to subcategory page filter? Currently assumes structure
+                                onClick={() => navigate(`/category/${cat.slug}`)}
                                 className="relative min-w-[160px] md:min-w-[280px] h-14 md:h-24 flex items-center cursor-pointer group/item flex-shrink-0"
                             >
                                 {/* Elongated Pill Background */}
-                                <div className={`absolute right-0 w-[90%] md:w-[85%] h-[80%] md:h-[70%] ${cat.color} rounded-full flex items-center justify-center shadow-md border border-white/10 pl-14 md:pl-20 pr-4 md:pr-6 overflow-hidden transition-all duration-500 group-hover/item:shadow-2xl group-hover/item:border-white/30`}>
+                                <div className={`absolute right-0 w-[90%] md:w-[85%] h-[80%] md:h-[70%] ${colors[index % colors.length]} rounded-full flex items-center justify-center shadow-md border border-white/10 pl-14 md:pl-20 pr-4 md:pr-6 overflow-hidden transition-all duration-500 group-hover/item:shadow-2xl group-hover/item:border-white/30`}>
                                     <span className="text-white font-black text-[9px] md:text-[15px] tracking-widest uppercase text-center leading-tight drop-shadow-lg z-10">
                                         {cat.name}
                                     </span>
@@ -159,7 +149,7 @@ const CategoryStrip = () => {
                                 >
                                     <motion.img
                                         whileHover={{ scale: 1.15, rotate: 5 }}
-                                        src={cat.image}
+                                        src={assetMap[cat.slug] || cat.image}
                                         alt={cat.name}
                                         className="w-full h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.15)] group-hover/item:drop-shadow-[0_20px_30px_rgba(0,0,0,0.25)] transition-all duration-500"
                                         onError={(e) => {

@@ -1,17 +1,34 @@
 import React from 'react';
-import { Search, User, Heart, ShoppingCart, LayoutGrid, Bookmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Deprecated
+import useCartStore from '../../../store/useCartStore';
+import useUserStore from '../../../store/useUserStore';
+import { useCategories } from '../../../hooks/useProducts';
+
 import logo from '../../../assets/logo.png';
 
 const Navbar = () => {
     const { user } = useAuth();
-    const { getCart, getWishlist, saveForLater } = useShop();
-    const savedItemsCount = user ? saveForLater(user.id).length : 0;
+    
+    // Zustand Stores
+    const cartItemsMap = useCartStore(state => state.cartItems);
+    const wishlistMap = useUserStore(state => state.wishlist);
+    const savedItemsMap = useUserStore(state => state.saveForLater);
 
-    const cartCount = user ? getCart(user.id).reduce((acc, item) => acc + item.qty, 0) : 0;
-    const wishlistCount = user ? getWishlist(user.id).length : 0;
+    const cartItems = cartItemsMap[user?.id] || [];
+    const wishlist = wishlistMap[user?.id] || [];
+    const savedItems = savedItemsMap[user?.id] || [];
+
+    // React Query
+    const { data: categories = [] } = useCategories();
+
+    const [showCategories, setShowCategories] = React.useState(false);
+
+    const savedItemsCount = savedItems.length;
+    const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
+    const wishlistCount = wishlist.length;
 
     return (
         <nav className="bg-background sticky top-0 md:relative z-40 border-b border-gray-100 py-3 md:py-4 px-4 md:px-12">
@@ -22,18 +39,44 @@ const Navbar = () => {
                 </Link>
 
                 {/* Search Bar */}
-                <div className="hidden md:flex flex-1 max-w-2xl relative group">
-                    <div className="flex w-full items-center border border-gray-300 rounded-full bg-white overflow-hidden transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 hover:border-gray-400">
-                        <button className="px-4 py-2.5 text-textSecondary text-sm font-medium border-r border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1">
-                            All Categories
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
+                <div className="hidden md:flex flex-1 max-w-2xl relative group z-50">
+                    <div className="flex w-full items-center border border-gray-300 rounded-full bg-white transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 hover:border-gray-400 relative">
+                        <div className="relative">
+                            <button 
+                                onClick={() => setShowCategories(!showCategories)}
+                                onBlur={() => setTimeout(() => setShowCategories(false), 200)}
+                                className="px-4 py-2.5 text-textSecondary text-sm font-medium border-r border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1 rounded-l-full h-full"
+                            >
+                                All Categories
+                                <svg className={`w-3 h-3 transition-transform ${showCategories ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            
+                            {/* Dropdown Menu */}
+                            {showCategories && (
+                                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                    {categories.filter(c => c.status === 'Active').length > 0 ? (
+                                        categories.filter(c => c.status === 'Active').map(cat => (
+                                            <Link 
+                                                key={cat.id || cat._id} 
+                                                to={`/category/${cat.slug}`}
+                                                className="block px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors font-medium border-b border-gray-50 last:border-0"
+                                                onClick={() => setShowCategories(false)}
+                                            >
+                                                {cat.name}
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-gray-400 italic">No categories found</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <input
                             type="text"
                             placeholder="Search for Raisin, Almonds..."
-                            className="flex-1 px-4 py-2.5 text-textPrimary placeholder-gray-400 outline-none w-full"
+                            className="flex-1 px-4 py-2.5 text-textPrimary placeholder-gray-400 outline-none w-full bg-transparent"
                         />
-                        <button className="px-5 py-2.5 text-gray-500 hover:text-primary transition-colors">
+                        <button className="px-5 py-2.5 text-gray-500 hover:text-primary transition-colors rounded-r-full">
                             <Search size={22} />
                         </button>
                     </div>

@@ -1,29 +1,37 @@
 
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
 import { ArrowLeft, RefreshCw, CheckCircle, Clock, Truck, XCircle, AlertCircle, Search, Package, ShoppingBag } from 'lucide-react';
+import { useReturns } from '../../../hooks/useOrders';
+import { useProducts } from '../../../hooks/useProducts';
 
 const ReturnDetailPage = () => {
     const { returnId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { getReturnById, getVariantById } = useShop();
+    
+    const { data: returns = [] } = useReturns(user?.id);
+    const { data: products = [] } = useProducts();
+    
+    // Helper used in render
+    const getVariantById = (variantId) => {
+         for(let p of products) {
+            const v = p.variants?.find(v => v.id === variantId);
+            if(v) return { ...v, product: p };
+        }
+        return null;
+    };
+
     const [returnRequest, setReturnRequest] = React.useState(null);
 
     React.useEffect(() => {
-        if (user && returnId) {
-            const fetchReturn = () => {
-                const found = getReturnById(user.id, returnId);
-                setReturnRequest(found);
-            };
-
-            fetchReturn();
-            const interval = setInterval(fetchReturn, 5000);
-            return () => clearInterval(interval);
+        if (returns.length > 0 && returnId) {
+            const found = returns.find(r => r.id === returnId);
+            setReturnRequest(found);
         }
-    }, [user, returnId, getReturnById]);
+    }, [returns, returnId]);
 
     if (!returnRequest) {
         return <div className="min-h-screen flex items-center justify-center">Return request not found</div>;

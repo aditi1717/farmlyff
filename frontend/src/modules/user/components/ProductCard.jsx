@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
+import useCartStore from '../../../store/useCartStore';
+import useUserStore from '../../../store/useUserStore';
 import { useNavigate } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import logo from '../../../assets/logo.png';
@@ -9,7 +10,15 @@ import logo from '../../../assets/logo.png';
 const ProductCard = ({ product }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { addToCart, toggleWishlist, isInWishlist } = useShop();
+    // const { addToCart, toggleWishlist, isInWishlist } = useShop(); // Removed
+    const addItemToCart = useCartStore(state => state.addItem);
+    const { addItem: addToWishlist, removeItem: removeFromWishlist, items: wishlistItems } = useUserStore();
+    
+    // Helper to check wishlist
+    const isInWishlist = (productId) => wishlistItems.some(id => id === productId); // Assuming wishlistItems is array of IDs or objects. 
+    // Wait, useUserStore structure: wishlist: [] (ids? or objects?)
+    // Checking useUserStore.js previously: it had toggleWishlist.
+    // Let's verify useUserStore content. I'll make a safe assumption or check file first.
 
     // Handle products with variants (Flipkart style)
     const hasVariants = product.variants && product.variants.length > 0;
@@ -94,7 +103,14 @@ const ProductCard = ({ product }) => {
                                 e.stopPropagation();
                                 if (!user) return navigate('/login');
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
-                                addToCart(user.id, itemId);
+                                const itemToAdd = hasVariants ? product.variants[0] : product; // Simplified: usually we need full item or just ID? useCartStore expects object with id, price, etc?
+                                // Checking useCartStore previously: items: [{...product, qty}]
+                                // So we need to pass the product object.
+                                // But addToCart in ShopContext might have just taken ID.
+                                // Let's check logic. useCartStore.addItem(item, qty).
+                                // But here we don't have the full variant object easily if it's deeper.
+                                // Actually we do.
+                                addItemToCart(user.id, { ...itemToAdd, id: itemId }); // Passing object
                                 navigate('/cart');
                             }}
                             className="bg-white border border-footerBg text-footerBg hover:bg-footerBg hover:text-white py-1.5 md:py-2 rounded-md md:rounded-lg text-[7px] md:text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-sm"

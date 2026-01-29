@@ -8,60 +8,19 @@ import {
     Calendar,
     Users,
     Activity,
-    CheckCircle2,
-    XCircle,
     Clock,
-    Percent,
-    ArrowUpDown
+    Percent
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useShop } from '../../../context/ShopContext';
 import Pagination from '../components/Pagination';
+import toast from 'react-hot-toast';
 
 const CouponListPage = () => {
     const navigate = useNavigate();
-    const { getActiveCoupons, deleteCoupon } = useShop();
-
-    // Dummy Data for visualization
-    const DUMMY_COUPONS = [
-        {
-            id: 'cpn_1', code: 'WELCOME50', description: 'Flat discount for new users',
-            type: 'flat', value: 50, minOrderValue: 500, maxDiscount: 50,
-            validFrom: '2024-01-01', validUntil: '2024-12-31',
-            usageLimit: 1000, usageCount: 145, perUserLimit: 1, active: true,
-            userEligibility: 'new', applicabilityType: 'all', targetItems: []
-        },
-        {
-            id: 'cpn_2', code: 'SUMMER20', description: 'Summer sale on all products',
-            type: 'percentage', value: 20, minOrderValue: 1000, maxDiscount: 200,
-            validFrom: '2024-06-01', validUntil: '2025-08-31',
-            usageLimit: 5000, usageCount: 1234, perUserLimit: 3, active: true,
-            userEligibility: 'all', applicabilityType: 'all', targetItems: []
-        },
-        {
-            id: 'cpn_3', code: 'NUTTY10', description: '10% Off on Premium Nuts',
-            type: 'percentage', value: 10, minOrderValue: 0, maxDiscount: 100,
-            validFrom: '2024-01-01', validUntil: '2025-12-31',
-            usageLimit: 200, usageCount: 45, perUserLimit: 10, active: true,
-            userEligibility: 'all', applicabilityType: 'category', targetItems: ['nuts']
-        },
-        {
-            id: 'cpn_4', code: 'EXPIRED100', description: 'Past campaign',
-            type: 'flat', value: 100, minOrderValue: 1000, maxDiscount: 100,
-            validFrom: '2023-01-01', validUntil: '2023-12-31',
-            usageLimit: 100, usageCount: 100, perUserLimit: 1, active: false,
-            userEligibility: 'all', applicabilityType: 'all', targetItems: []
-        }
-    ];
-
-    // Read from localStorage or use Dummy Data
-    const [coupons, setCoupons] = useState(() => {
-        const stored = JSON.parse(localStorage.getItem('farmlyf_coupons'));
-        return stored && stored.length > 0 ? stored : DUMMY_COUPONS;
-    });
+    const { coupons, deleteCoupon, fetchCoupons } = useShop();
 
     const [searchTerm, setSearchTerm] = useState('');
-
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
@@ -71,7 +30,7 @@ const CouponListPage = () => {
                 c.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.description?.toLowerCase().includes(searchTerm.toLowerCase())
             )
-            .sort((a, b) => b.id?.localeCompare(a.id) || 0);
+            .sort((a, b) => b.createdAt?.localeCompare(a.createdAt) || 0);
     }, [coupons, searchTerm]);
 
     const paginatedCoupons = useMemo(() => {
@@ -81,10 +40,14 @@ const CouponListPage = () => {
 
     const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this coupon?')) {
-            deleteCoupon(id);
-            setCoupons(prev => prev.filter(c => c.id !== id));
+            const result = await deleteCoupon(id);
+            if (result.success) {
+                // Toast or notification?
+            } else {
+                toast.error('Failed to delete coupon');
+            }
         }
     };
 
@@ -92,7 +55,7 @@ const CouponListPage = () => {
         const now = new Date();
         if (!coupon.active) return { label: 'Inactive', color: 'bg-gray-100 text-gray-400 border-gray-200' };
         if (new Date(coupon.validUntil) < now) return { label: 'Expired', color: 'bg-red-50 text-red-600 border-red-100' };
-        if (coupon.usageCount >= coupon.usageLimit) return { label: 'Limit Reached', color: 'bg-amber-50 text-amber-600 border-amber-100' };
+        if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) return { label: 'Limit Reached', color: 'bg-amber-50 text-amber-600 border-amber-100' };
         return { label: 'Active', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
     };
 
@@ -116,7 +79,7 @@ const CouponListPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
                     { label: 'Total Coupons', value: coupons.length, icon: Ticket },
-                    { label: 'Active Now', value: coupons.filter(c => getCouponStatus(c).label === 'Active').length, icon: Activity },
+                    { label: 'Active Now', value: coupons.filter(c => c.active && new Date(c.validUntil) > new Date()).length, icon: Activity },
                     { label: 'Total Redemptions', value: coupons.reduce((acc, c) => acc + (c.usageCount || 0), 0), icon: Users },
                     {
                         label: 'Upcoming Expiry', value: coupons.filter(c => {
@@ -164,80 +127,90 @@ const CouponListPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {paginatedCoupons.map((coupon) => {
-                                const status = getCouponStatus(coupon);
-                                return (
-                                    <tr key={coupon.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-3.5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center font-black text-xs border border-primary/10">
-                                                    <Ticket size={24} strokeWidth={2.5} />
+                            {paginatedCoupons.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-400 text-sm">
+                                        No coupons found
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedCoupons.map((coupon) => {
+                                    const status = getCouponStatus(coupon);
+                                    return (
+                                        <tr key={coupon.id || coupon._id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-3.5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-primary/5 text-primary rounded-xl flex items-center justify-center font-black text-xs border border-primary/10">
+                                                        <Ticket size={24} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-footerBg text-sm tracking-widest">{coupon.code}</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold mt-1 max-w-[200px] line-clamp-1">{coupon.description || 'No description'}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-black text-footerBg text-sm tracking-widest">{coupon.code}</p>
-                                                    <p className="text-[10px] text-gray-400 font-bold mt-1 max-w-[200px] line-clamp-1">{coupon.description}</p>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg shrink-0">
+                                                        <Percent size={14} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-footerBg">{coupon.type === 'percent' ? `${coupon.value}%` : `₹${coupon.value}`} OFF</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Min Order: ₹{coupon.minOrderValue}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg shrink-0">
-                                                    <Percent size={14} />
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="w-full max-w-[100px] space-y-1.5">
+                                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter">
+                                                        <span className="text-footerBg">{coupon.usageCount} Used</span>
+                                                        <span className="text-gray-400">{coupon.usageLimit || '∞'} Max</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full"
+                                                            style={{ width: `${Math.min((coupon.usageCount / (coupon.usageLimit || 1)) * 100, 100)}%` }}
+                                                        ></div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-black text-footerBg">{coupon.type === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`} OFF</p>
-                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Min Order: ₹{coupon.minOrderValue}</p>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <Calendar size={14} className="text-gray-400" />
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-footerBg uppercase">Ends {new Date(coupon.validUntil).toLocaleDateString()}</p>
+                                                        {coupon.createdAt && (
+                                                            <p className="text-[9px] text-gray-400 font-medium">Created {new Date(coupon.createdAt).toLocaleDateString()}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="w-full max-w-[100px] space-y-1.5">
-                                                <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter">
-                                                    <span className="text-footerBg">{coupon.usageCount} Used</span>
-                                                    <span className="text-gray-400">{coupon.usageLimit} Max</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${status.color}`}>
+                                                    {status.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/admin/coupons/edit/${coupon.id || coupon._id}`)}
+                                                        className="p-2 text-gray-400 hover:text-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100"
+                                                        title="Edit Coupon"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(coupon.id || coupon._id)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
                                                 </div>
-                                                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-primary rounded-full"
-                                                        style={{ width: `${Math.min((coupon.usageCount / coupon.usageLimit) * 100, 100)}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <Calendar size={14} className="text-gray-400" />
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-footerBg uppercase">Ends {new Date(coupon.validUntil).toLocaleDateString()}</p>
-                                                    <p className="text-[9px] text-gray-400 font-medium">Starts {new Date(coupon.validFrom).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${status.color}`}>
-                                                {status.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => navigate(`/admin/coupons/edit/${coupon.id}`)}
-                                                    className="p-2 text-gray-400 hover:text-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100"
-                                                    title="Edit Coupon"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(coupon.id)}
-                                                    className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>

@@ -3,40 +3,22 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Save,
-    Plus,
-    Trash2,
-    Ticket,
     Calendar,
     Settings,
     ShieldCheck,
     Info,
-    CheckCircle2,
-    XCircle,
-    Copy,
-    AlertCircle
+    CheckCircle2
 } from 'lucide-react';
 import { useShop } from '../../../context/ShopContext';
-import { PRODUCTS as mockProducts } from '../../../mockData/data'; // Fallback / Helper
+import toast from 'react-hot-toast';
 
 const CouponFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { products } = useShop();
+    const { products, categories, subCategories, coupons, addCoupon, updateCoupon } = useShop();
     const isEdit = Boolean(id);
 
-    // Hardcoded Categories for simplicty (usually from context)
-    const CATEGORIES = [
-        { id: 'nuts', name: 'Nuts' },
-        { id: 'dried-fruits', name: 'Dried Fruits' },
-        { id: 'seeds-mixes', name: 'Seeds & Mixes' },
-        { id: 'combos-packs', name: 'Combos & Packs' }
-    ];
-
-    const SUBCATEGORIES = [
-        'Almonds', 'Cashews', 'Walnuts (Akhrot)', 'Pistachios',
-        'Raisins', 'Dates', 'Dried Figs (Anjeer)',
-        'Seeds', 'Mixes', 'Daily Packs', 'Gifting'
-    ];
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         code: '',
@@ -51,22 +33,24 @@ const CouponFormPage = () => {
         active: true,
         userEligibility: 'all',
         description: '',
-        // New Fields
         applicabilityType: 'all', // 'all', 'category', 'subcategory', 'product'
         targetItems: [] // Array of IDs or Names
     });
 
     useEffect(() => {
         if (isEdit) {
-            const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || [];
-            const coupon = storedCoupons.find(c => c.id === id);
-            if (coupon) setFormData({
-                ...coupon,
-                applicabilityType: coupon.applicabilityType || 'all',
-                targetItems: coupon.targetItems || []
-            });
+            const coupon = coupons.find(c => c.id === id || c._id === id);
+            if (coupon) {
+                setFormData({
+                    ...coupon,
+                    validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '',
+                    validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '',
+                    applicabilityType: coupon.applicabilityType || 'all',
+                    targetItems: coupon.targetItems || []
+                });
+            }
         }
-    }, [id, isEdit]);
+    }, [id, isEdit, coupons]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -87,15 +71,12 @@ const CouponFormPage = () => {
         });
     };
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
-
-        const storedCoupons = JSON.parse(localStorage.getItem('farmlyf_coupons')) || [];
+        setLoading(true);
 
         const payload = {
             ...formData,
-            id: isEdit ? id : `COUP-${Date.now()}`,
-            usageCount: isEdit ? formData.usageCount : 0,
             value: Number(formData.value),
             minOrderValue: Number(formData.minOrderValue),
             maxDiscount: Number(formData.maxDiscount) || null,
@@ -103,16 +84,21 @@ const CouponFormPage = () => {
             perUserLimit: Number(formData.perUserLimit) || 1
         };
 
-        let updatedCoupons;
+        let result;
         if (isEdit) {
-            updatedCoupons = storedCoupons.map(c => c.id === id ? payload : c);
+            result = await updateCoupon(id, payload);
         } else {
-            updatedCoupons = [payload, ...storedCoupons];
+            result = await addCoupon(payload);
         }
 
-        localStorage.setItem('farmlyf_coupons', JSON.stringify(updatedCoupons));
-        alert("Coupon successfully saved!");
-        navigate('/admin/coupons');
+        setLoading(false);
+
+        if (result.success) {
+            toast.success(`Coupon successfully ${isEdit ? 'updated' : 'created'}!`);
+            navigate('/admin/coupons');
+        } else {
+            toast.error(`Error: ${result.error}`);
+        }
     };
 
     return (
@@ -137,9 +123,10 @@ const CouponFormPage = () => {
                 </div>
                 <button
                     onClick={handleSave}
-                    className="bg-footerBg text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-xl shadow-footerBg/20"
+                    disabled={loading}
+                    className="bg-footerBg text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-xl shadow-footerBg/20 disabled:opacity-70"
                 >
-                    <Save size={18} /> {isEdit ? 'Update Coupon' : 'Deploy Coupon'}
+                    <Save size={18} /> {loading ? 'Saving...' : (isEdit ? 'Update Coupon' : 'Deploy Coupon')}
                 </button>
             </div>
 
@@ -185,7 +172,7 @@ const CouponFormPage = () => {
                                         className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-sm font-bold outline-none focus:bg-white focus:border-footerBg transition-all cursor-pointer"
                                     >
                                         <option value="flat">Flat Amount (₹)</option>
-                                        <option value="percentage">Percentage (%)</option>
+                                        <option value="percent">Percentage (%)</option>
                                         <option value="free_shipping">Free Shipping</option>
                                     </select>
                                 </div>
@@ -197,7 +184,7 @@ const CouponFormPage = () => {
                                         value={formData.value}
                                         onChange={handleChange}
                                         disabled={formData.type === 'free_shipping'}
-                                        placeholder={formData.type === 'percentage' ? 'e.g., 20' : 'e.g., 500'}
+                                        placeholder={formData.type === 'percent' ? 'e.g., 20' : 'e.g., 500'}
                                         className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-sm font-bold outline-none focus:bg-white focus:border-primary transition-all"
                                     />
                                 </div>
@@ -238,6 +225,7 @@ const CouponFormPage = () => {
                                     { id: 'all', label: 'All Orders' },
                                     { id: 'new_user', label: 'New Users' },
                                     { id: 'category', label: 'Category' },
+                                    { id: 'subcategory', label: 'Sub-Category' },
                                     { id: 'product', label: 'Product' }
                                 ].map(scope => {
                                     const isActive = (scope.id === 'new_user' && formData.userEligibility === 'new') ||
@@ -289,18 +277,37 @@ const CouponFormPage = () => {
 
                                 {formData.applicabilityType === 'category' && formData.userEligibility !== 'new' && (
                                     <div className="space-y-2">
-                                        {CATEGORIES.map(cat => (
-                                            <label key={cat.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 cursor-pointer hover:border-primary/30 transition-all">
-                                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.targetItems.includes(cat.id) ? 'bg-primary border-primary' : 'border-gray-300'}`}>
-                                                    {formData.targetItems.includes(cat.id) && <CheckCircle2 size={12} className="text-white" />}
+                                        {categories.map(cat => (
+                                            <label key={cat.id || cat._id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 cursor-pointer hover:border-primary/30 transition-all">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.targetItems.includes(cat.id || cat._id) ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                                    {formData.targetItems.includes(cat.id || cat._id) && <CheckCircle2 size={12} className="text-white" />}
                                                 </div>
                                                 <input
                                                     type="checkbox"
                                                     className="hidden"
-                                                    checked={formData.targetItems.includes(cat.id)}
-                                                    onChange={() => toggleTargetItem(cat.id)}
+                                                    checked={formData.targetItems.includes(cat.id || cat._id)}
+                                                    onChange={() => toggleTargetItem(cat.id || cat._id)}
                                                 />
                                                 <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">{cat.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {formData.applicabilityType === 'subcategory' && formData.userEligibility !== 'new' && (
+                                    <div className="space-y-2">
+                                        {subCategories.map(sub => (
+                                            <label key={sub.id || sub._id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 cursor-pointer hover:border-primary/30 transition-all">
+                                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.targetItems.includes(sub.name) ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                                    {formData.targetItems.includes(sub.name) && <CheckCircle2 size={12} className="text-white" />}
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="hidden"
+                                                    checked={formData.targetItems.includes(sub.name)}
+                                                    onChange={() => toggleTargetItem(sub.name)}
+                                                />
+                                                <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">{sub.name}</span>
                                             </label>
                                         ))}
                                     </div>
@@ -313,7 +320,7 @@ const CouponFormPage = () => {
                                                 <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${formData.targetItems.includes(p.id) ? 'bg-primary border-primary' : 'border-gray-300'}`}>
                                                     {formData.targetItems.includes(p.id) && <CheckCircle2 size={12} className="text-white" />}
                                                 </div>
-                                                <img src={p.image} className="w-8 h-8 object-contain mix-blend-multiply" alt="" />
+                                                {p.image && <img src={p.image} className="w-8 h-8 object-contain mix-blend-multiply" alt="" />}
                                                 <input
                                                     type="checkbox"
                                                     className="hidden"

@@ -1,55 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import {
-    User,
-    Mail,
-    Copy,
-    Check,
-    Settings,
-    LogOut,
-    Package,
-    Heart,
-    Shield,
-    ChevronRight,
-    Tag,
-    Home,
-    MapPin,
-    CreditCard,
-    Bell,
-    Edit3,
-    ChevronDown,
-    Calendar,
-    Ticket,
-    Headphones,
-    ShieldCheck,
-    Plus,
-    Trash2,
-    Lock,
-    RefreshCw,
-    AlertCircle,
-    Clock,
-    Bookmark,
-    Share2,
-    Percent,
-    Eye,
-    X
-} from 'lucide-react';
+import { ChevronRight, Package, RefreshCw, Heart, Ticket, User, MapPin, Bookmark, Headphones, Mail, Share2, CreditCard, Plus, Home, Edit3, Trash2, Check, Lock, LogOut, Copy, Percent, X, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Stores & Hooks
+import useUserStore from '../../../store/useUserStore';
+import { useOrders, useReturns } from '../../../hooks/useOrders';
+import { useActiveCoupons } from '../../../hooks/useCoupons';
+import { useProducts } from '../../../hooks/useProducts';
+
 import logo from '../../../assets/logo.png';
 
 const ProfilePage = () => {
-    const { user, logout } = useAuth();
-    const {
-        getOrders,
-        getActiveCoupons,
-        getReturns,
-        getRecentlyViewed,
-        getRecommendations,
-        getPackById
-    } = useShop();
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
+    const { data: orders = [] } = useOrders(user?.id);
+    const { data: activeCoupons = [] } = useActiveCoupons();
     const { tab } = useParams();
     const activeTab = tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Overview';
     const [copied, setCopied] = useState(false);
@@ -291,7 +259,7 @@ const ProfilePage = () => {
 
 
     const renderCoupons = () => {
-        const coupons = getActiveCoupons();
+        const coupons = activeCoupons; // getActiveCoupons();
         return (
             <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -756,7 +724,7 @@ const ProfilePage = () => {
         </div>
     );
 
-    const ordersData = getOrders(userData.id);
+    const ordersData = orders; // getOrders(userData.id);
 
     return (
         <div className="bg-[#f8fafc] min-h-screen pb-20 font-['Inter']">
@@ -983,6 +951,7 @@ const ProfilePage = () => {
             </div>
         </div>
     );
+
 };
 
 export default ProfilePage;

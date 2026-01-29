@@ -32,12 +32,12 @@ const AuthPage = () => {
         setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         if (isLogin) {
-            const res = login(formData.email, formData.password);
+            const res = await login(formData.email, formData.password);
             if (res.success) {
                 // If coming from a protected route or action, go back, else home
                 // For now just go home or back
@@ -54,7 +54,7 @@ const AuthPage = () => {
                 setError('Password must be at least 6 characters');
                 return;
             }
-            const res = signup({
+            const res = await signup({
                 name: formData.name,
                 email: formData.email,
                 password: formData.password

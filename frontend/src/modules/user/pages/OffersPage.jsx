@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useShop } from '../../../context/ShopContext';
+// import { useShop } from '../../../context/ShopContext'; // Removed
 import { Copy, Clock, ArrowRight, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useActiveCoupons } from '../../../hooks/useCoupons';
 
 const OffersPage = () => {
-    const { getActiveCoupons } = useShop();
+    // const { getActiveCoupons } = useShop();
     const navigate = useNavigate();
-    const activeCoupons = getActiveCoupons();
+    const activeCoupons = useActiveCoupons(); // Hook usage
     const [copiedId, setCopiedId] = useState(null);
 
     const handleCopy = (code, id) => {

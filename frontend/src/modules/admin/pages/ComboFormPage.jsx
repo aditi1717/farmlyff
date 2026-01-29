@@ -18,8 +18,23 @@ import { useShop } from '../../../context/ShopContext';
 const ComboFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { packs, products, getPackById, addPack, updatePack } = useShop();
+    const { packs, products, getPackById, addPack, updatePack, categories, subCategories } = useShop();
     const fileInputRef = useRef(null);
+
+    // Get Combo Parent ID
+    const comboParentId = useMemo(() => {
+        const parent = categories.find(c => c.slug === 'combos-packs' || c.name === 'Combos & Packs');
+        return parent?._id || parent?.id;
+    }, [categories]);
+
+    // Get Available Combo Categories (SubCategories of Combos)
+    const comboCategories = useMemo(() => {
+        if (!comboParentId) return [];
+        return subCategories.filter(s => {
+            const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
+            return pId === comboParentId;
+        });
+    }, [subCategories, comboParentId]);
 
     const isEdit = Boolean(id);
 
@@ -348,10 +363,14 @@ const ComboFormPage = () => {
                                     required
                                     className="w-full bg-gray-50 border border-transparent rounded-xl p-4 text-sm font-bold outline-none focus:bg-white focus:border-primary transition-all cursor-pointer"
                                 >
-                                    <option value="Festival Combos">Festival Combos</option>
-                                    <option value="Gift Hampers">Gift Hampers</option>
-                                    <option value="Family Packs">Family Packs</option>
-                                    <option value="Nutrition Combos">Nutrition Combos</option>
+                                    <option value="">Select Category</option>
+                                    {comboCategories.length > 0 ? (
+                                        comboCategories.map(cat => (
+                                            <option key={cat.id || cat._id} value={cat.name}>{cat.name}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No Categories Found</option>
+                                    )}
                                 </select>
                             </div>
 
