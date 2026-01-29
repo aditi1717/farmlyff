@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useCategories, useSubCategories } from '../../../hooks/useProducts';
 import {
     Store,
     Nut,
@@ -73,11 +74,75 @@ const categories = [
 
 const CategoryNav = () => {
     const [activeMenu, setActiveMenu] = useState(null);
+    const { data: rawCategories = [] } = useCategories();
+    const { data: rawSubCategories = [] } = useSubCategories();
+
+    // Deduplicate and filter active categories
+    const categoriesDB = React.useMemo(() => {
+        const unique = [];
+        const seen = new Set();
+        for (const cat of rawCategories) {
+            const id = cat._id || cat.id;
+            if (id && !seen.has(id) && cat.status === 'Active' && cat.showInNavbar !== false) {
+                seen.add(id);
+                unique.push(cat);
+            }
+        }
+        return unique;
+    }, [rawCategories]);
+
+    // Build Shop Menu Data properly from DB
+    const shopMenuData = React.useMemo(() => {
+        return categoriesDB.map(cat => {
+            const catId = cat._id || cat.id;
+            const subs = rawSubCategories.filter(sub => {
+                const subParentId = sub.parent?._id || sub.parent;
+                return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
+            });
+            
+            return {
+                title: cat.name,
+                items: subs.map(s => s.name) // Using name string as per previous structure, or could be object
+            };
+        });
+    }, [categoriesDB, rawSubCategories]);
+
+    // Build Top Level Navigation Items
+    const navItems = React.useMemo(() => {
+        const items = [
+            { name: 'Home', icon: Home, path: '/' },
+            { 
+                name: `Shop (${categoriesDB.length})`, // Debug count as requested, or remove
+                icon: Store, 
+                path: '/catalog', 
+                hasMenu: true, 
+                menuData: shopMenuData 
+            }
+        ];
+
+        // Add DB Categories as top level links
+        categoriesDB.forEach(cat => {
+            // Icon logic is hard because icons are imports. We can use a default or mapped icon.
+            // For now, use Sprout or similar.
+            /* 
+               We could try to map names to icons if we want, but dynamic is safer with generic icon.
+            */
+            items.push({
+                name: cat.name,
+                icon: Sprout, // Default icon
+                path: `/category/${cat.slug}`
+            });
+        });
+
+        // Add Combos if not present? "Combos & Packs" is usually in DB.
+        
+        return items;
+    }, [categoriesDB, shopMenuData]);
 
     return (
         <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg px-4 lg:px-12 relative z-[100]">
             <div className="flex justify-between items-center text-[10px] lg:text-[11px] font-black tracking-widest uppercase items-center">
-                {categories.map((cat, index) => {
+                {navItems.map((cat, index) => {
                     const Icon = cat.icon;
                     return (
                         <div
@@ -97,7 +162,7 @@ const CategoryNav = () => {
                             </Link>
 
                             {/* Vertical Divider */}
-                            {index !== categories.length - 1 && (
+                            {index !== navItems.length - 1 && (
                                 <div className="h-4 w-[1px] bg-white/10 mx-3 lg:mx-6" />
                             )}
                         </div>
@@ -105,7 +170,7 @@ const CategoryNav = () => {
                 })}
             </div>
 
-            {/* Popup Mega Menu - Positioned Exactly Below the bar */}
+            {/* Popup Mega Menu */}
             <AnimatePresence>
                 {activeMenu && (
                     <motion.div
@@ -118,8 +183,8 @@ const CategoryNav = () => {
                         onMouseLeave={() => setActiveMenu(null)}
                     >
                         <div className="max-w-[1500px] mx-auto px-12 py-12">
-                            <div className={`grid ${activeMenu === 'Shop' ? 'grid-cols-6' : 'grid-cols-4'} gap-x-10 gap-y-12`}>
-                                {categories.find(c => c.name === activeMenu)?.menuData?.map((section, idx) => (
+                            <div className={`grid ${activeMenu.startsWith('Shop') ? 'grid-cols-6' : 'grid-cols-4'} gap-x-10 gap-y-12`}>
+                                {navItems.find(c => c.name === activeMenu)?.menuData?.map((section, idx) => (
                                     <div key={idx} className="space-y-6">
                                         <h4 className="text-footerBg font-black text-[12px] tracking-[0.15em] mb-6 border-b border-gray-100 pb-3 uppercase">
                                             {section.title}
@@ -130,29 +195,13 @@ const CategoryNav = () => {
                                                     <div className="flex items-start gap-2.5">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] mt-[6px] flex-shrink-0" />
                                                         <Link
-                                                            to={`/category/${(item.label || item).toLowerCase().replace(/ /g, '-')}`}
+                                                            to={`/category/${section.title.toLowerCase().replace(/ /g, '-')}/${(item.label || item).toLowerCase().replace(/ /g, '-')}`}
                                                             onClick={() => setActiveMenu(null)}
                                                             className="text-[#374151] group-hover/item:text-primary font-black text-[12px] leading-tight transition-all duration-200 tracking-wide uppercase"
                                                         >
                                                             {item.label || item}
                                                         </Link>
                                                     </div>
-
-                                                    {item.subItems && (
-                                                        <ul className="ml-4 border-l-2 border-primary/10 pl-5 space-y-3 mt-4">
-                                                            {item.subItems.map((sub, j) => (
-                                                                <li key={j}>
-                                                                    <Link
-                                                                        to={`/category/${sub.toLowerCase().replace(/ /g, '-')}`}
-                                                                        onClick={() => setActiveMenu(null)}
-                                                                        className="text-gray-400 hover:text-primary text-[11px] font-black transition-colors block uppercase tracking-widest"
-                                                                    >
-                                                                        • {sub}
-                                                                    </Link>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    )}
                                                 </li>
                                             ))}
                                         </ul>

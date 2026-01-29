@@ -16,7 +16,8 @@ import {
     Plus,
     List,
     Share2,
-    Monitor
+    Monitor,
+    Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -44,6 +45,7 @@ const AdminSidebar = () => {
         { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
         { icon: RefreshCcw, label: 'Returns', path: '/admin/returns' },
         { icon: TicketPercent, label: 'Coupons', path: '/admin/coupons' },
+        { icon: Video, label: 'Reels', path: '/admin/reels' },
         { icon: Share2, label: 'Referrals', path: '/admin/referrals' },
     ];
 

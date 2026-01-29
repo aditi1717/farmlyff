@@ -40,6 +40,7 @@ import SettingsPage from './modules/admin/pages/SettingsPage';
 import InfluencerReferralPage from './modules/admin/pages/InfluencerReferralPage';
 import LoginPage from './modules/admin/pages/LoginPage';
 import BannerListPage from './modules/admin/pages/BannerListPage';
+import ReelsPage from './modules/admin/pages/ReelsPage';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { Provider } from 'react-redux'; // Removed
@@ -107,6 +108,7 @@ function App() {
               <Route path="coupons/edit/:id" element={<CouponFormPage />} />
               <Route path="referrals" element={<InfluencerReferralPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="reels" element={<ReelsPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

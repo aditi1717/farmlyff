@@ -22,8 +22,35 @@ const Navbar = () => {
     const savedItems = savedItemsMap[user?.id] || [];
 
     // React Query
-    const { data: categories = [] } = useCategories();
-    const { data: subCategories = [] } = useSubCategories();
+    // React Query
+    const { data: rawCategories = [] } = useCategories();
+    const { data: rawSubCategories = [] } = useSubCategories();
+
+    const categories = React.useMemo(() => {
+        const unique = [];
+        const seen = new Set();
+        for (const cat of rawCategories) {
+            const id = cat._id || cat.id;
+            if (id && !seen.has(id)) {
+                seen.add(id);
+                unique.push(cat);
+            }
+        }
+        return unique;
+    }, [rawCategories]);
+
+    const subCategories = React.useMemo(() => {
+         const unique = [];
+         const seen = new Set();
+         for (const sub of rawSubCategories) {
+             const id = sub._id || sub.id;
+             if (id && !seen.has(id)) {
+                 seen.add(id);
+                 unique.push(sub);
+             }
+         }
+         return unique;
+    }, [rawSubCategories]);
 
     const [showCategories, setShowCategories] = React.useState(false);
 
@@ -90,13 +117,15 @@ const Navbar = () => {
                     <div className="relative group z-30">
                         <Link to="/catalog" className="flex flex-col items-center gap-0.5 text-textPrimary hover:text-primary transition-colors">
                             <LayoutGrid size={22} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
-                            <span className="text-[10px] font-medium hidden md:block">Shop</span>
+                            <span className="text-[10px] font-medium hidden md:block">Shop ({categories.filter(c => c.status === 'Active' && c.showInNavbar !== false).length})</span>
                         </Link>
                         
                         {/* Dropdown Menu */}
                         <div className="absolute right-0 top-full pt-4 hidden group-hover:block w-[600px] z-50">
                             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2">
-                                {categories.filter(c => c.status === 'Active').map(cat => (
+                                {categories
+                                    .filter(c => c.status === 'Active' && (c.showInNavbar !== false))
+                                    .map(cat => (
                                     <div key={cat._id || cat.id} className="space-y-3">
                                         <Link 
                                             to={`/category/${cat.slug}`}
@@ -105,7 +134,12 @@ const Navbar = () => {
                                             {cat.name}
                                         </Link>
                                         <div className="space-y-2 flex flex-col">
-                                            {subCategories.filter(sub => (sub.parent === cat.id || sub.parent === cat._id || sub.parent?._id === cat.id || sub.parent?._id === cat._id) && sub.status === 'Active').map(sub => (
+                                            {subCategories.filter(sub => {
+                                                const subParentId = sub.parent?._id || sub.parent;
+                                                const catId = cat._id || cat.id;
+                                                // Strict check: IDs must exist and match
+                                                return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
+                                            }).map(sub => (
                                                 <Link 
                                                     key={sub._id || sub.id}
                                                     to={`/category/${cat.slug}/${sub.slug}`} // Assuming route structure
@@ -114,7 +148,11 @@ const Navbar = () => {
                                                     {sub.name}
                                                 </Link>
                                             ))}
-                                            {subCategories.filter(sub => (sub.parent === cat.id || sub.parent === cat._id || sub.parent?._id === cat.id || sub.parent?._id === cat._id)).length === 0 && (
+                                            {subCategories.filter(sub => {
+                                                const subParentId = sub.parent?._id || sub.parent;
+                                                const catId = cat._id || cat.id;
+                                                return subParentId && catId && String(subParentId) === String(catId);
+                                            }).length === 0 && (
                                                <Link to={`/category/${cat.slug}`} className="text-[10px] text-gray-400 italic hover:text-primary">
                                                   View all {cat.name}
                                                </Link>
