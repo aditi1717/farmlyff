@@ -12,10 +12,14 @@ import {
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import Pagination from '../components/Pagination';
-import { useShop } from '../../../context/ShopContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CategoriesPage = () => {
-    const { fetchCategories: refreshGlobalCategories } = useShop();
+    const queryClient = useQueryClient();
+    const refreshGlobalCategories = () => {
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+        queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+    };
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');

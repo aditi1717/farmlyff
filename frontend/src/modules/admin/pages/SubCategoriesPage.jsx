@@ -11,10 +11,16 @@ import {
     Upload
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useShop } from '../../../context/ShopContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCategories } from '../../../hooks/useProducts';
 
 const SubCategoriesPage = () => {
-    const { categories: globalParents, fetchCategories: refreshGlobalCategories } = useShop();
+    const { data: globalParents = [] } = useCategories();
+    const queryClient = useQueryClient();
+    const refreshGlobalCategories = () => {
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+        queryClient.invalidateQueries({ queryKey: ['subcategories'] });
+    };
     
     // Data State
     // parents state removed, using globalParents
@@ -37,8 +43,6 @@ const SubCategoriesPage = () => {
 
     useEffect(() => {
         fetchData();
-        // Ensure global categories are loaded if not
-        if (globalParents.length === 0) refreshGlobalCategories();
     }, []);
 
     const fetchData = async () => {
