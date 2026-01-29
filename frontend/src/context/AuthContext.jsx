@@ -37,13 +37,6 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        // Admin Backdoor
-        if (email === 'admin@farmlyf.com' && password === 'admin') {
-            const adminUser = { id: 'admin_01', name: 'Super Admin', email, role: 'admin' };
-            setUser(adminUser);
-            localStorage.setItem('farmlyf_current_user', JSON.stringify(adminUser));
-            return { success: true };
-        }
 
         try {
             const response = await fetch(`${API_URL}/users/login`, {
