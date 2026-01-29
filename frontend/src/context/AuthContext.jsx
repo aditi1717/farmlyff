@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -12,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/users/profile', {
+                const response = await fetch(`${API_URL}/users/profile`, {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include'
                 });
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/users/login', {
+            const response = await fetch(`${API_URL}/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -72,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (userData) => {
         try {
-            const response = await fetch('http://localhost:5000/api/users', {
+            const response = await fetch(`${API_URL}/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData),
@@ -100,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await fetch('http://localhost:5000/api/users/logout', { method: 'POST', credentials: 'include' });
+            await fetch(`${API_URL}/users/logout`, { method: 'POST', credentials: 'include' });
             toast.success('Logged out successfully');
         } catch (error) {
             console.error("Logout error:", error);

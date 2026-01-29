@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const initialState = {
     wishlist: JSON.parse(localStorage.getItem('farmlyf_wishlist')) || {}, // { userId: [packIds] }

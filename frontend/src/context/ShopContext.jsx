@@ -4,6 +4,8 @@ import bannerMix from '../assets/banner_mix.jpg';
 import authShowcase from '../assets/auth_showcase.jpg';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ShopContext = createContext();
 
 export const useShop = () => useContext(ShopContext);
@@ -24,7 +26,7 @@ export const ShopProvider = ({ children }) => {
 
     const fetchCategories = async () => {
         try {
-            const catRes = await fetch('http://localhost:5000/api/categories');
+            const catRes = await fetch(`${API_URL}/categories`);
             const catData = await catRes.json();
             if (Array.isArray(catData)) {
                 setCategories(catData);
@@ -33,7 +35,7 @@ export const ShopProvider = ({ children }) => {
                 setCategories([]);
             }
             
-            const subRes = await fetch('http://localhost:5000/api/subcategories');
+            const subRes = await fetch(`${API_URL}/subcategories`);
             const subData = await subRes.json();
             if (Array.isArray(subData)) {
                 setSubCategories(subData);
@@ -55,16 +57,16 @@ export const ShopProvider = ({ children }) => {
         const fetchData = async () => {
             try {
                 // Fetch Products
-                const productRes = await fetch('http://localhost:5000/api/products');
+                const productRes = await fetch(`${API_URL}/products`);
                 const productsData = await productRes.json();
                 setProducts(productsData.length > 0 ? productsData : PRODUCTS);
 
                 // Fetch Users
-                const userRes = await fetch('http://localhost:5000/api/users');
+                const userRes = await fetch(`${API_URL}/users`);
                 const usersData = await userRes.json();
                 
                 // Fetch Orders
-                const orderRes = await fetch('http://localhost:5000/api/orders');
+                const orderRes = await fetch(`${API_URL}/orders`);
                 const ordersData = await orderRes.json();
 
                 // Group Orders by User ID
@@ -76,7 +78,7 @@ export const ShopProvider = ({ children }) => {
                 setOrders(ordersMap);
 
                 // Fetch Returns
-                const returnRes = await fetch('http://localhost:5000/api/returns');
+                const returnRes = await fetch(`${API_URL}/returns`);
                 const returnsData = await returnRes.json();
 
                 // Group Returns by User ID
@@ -91,7 +93,7 @@ export const ShopProvider = ({ children }) => {
                 await fetchCategories();
                 
                 // Fetch Coupons
-                const couponRes = await fetch('http://localhost:5000/api/coupons');
+                const couponRes = await fetch(`${API_URL}/coupons`);
                 const couponData = await couponRes.json();
                 if (Array.isArray(couponData)) setCoupons(couponData);
 
@@ -743,7 +745,7 @@ export const ShopProvider = ({ children }) => {
             coupons, 
             fetchCoupons: async () => {
                 try {
-                    const res = await fetch('http://localhost:5000/api/coupons');
+                    const res = await fetch(`${API_URL}/coupons`);
                     const data = await res.json();
                     if(Array.isArray(data)) setCoupons(data);
                 } catch (error) {
@@ -752,7 +754,7 @@ export const ShopProvider = ({ children }) => {
             },
             addCoupon: async (couponData) => {
                 try {
-                    const res = await fetch('http://localhost:5000/api/coupons', {
+                    const res = await fetch(`${API_URL}/coupons`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(couponData)
@@ -771,7 +773,7 @@ export const ShopProvider = ({ children }) => {
             },
             updateCoupon: async (id, updates) => {
                 try {
-                    const res = await fetch(`http://localhost:5000/api/coupons/${id}`, {
+                    const res = await fetch(`${API_URL}/coupons/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(updates)
@@ -789,7 +791,7 @@ export const ShopProvider = ({ children }) => {
             },
             deleteCoupon: async (id) => {
                 try {
-                    const res = await fetch(`http://localhost:5000/api/coupons/${id}`, { method: 'DELETE' });
+                    const res = await fetch(`${API_URL}/coupons/${id}`, { method: 'DELETE' });
                     if (res.ok) {
                         setCoupons(prev => prev.filter(c => c.id !== id && c._id !== id));
                         return { success: true };

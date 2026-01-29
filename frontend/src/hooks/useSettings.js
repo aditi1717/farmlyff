@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api/settings';
+const API_URL = `${import.meta.env.VITE_API_URL}/settings`;
 
 export const useSetting = (key) => {
     return useQuery({
