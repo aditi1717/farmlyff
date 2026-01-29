@@ -9,9 +9,27 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = JSON.parse(localStorage.getItem('farmlyf_current_user'));
-        if (storedUser) setUser(storedUser);
-        setLoading(false);
+        const checkAuth = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/users/profile', {
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setUser({ ...data, id: data._id });
+                    localStorage.setItem('farmlyf_current_user', JSON.stringify({ ...data, id: data._id }));
+                } else {
+                    setUser(null);
+                    localStorage.removeItem('farmlyf_current_user');
+                }
+            } catch (error) {
+                console.error("Auth status check failed:", error);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        checkAuth();
     }, []);
 
     const login = async (email, password) => {
@@ -33,10 +51,9 @@ export const AuthProvider = ({ children }) => {
             const data = await response.json();
 
             if (response.ok) {
-                const userObj = { ...data, id: data._id, role: 'user' }; // Map _id to id, default role
+                const userObj = { ...data, id: data._id }; 
                 setUser(userObj);
                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
-                localStorage.setItem('farmlyf_token', data.token);
                 return { success: true };
             } else {
                 return { success: false, message: data.message || 'Login failed' };
@@ -58,10 +75,9 @@ export const AuthProvider = ({ children }) => {
             const data = await response.json();
 
             if (response.ok) {
-                 const userObj = { ...data, id: data._id, role: 'user' };
+                 const userObj = { ...data, id: data._id };
                  setUser(userObj);
                  localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
-                 localStorage.setItem('farmlyf_token', data.token);
                  return { success: true };
             } else {
                  return { success: false, message: data.message || 'Signup failed' };
@@ -72,10 +88,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await fetch('http://localhost:5000/api/users/logout', { method: 'POST' });
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
         setUser(null);
         localStorage.removeItem('farmlyf_current_user');
-        localStorage.removeItem('farmlyf_token');
     };
 
     return (

@@ -68,7 +68,7 @@ const AuthPage = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-['Inter']">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 font-['Inter']">
             {/* Blurred Backdrop */}
             <div
                 className="absolute inset-0 z-0 bg-cover bg-center"

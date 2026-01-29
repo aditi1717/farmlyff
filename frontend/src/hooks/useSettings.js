@@ -7,7 +7,7 @@ export const useSetting = (key) => {
     return useQuery({
         queryKey: ['setting', key],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/${key}`);
+            const res = await fetch(`${API_URL}/${key}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch setting');
             return res.json();
         }
@@ -21,7 +21,8 @@ export const useUpdateSetting = () => {
             const res = await fetch(`${API_URL}/${key}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ value })
+                body: JSON.stringify({ value }),
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to update setting');
             return res.json();

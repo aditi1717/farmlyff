@@ -41,7 +41,7 @@ export const useBanners = () => {
     return useQuery({
         queryKey: ['banners'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/banners`);
+            const res = await fetch(`${API_URL}/banners`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch banners');
             return res.json();
         }
@@ -56,6 +56,7 @@ export const useAddBanner = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to add banner');
             return res.json();
@@ -76,6 +77,7 @@ export const useUpdateBanner = () => {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to update banner');
             return res.json();
@@ -94,6 +96,7 @@ export const useDeleteBanner = () => {
         mutationFn: async (id) => {
             const res = await fetch(`${API_URL}/banners/${id}`, {
                 method: 'DELETE',
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to delete banner');
             return res.json();

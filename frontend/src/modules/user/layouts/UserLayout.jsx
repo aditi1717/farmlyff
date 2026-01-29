@@ -10,7 +10,7 @@ import Footer from '../components/Footer';
 const UserLayout = () => {
     return (
         <div className="flex flex-col min-h-screen font-sans bg-background">
-            <header className="sticky top-0 shadow-md flex flex-col shrink-0 bg-white" style={{ zIndex: 9999 }}>
+            <header className="sticky top-0 shadow-md flex flex-col shrink-0 bg-white" style={{ zIndex: 100 }}>
                 <TopBar />
                 <Navbar />
                 <CategoryNav />

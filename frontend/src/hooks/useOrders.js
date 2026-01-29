@@ -7,7 +7,7 @@ export const useOrders = (userId) => {
     return useQuery({
         queryKey: ['orders', userId],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/orders`);
+            const res = await fetch(`${API_URL}/orders`, { credentials: 'include' });
             const allOrders = await res.json();
             return allOrders.filter(o => o.userId === userId);
         },
@@ -19,7 +19,7 @@ export const useAllOrders = () => {
     return useQuery({
         queryKey: ['all-orders'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/orders`);
+            const res = await fetch(`${API_URL}/orders`, { credentials: 'include' });
             return res.json();
         }
     });
@@ -29,7 +29,7 @@ export const useReturns = (userId) => {
     return useQuery({
         queryKey: ['returns', userId],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/returns`);
+            const res = await fetch(`${API_URL}/returns`, { credentials: 'include' });
             const allReturns = await res.json();
             return allReturns.filter(r => r.userId === userId);
         },
@@ -41,7 +41,7 @@ export const useAllReturns = () => {
     return useQuery({
         queryKey: ['all-returns'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/returns`);
+            const res = await fetch(`${API_URL}/returns`, { credentials: 'include' });
             return res.json();
         }
     });
@@ -54,7 +54,8 @@ export const useCreateReturn = () => {
             const res = await fetch(`${API_URL}/returns`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(returnData)
+                body: JSON.stringify(returnData),
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to create return request');
             return res.json();

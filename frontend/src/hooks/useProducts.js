@@ -7,7 +7,7 @@ export const useProducts = () => {
     return useQuery({
         queryKey: ['products'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/products`);
+            const res = await fetch(`${API_URL}/products`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch products');
             return res.json();
         }
@@ -18,7 +18,7 @@ export const useProduct = (id) => {
     return useQuery({
         queryKey: ['product', id],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/products/${id}`);
+            const res = await fetch(`${API_URL}/products/${id}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch product');
             return res.json();
         },
@@ -31,12 +31,11 @@ export const useCategories = () => {
         queryKey: ['categories'],
         queryFn: async () => {
             const [catRes, subRes] = await Promise.all([
-                 fetch(`${API_URL}/categories`),
-                 fetch(`${API_URL}/subcategories`)
+                 fetch(`${API_URL}/categories`, { credentials: 'include' }),
+                 fetch(`${API_URL}/subcategories`, { credentials: 'include' })
             ]);
             if (!catRes.ok || !subRes.ok) throw new Error('Failed to fetch categories');
             const categories = await catRes.json();
-            // const subCategories = await subRes.json(); // We can return both
             return categories; 
         }
     });
@@ -46,7 +45,7 @@ export const useSubCategories = () => {
     return useQuery({
         queryKey: ['subcategories'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/subcategories`);
+            const res = await fetch(`${API_URL}/subcategories`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch subcategories');
             return res.json();
         }
@@ -64,6 +63,7 @@ export const useAddProduct = () => {
                      'Content-Type': 'application/json',
                  },
                  body: JSON.stringify(productData),
+                 credentials: 'include'
              });
              if (!res.ok) {
                  const error = await res.json();
@@ -89,6 +89,7 @@ export const useUpdateProduct = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data),
+                credentials: 'include'
             });
             if (!res.ok) {
                 const error = await res.json();
@@ -111,6 +112,7 @@ export const useDeleteProduct = () => {
         mutationFn: async (id) => {
             const res = await fetch(`${API_URL}/products/${id}`, {
                 method: 'DELETE',
+                credentials: 'include'
             });
             if (!res.ok) {
                 const error = await res.json();
@@ -135,6 +137,7 @@ export const useUploadImage = () => {
             const res = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
+                credentials: 'include'
             });
             
             if (!res.ok) {

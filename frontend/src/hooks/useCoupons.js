@@ -6,7 +6,7 @@ export const useCoupons = () => {
     return useQuery({
         queryKey: ['coupons'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/coupons`);
+            const res = await fetch(`${API_URL}/coupons`, { credentials: 'include' });
             if(!res.ok) throw new Error('Failed');
             return res.json();
         }

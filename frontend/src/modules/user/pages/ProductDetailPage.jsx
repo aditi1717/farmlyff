@@ -84,6 +84,7 @@ const ProductDetailPage = () => {
         { name: 'chunduru nageswara r.', date: '09/08/2023', rating: 4, title: 'SMALL AND BIG PICES CAME', text: '' },
         { name: 'SAIRAM V.', date: '09/02/2023', rating: 5, title: 'Nice quality', text: '' }
     ]);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const handleReviewSubmit = (e) => {
         e.preventDefault();
@@ -103,6 +104,7 @@ const ProductDetailPage = () => {
         if (foundProduct) {
             setProduct(foundProduct);
             setSelectedVariant(foundProduct.variants?.[0]);
+            setSelectedImage(foundProduct.image);
 
             // Track view
             if (user) {
@@ -162,9 +164,10 @@ const ProductDetailPage = () => {
                             <div className="lg:col-span-5 space-y-3">
                                 <div className="bg-white rounded-xl border border-gray-100 p-3 relative group overflow-hidden shadow-sm h-[320px] md:h-[400px] flex items-center justify-center">
                                     <motion.img
+                                        key={selectedImage || product.image}
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        src={product.image}
+                                        src={selectedImage || product.image}
                                         alt={product.name}
                                         className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
                                     />
@@ -180,6 +183,20 @@ const ProductDetailPage = () => {
                                         <Heart size={18} fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
                                     </button>
                                 </div>
+                                {/* Thumbnails for Combos */}
+                                {product.images && product.images.length > 0 && (
+                                    <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none justify-center">
+                                        {[product.image, ...product.images].map((img, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setSelectedImage(img)}
+                                                className={`shrink-0 w-12 h-12 md:w-16 md:h-16 bg-white border-2 ${(selectedImage || product.image) === img ? 'border-primary' : 'border-gray-50'} rounded-lg p-1 hover:border-primary transition-all`}
+                                            >
+                                                <img src={img} alt="" className="w-full h-full object-contain mix-blend-multiply" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Right: Info & Actions */}
@@ -386,11 +403,11 @@ const ProductDetailPage = () => {
                     <div className="lg:col-span-5 space-y-3">
                         <div className="bg-white rounded-xl border border-gray-100 p-3 relative overflow-hidden group shadow-sm flex items-center justify-center h-[300px] md:h-[420px]">
                             <motion.img
-                                key={isGroupProduct ? selectedVariant.id : product.id}
+                                key={selectedImage || product.image}
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.5 }}
-                                src={product.image}
+                                src={selectedImage || product.image}
                                 alt={product.name}
                                 className="w-full h-full object-contain max-h-full mx-auto mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
                             />
@@ -413,13 +430,19 @@ const ProductDetailPage = () => {
                             </button>
                         </div>
                         {/* Thumbnails */}
-                        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none justify-center">
-                            {[product.image, product.image, product.image, product.image].map((img, idx) => (
-                                <button key={idx} className={`shrink-0 w-12 h-12 md:w-16 md:h-16 bg-white border-2 ${idx === 0 ? 'border-primary' : 'border-gray-50'} rounded-lg p-1 hover:border-primary transition-all`}>
-                                    <img src={img} alt="" className="w-full h-full object-contain mix-blend-multiply" />
-                                </button>
-                            ))}
-                        </div>
+                        {product.images && product.images.length > 0 && (
+                            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none justify-center">
+                                {[product.image, ...product.images].map((img, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedImage(img)}
+                                        className={`shrink-0 w-12 h-12 md:w-16 md:h-16 bg-white border-2 ${(selectedImage || product.image) === img ? 'border-primary' : 'border-gray-50'} rounded-lg p-1 hover:border-primary transition-all`}
+                                    >
+                                        <img src={img} alt="" className="w-full h-full object-contain mix-blend-multiply" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT COLUMN - DETAILS */}
