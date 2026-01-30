@@ -171,7 +171,11 @@ const Navbar = () => {
                             
                             {/* Search Suggestions Dropdown */}
                             {showSuggestions && searchQuery.length > 0 && (
-                                <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2" style={{ zIndex: 10006 }}>
+                                <div 
+                                    className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2" 
+                                    style={{ zIndex: 10006 }}
+                                    onMouseDown={(e) => e.preventDefault()} // Prevent blur on click
+                                >
                                     
                                     {/* Products */}
                                     {filteredProducts.length > 0 && (
@@ -187,7 +191,6 @@ const Navbar = () => {
                                                     <img src={p.image} className="w-8 h-8 object-contain mix-blend-multiply" alt=""/>
                                                     <div>
                                                         <div className="text-sm font-bold text-footerBg">{p.name}</div>
-                                                        <div className="text-[10px] text-gray-400">₹{p.price}</div>
                                                     </div>
                                                 </Link>
                                             ))}
