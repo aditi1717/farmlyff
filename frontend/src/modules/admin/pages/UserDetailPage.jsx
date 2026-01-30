@@ -25,15 +25,9 @@ const UserDetailPage = () => {
     const { data: user, isLoading: userLoading } = useQuery({
         queryKey: ['user', id],
         queryFn: async () => {
-             // If backend supports /api/users/:id, use that. If not, fetch list.
-             // Assuming list for now based on previous pattern reliability, or fetch single if I added it. 
-             // Logic: I'll try to fetch all users and find. Or if looking at previous steps...
-             // UsersPage fetched all. I'll stick to fetching all for safety unless I check backend routes.
-             // Actually, safer to fetch all like UsersPage for now given the speed.
-             const res = await fetch('http://localhost:5000/api/users', { credentials: 'include' });
-             if(!res.ok) throw new Error('Failed');
-             const users = await res.json();
-             return users.find(u => u._id === id || u.id === id);
+             const res = await fetch(`http://localhost:5000/api/users/${id}`, { credentials: 'include' });
+             if(!res.ok) throw new Error('Failed to fetch user');
+             return res.json();
         }
     });
 
@@ -48,8 +42,18 @@ const UserDetailPage = () => {
          }
     });
 
-    const handleToggleBlock = () => {
-         alert('Block/Unblock feature requires API implementation.');
+    const handleToggleBlock = async () => {
+         try {
+             const res = await fetch(`http://localhost:5000/api/users/${user.id}/ban`, { 
+                 method: 'PUT',
+                 credentials: 'include' 
+             });
+             if(res.ok) {
+                 // Refetch or update local state
+                 window.location.reload(); 
+                 // Ideally use queryClient.invalidateQueries(['user', id]) but quick fix for now
+             }
+         } catch(e) { console.error(e); }
     };
 
     if (!user) {
@@ -82,13 +86,13 @@ const UserDetailPage = () => {
                 <div className="flex gap-3">
                     <button
                         onClick={handleToggleBlock}
-                        className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${user.isBlocked
+                        className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${user.isBanned
                             ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white'
                             : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white'
                             }`}
                     >
-                        {user.isBlocked ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
-                        {user.isBlocked ? 'Unblock Account' : 'Block Account'}
+                        {user.isBanned ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
+                        {user.isBanned ? 'Unban Account' : 'Ban Account'}
                     </button>
                 </div>
             </div>

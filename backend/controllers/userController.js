@@ -141,10 +141,57 @@ export const getUserProfile = async (req, res) => {
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (admin only)
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+export const getUserById = async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.params.id }); 
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const page = Number(req.query.page) || 1;
+
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const status = req.query.status; // 'Active' or 'Blocked'
+
+    const query = {};
+    
+    if (search) {
+        query.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
+    if (status === 'Active') {
+        query.isBlocked = { $ne: true }; // undefined or false
+    } else if (status === 'Blocked') {
+        query.isBlocked = true;
+    }
+
+    const count = await User.countDocuments(query);
+    const users = await User.find(query)
+        .limit(limit)
+        .skip(limit * (page - 1))
+        .sort({ createdAt: -1 });
+
+    res.json({
+        users,
+        page,
+        pages: Math.ceil(count / limit),
+        total: count
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
