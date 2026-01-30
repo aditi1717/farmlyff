@@ -43,7 +43,6 @@ const AdminSidebar = () => {
         { icon: Layers, label: 'Sub-categories', path: '/admin/sub-categories' },
         { icon: Package, label: 'Products', path: '/admin/products' },
         { icon: Monitor, label: 'Banners', path: '/admin/banners' },
-        { icon: MessageSquare, label: 'Announcements', path: '/admin/settings?tab=announcements' },
         { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
         { icon: RefreshCcw, label: 'Returns', path: '/admin/returns' },
         { icon: TicketPercent, label: 'Coupons', path: '/admin/coupons' },

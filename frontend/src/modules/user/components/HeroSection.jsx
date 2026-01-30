@@ -12,6 +12,37 @@ const HeroSection = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
 
+    const [promoSettings, setPromoSettings] = useState({
+        badgeText1: 'Upto',
+        discountTitle: '60',
+        discountSuffix: '%',
+        discountLabel: 'OFF',
+        subtitle: 'EXTRA SAVE',
+        extraDiscount: '15',
+        extraDiscountSuffix: '%',
+        couponCode: 'REPUBLICJOY',
+        topBadge: 'Hot Deal'
+    });
+
+    useEffect(() => {
+        const fetchPromoSettings = async () => {
+             const API_URL = import.meta.env.VITE_API_URL;
+             try {
+                 const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
+                 if (res.ok) {
+                     const data = await res.json();
+                     if (data) {
+                         // Backend returns the object directly now
+                         setPromoSettings(prev => ({ ...prev, ...data }));
+                     }
+                 }
+             } catch (error) {
+                 console.error('Failed to fetch promo settings:', error);
+             }
+        };
+        fetchPromoSettings();
+    }, []);
+
     // Auto-slide
     useEffect(() => {
         if (banners.length === 0) return;
@@ -110,7 +141,6 @@ const HeroSection = () => {
                     </AnimatePresence>
 
                     {/* Static Branding Overlay */}
-                    {/* Static Branding Overlay */}
                     <div className="absolute top-3 left-4 md:left-12 z-40 bg-white/10 backdrop-blur-md px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-white/20">
                         <span className="text-[8px] md:text-[10px] tracking-[0.1em] md:tracking-[0.2em] uppercase text-white/80 font-bold block">Passion for Nutrition</span>
                         <div className="flex items-center gap-1 md:gap-1.5">
@@ -118,29 +148,29 @@ const HeroSection = () => {
                         </div>
                     </div>
 
-                    {/* Static Right Side Offer Box (Optional - kept for consistent look if desired, or can be dynamic later) */}
-                    <div className="hidden lg:flex flex-col items-center justify-center border border-white/60 bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-2xl z-20 absolute right-20 top-1/2 -translate-y-1/2 transition-all duration-500">
+                    {/* Dynamic Right Side Offer Box */}
+                    <div className="hidden lg:flex flex-col items-center justify-center border border-white/60 bg-white/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-2xl z-20 absolute right-20 top-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-105">
                         <div className="absolute -top-3 -right-3 bg-offerRed text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg animate-bounce uppercase tracking-tighter">
-                            Hot Deal
+                            {promoSettings.topBadge}
                         </div>
                         <div className="text-center font-sans">
-                            <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">Upto</p>
+                            <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">{promoSettings.badgeText1}</p>
                             <div className="flex items-baseline gap-0.5 justify-center leading-none my-1">
-                                <span className="text-5xl font-black text-offerRed tracking-tighter">60</span>
+                                <span className="text-5xl font-black text-offerRed tracking-tighter">{promoSettings.discountTitle}</span>
                                 <div className="flex flex-col items-start translate-y-1">
-                                    <span className="text-xl font-black text-footerBg">%</span>
-                                    <span className="text-[9px] font-bold text-footerBg/70 uppercase">Off</span>
+                                    <span className="text-xl font-black text-footerBg">{promoSettings.discountSuffix}</span>
+                                    <span className="text-[9px] font-bold text-footerBg/70 uppercase">{promoSettings.discountLabel}</span>
                                 </div>
                             </div>
                             <div className="w-10 h-1 bg-primary/30 mx-auto rounded-full my-2"></div>
-                            <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">Extra Save</p>
+                            <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">{promoSettings.subtitle}</p>
                             <div className="flex items-baseline gap-0.5 justify-center leading-none mt-1">
-                                <span className="text-3xl font-black text-primary">15</span>
-                                <span className="text-lg font-bold text-footerBg">%</span>
+                                <span className="text-3xl font-black text-primary">{promoSettings.extraDiscount}</span>
+                                <span className="text-lg font-bold text-footerBg">{promoSettings.extraDiscountSuffix}</span>
                             </div>
                         </div>
                         <div className="mt-5 bg-footerBg text-white px-5 py-2 rounded-lg text-xs font-black tracking-widest border border-white/20 select-all cursor-pointer hover:bg-primary transition-colors">
-                            REPUBLICJOY
+                            {promoSettings.couponCode}
                         </div>
                     </div>
 
