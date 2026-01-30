@@ -45,7 +45,10 @@ export const getProductReviews = async (req, res) => {
             comment: r.comment,
             createdAt: r.createdAt,
             user: {
-                name: r.user === 'admin_01' ? 'Team Farmly' : (r.userDetails?.name || 'Anonymous')
+                name: r.user === 'admin_01' ? 'Team Farmly' : (r.userDetails?.name || 'Anonymous'),
+                email: r.userDetails?.email,
+                id: r.userDetails?.id,
+                isBanned: r.userDetails?.isBanned
             }
         }));
         
@@ -126,7 +129,9 @@ export const getAllReviewsAdmin = async (req, res) => {
                     createdAt: 1,
                     user: { 
                         name: { $ifNull: ['$userDetails.name', 'Admin/Unknown'] },
-                        email: '$userDetails.email' 
+                        email: '$userDetails.email',
+                        id: '$userDetails.id',
+                        isBanned: '$userDetails.isBanned'
                     },
                     product: {
                         name: '$productDetails.name',

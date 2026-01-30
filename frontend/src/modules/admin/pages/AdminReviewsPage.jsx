@@ -3,7 +3,8 @@ import {
     Star, 
     Trash2, 
     CheckCircle, 
-    XCircle, 
+    XCircle,
+    Ban,
     MessageSquare,
     Loader,
     Search,
@@ -57,6 +58,33 @@ const AdminReviewsPage = () => {
             }
         } catch (error) {
             toast.error('Error updating status');
+        }
+    };
+
+    const handleBanUser = async (userId) => {
+        if (!userId) return toast.error('User not found');
+        if (!window.confirm('Are you sure you want to ban/unban this user?')) return;
+        
+        try {
+            const API_URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${API_URL}/users/${userId}/ban`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message);
+                // Update local state for all reviews by this user
+                setReviews(reviews.map(r => 
+                    r.user?.id === userId 
+                        ? { ...r, user: { ...r.user, isBanned: data.isBanned } } 
+                        : r
+                ));
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error('Error updating user status');
         }
     };
 
@@ -163,7 +191,10 @@ const AdminReviewsPage = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-xs font-bold text-gray-600">{review.user?.name || 'Anonymous'}</div>
+                                        <div className="text-xs font-bold text-gray-600 flex items-center gap-2">
+                                            {review.user?.name || 'Anonymous'}
+                                            {review.user?.isBanned && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 rounded uppercase font-black tracking-wider">Banned</span>}
+                                        </div>
                                         <div className="text-[10px] text-gray-400">{review.user?.email}</div>
                                     </td>
                                     <td className="px-6 py-4">

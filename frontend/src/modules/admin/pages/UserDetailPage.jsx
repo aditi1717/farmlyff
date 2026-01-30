@@ -175,7 +175,7 @@ const UserDetailPage = () => {
                         {[
                             { label: 'Orders', value: userOrders.length, icon: Package },
                             { label: 'Spending', value: `₹${userOrders.reduce((acc, o) => acc + (o.amount || 0), 0).toLocaleString()}`, icon: IndianRupee },
-                            { label: 'Items Saved', value: (wishlist[id]?.length || 0), icon: Heart },
+                            { label: 'Items Saved', value: (user.wishlist?.length || 0), icon: Heart },
                         ].map((stat, i) => (
                             <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center text-center">
                                 <div className={`bg-gray-50 text-footerBg p-3 rounded-2xl mb-3`}>

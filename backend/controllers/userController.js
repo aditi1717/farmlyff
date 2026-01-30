@@ -83,6 +83,10 @@ export const loginUser = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
+    
+    if (user && user.isBanned) {
+        return res.status(401).json({ message: 'Your account has been banned.' });
+    }
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const token = generateToken(user.id);
@@ -144,4 +148,22 @@ export const getUsers = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Ban/Unban user
+// @route   PUT /api/users/:id/ban
+// @access  Private/Admin
+export const toggleBanUser = async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.params.id }); 
+        if (user) {
+            user.isBanned = !user.isBanned;
+            await user.save();
+            res.json({ message: `User ${user.isBanned ? 'banned' : 'unbanned'}`, isBanned: user.isBanned });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };

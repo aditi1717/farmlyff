@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   addresses: [addressSchema],
   wishlist: [String],
-  usedCoupons: [String]
+  usedCoupons: [String],
+  isBanned: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);
