@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
     Users,
     ShoppingBag,
@@ -31,13 +32,13 @@ const DashboardPage = () => {
         const pendingReturns = allReturns.filter(r => r.status === 'Pending').length;
 
         return [
-            { label: 'Total Users', value: users.length, icon: Users, color: 'text-footerBg', bg: '', trend: 'Real-time' },
-            { label: 'Total Orders', value: allOrders.length, icon: ShoppingBag, color: 'text-footerBg', bg: '', trend: 'Updated' },
-            { label: 'Active Orders', value: activeOrders, icon: Clock, color: 'text-footerBg', bg: '', trend: 'Live' },
-            { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: Banknote, color: 'text-footerBg', bg: '', trend: 'Official' },
-            { label: 'Total Products', value: products.length, icon: Box, color: 'text-footerBg', bg: '', trend: 'Stable' },
-            { label: 'Out of Stock', value: outOfStock, icon: FileWarning, color: 'text-footerBg', bg: '', trend: outOfStock > 0 ? 'Urgent' : 'Perfect' },
-            { label: 'Pending Returns', value: pendingReturns, icon: History, color: 'text-footerBg', bg: '', trend: pendingReturns > 0 ? 'Needs Review' : 'Clean' },
+            { label: 'Total Users', value: users.length, icon: Users, color: 'text-footerBg', bg: '', trend: 'Real-time', link: '/admin/users' },
+            { label: 'Total Orders', value: allOrders.length, icon: ShoppingBag, color: 'text-footerBg', bg: '', trend: 'Updated', link: '/admin/orders' },
+            { label: 'Active Orders', value: activeOrders, icon: Clock, color: 'text-footerBg', bg: '', trend: 'Live', link: '/admin/orders' },
+            { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: Banknote, color: 'text-footerBg', bg: '', trend: 'Official', link: '/admin/orders' },
+            { label: 'Total Products', value: products.length, icon: Box, color: 'text-footerBg', bg: '', trend: 'Stable', link: '/admin/products' },
+            { label: 'Out of Stock', value: outOfStock, icon: FileWarning, color: 'text-footerBg', bg: '', trend: outOfStock > 0 ? 'Urgent' : 'Perfect', link: '/admin/products' },
+            { label: 'Pending Returns', value: pendingReturns, icon: History, color: 'text-footerBg', bg: '', trend: pendingReturns > 0 ? 'Needs Review' : 'Clean', link: '/admin/returns' },
         ];
     }, [orders, products, returns, users]);
 
@@ -54,7 +55,7 @@ const DashboardPage = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:border-gray-200 transition-all group relative text-left">
+                    <Link to={stat.link} key={idx} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:border-gray-200 transition-all group relative text-left block">
                         <div className="flex items-center justify-between mb-6">
                             <stat.icon size={22} className={stat.color} strokeWidth={2.5} />
                             <span className={`text-[9px] font-black px-2 py-1 rounded-lg ${
@@ -67,7 +68,7 @@ const DashboardPage = () => {
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
                             <h3 className="text-2xl font-black text-footerBg mt-1">{stat.value}</h3>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
 

@@ -6,56 +6,15 @@ import {
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
-const DUMMY_INFLUENCERS = [
-    {
-        id: 1,
-        name: 'Rahul Fitness',
-        platform: 'Instagram',
-        code: 'RAHULFIT20',
-        type: 'percentage',
-        value: 20,
-        commissionRate: 10,
-        validFrom: '2024-01-01',
-        validTo: '2024-12-31',
-        usageCount: 145,
-        totalSales: 156000,
-        totalPaid: 12000,
-        active: true
-    },
-    {
-        id: 2,
-        name: 'Healthy Bites',
-        platform: 'Youtube',
-        code: 'HEALTHY500',
-        type: 'percentage',
-        value: 10,
-        commissionRate: 5,
-        validFrom: '2024-02-15',
-        validTo: '2024-06-30',
-        usageCount: 89,
-        totalSales: 267000,
-        totalPaid: 10000,
-        active: true
-    },
-    {
-        id: 3,
-        name: 'Priya Yoga',
-        platform: 'Instagram',
-        code: 'YOGAPRIYA',
-        type: 'percentage',
-        value: 15,
-        commissionRate: 8,
-        validFrom: '2024-03-01',
-        validTo: '2025-03-01',
-        usageCount: 12,
-        totalSales: 8400,
-        totalPaid: 0,
-        active: false
-    }
-];
+import { useReferrals, useCreateReferral, useUpdateReferral, useDeleteReferral, useAddPayout } from '../../../hooks/useReferrals';
 
 const InfluencerReferralPage = () => {
-    const [influencers, setInfluencers] = useState(DUMMY_INFLUENCERS);
+    const { data: influencers = [], isLoading } = useReferrals();
+    const createReferralMutation = useCreateReferral();
+    const updateReferralMutation = useUpdateReferral();
+    const deleteReferralMutation = useDeleteReferral();
+    const addPayoutMutation = useAddPayout();
+
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -90,7 +49,11 @@ const InfluencerReferralPage = () => {
     const openModal = (item = null) => {
         if (item) {
             setEditingItem(item);
-            setFormData(item);
+            setFormData({
+                ...item,
+                validFrom: item.validFrom ? new Date(item.validFrom).toISOString().split('T')[0] : '',
+                validTo: item.validTo ? new Date(item.validTo).toISOString().split('T')[0] : ''
+            });
         } else {
             setEditingItem(null);
             setFormData({
@@ -113,8 +76,8 @@ const InfluencerReferralPage = () => {
         setDetailItem(item);
         setIsAddingPayout(false);
         setPayoutAmount('');
-        // Generate dummy history for visualization
-        const history = Array.from({ length: Math.min(item.usageCount, 8) }).map((_, i) => {
+        // Generate dummy history for visualization (keeping this as is for now)
+        const history = Array.from({ length: Math.min(item.usageCount || 0, 8) }).map((_, i) => {
             const amount = Math.floor(Math.random() * 5000) + 500;
             return {
                 id: i + 1,
@@ -130,54 +93,57 @@ const InfluencerReferralPage = () => {
     };
 
     const calculateEarnings = (item) => {
-        return Math.floor(item.totalSales * (item.commissionRate / 100));
+        return Math.floor((item.totalSales || 0) * (item.commissionRate / 100));
     };
 
     const handleAddPayout = () => {
         const amount = Number(payoutAmount);
         if (!amount || amount <= 0) return;
 
-        setInfluencers(prev => prev.map(item =>
-            item.id === detailItem.id
-                ? { ...item, totalPaid: (item.totalPaid || 0) + amount }
-                : item
-        ));
-
-        setDetailItem(prev => ({
-            ...prev,
-            totalPaid: (prev.totalPaid || 0) + amount
-        }));
-
-        setIsAddingPayout(false);
-        setPayoutAmount('');
-        toast.success(`Payout of ₹${amount} added successfully!`);
+        addPayoutMutation.mutate({ id: detailItem._id || detailItem.id, amount }, {
+            onSuccess: (updatedItem) => {
+                 setDetailItem(prev => ({
+                    ...prev,
+                    totalPaid: (prev.totalPaid || 0) + amount
+                }));
+                setIsAddingPayout(false);
+                setPayoutAmount('');
+            }
+        });
     };
 
     const handleSave = (e) => {
         e.preventDefault();
+        const submissionData = {
+            ...formData,
+            value: Number(formData.value),
+            commissionRate: Number(formData.commissionRate)
+        };
+        
         if (editingItem) {
-            setInfluencers(prev => prev.map(item => item.id === editingItem.id ? { ...formData, id: item.id } : item));
+            updateReferralMutation.mutate({ id: editingItem._id || editingItem.id, ...submissionData }, {
+                onSuccess: () => {
+                   setShowModal(false);
+                   toast.success('Influencer updated successfully!');
+                }
+            });
         } else {
-            const newItem = {
-                ...formData,
-                id: Date.now(),
-                usageCount: 0,
-                totalSales: 0,
-                totalPaid: 0
-            };
-            setInfluencers(prev => [newItem, ...prev]);
+            createReferralMutation.mutate(submissionData, {
+                onSuccess: () => {
+                    setShowModal(false);
+                     toast.success('Influencer added successfully!');
+                }
+            });
         }
-        setShowModal(false);
-        toast.success(editingItem ? 'Influencer updated successfully!' : 'Influencer added successfully!');
     };
 
-    const toggleStatus = (id) => {
-        setInfluencers(prev => prev.map(item => item.id === id ? { ...item, active: !item.active } : item));
+    const toggleStatus = (item) => {
+        updateReferralMutation.mutate({ id: item._id || item.id, active: !item.active });
     };
 
     const handleDelete = (id) => {
         if (window.confirm('Delete this influencer code?')) {
-            setInfluencers(prev => prev.filter(item => item.id !== id));
+            deleteReferralMutation.mutate(id);
         }
     };
 
@@ -255,7 +221,7 @@ const InfluencerReferralPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {filteredList.map((item) => (
-                                <tr key={item.id} className="group hover:bg-gray-50/30 transition-colors">
+                                <tr key={item._id || item.id} className="group hover:bg-gray-50/30 transition-colors">
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs uppercase shadow-inner">
@@ -308,7 +274,7 @@ const InfluencerReferralPage = () => {
                                     </td>
                                     <td className="px-6 py-5">
                                         <button
-                                            onClick={() => toggleStatus(item.id)}
+                                            onClick={() => toggleStatus(item)}
                                             className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${item.active
                                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
                                                 : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'
@@ -332,7 +298,7 @@ const InfluencerReferralPage = () => {
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(item.id)}
+                                                onClick={() => handleDelete(item._id || item.id)}
                                                 className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-all"
                                             >
                                                 <Trash2 size={16} />
@@ -428,7 +394,7 @@ const InfluencerReferralPage = () => {
                                         type="number"
                                         placeholder="20"
                                         value={formData.value}
-                                        onChange={e => setFormData({ ...formData, value: Number(e.target.value) })}
+                                        onChange={e => setFormData({ ...formData, value: e.target.value })}
                                         className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-gray-300"
                                     />
                                 </div>
@@ -439,7 +405,7 @@ const InfluencerReferralPage = () => {
                                         type="number"
                                         placeholder="10"
                                         value={formData.commissionRate}
-                                        onChange={e => setFormData({ ...formData, commissionRate: Number(e.target.value) })}
+                                        onChange={e => setFormData({ ...formData, commissionRate: e.target.value })}
                                         className="w-full bg-white border border-purple-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-purple-300 text-purple-600"
                                     />
                                 </div>
