@@ -233,11 +233,11 @@ const CategoryNav = () => {
                                                 </h5>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-primary font-black text-xs">
-                                                        ₹{product.price}
+                                                        ₹{product.variants?.[0]?.price || product.price || 0}
                                                     </span>
-                                                    {product.mrp && product.mrp > product.price && (
+                                                    {(product.variants?.[0]?.mrp || product.mrp) > (product.variants?.[0]?.price || product.price) && (
                                                         <span className="text-gray-400 text-[10px] line-through">
-                                                            ₹{product.mrp}
+                                                            ₹{product.variants?.[0]?.mrp || product.mrp}
                                                         </span>
                                                     )}
                                                 </div>

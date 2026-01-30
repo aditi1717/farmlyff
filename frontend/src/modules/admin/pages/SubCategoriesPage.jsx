@@ -150,7 +150,7 @@ const SubCategoriesPage = () => {
             const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
             if(res.ok) {
                 toast.success('Deleted');
-                setSubCategories(subCategories.filter(s => s.id !== id));
+                setSubCategories(subCategories.filter(s => (s._id || s.id) !== id));
                 refreshGlobalCategories();
             } else {
                 toast.error('Failed to delete');
@@ -303,7 +303,7 @@ const SubCategoriesPage = () => {
                                                         setPreview(sub.image); 
                                                         setFile(null); 
                                                         }} className="p-1.5 text-gray-300 hover:text-[#2c5336] hover:bg-gray-50 rounded-lg"><Edit2 size={14}/></button>
-                                                    <button onClick={() => handleDelete(sub.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+                                                    <button onClick={() => handleDelete(sub._id || sub.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
                                                 </div>
                                             </td>
                                         </tr>
