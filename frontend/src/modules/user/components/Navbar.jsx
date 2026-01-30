@@ -297,6 +297,13 @@ const Navbar = () => {
                 </div>
             </div>
 
+            {/* Navigation Links Row */}
+            <div className="hidden md:flex items-center justify-center gap-8 mt-0 pt-0 border-t border-gray-50 overflow-x-auto no-scrollbar">
+                
+                
+                {/* Dynamic Subcategories Removed as per request (now in Blue Bar) */}
+            </div>
+
             {/* Mobile Search (Visible only on mobile) */}
             <div className="mt-3 md:hidden relative">
                 <input

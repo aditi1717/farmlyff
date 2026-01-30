@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useCategories, useSubCategories } from '../../../hooks/useProducts';
+import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';
 import {
     Store,
     Nut,
@@ -46,16 +46,14 @@ const shopMenuData = [
 const comboMenuData = [
     {
         title: 'ALL COMBOS',
+        slug: 'combos-packs',
         items: [
-            { label: 'DAILY PACKS' },
-            { label: 'FAMILY PACKS' },
-            { label: 'PARTY PACKS' },
-            {
-                label: 'FESTIVAL PACKS',
-                subItems: ['DIWALI PACK', 'HOLI PACK', 'RAKHI PACK']
-            },
-            { label: 'HEALTH & FITNESS PACKS' },
-            { label: 'WEDDING / GIFTING PACKS' }
+            { name: 'Daily Packs', slug: 'daily-packs' },
+            { name: 'Family Packs', slug: 'family-packs' },
+            { name: 'Party Packs', slug: 'party-packs' },
+            { name: 'Festival Packs', slug: 'festival-packs' },
+            { name: 'Health & Fitness Packs', slug: 'health-fitness-packs' },
+            { name: 'Wedding / Gifting Packs', slug: 'wedding-gifting-packs' }
         ]
     }
 ];
@@ -76,6 +74,7 @@ const CategoryNav = () => {
     const [activeMenu, setActiveMenu] = useState(null);
     const { data: rawCategories = [] } = useCategories();
     const { data: rawSubCategories = [] } = useSubCategories();
+    const { data: products = [] } = useProducts();
 
     // Deduplicate and filter active categories
     const categoriesDB = React.useMemo(() => {
@@ -118,37 +117,61 @@ const CategoryNav = () => {
                 path: '/catalog', 
                 hasMenu: true, 
                 menuData: shopMenuData 
+            },
+            {
+                name: 'Combos & Packs',
+                icon: Package2,
+                path: '/category/combos-packs',
+                hasMenu: true,
+                menuData: comboMenuData
             }
         ];
 
-        // Add DB Categories as top level links
-        categoriesDB.forEach(cat => {
-            // Icon logic is hard because icons are imports. We can use a default or mapped icon.
-            // For now, use Sprout or similar.
-            /* 
-               We could try to map names to icons if we want, but dynamic is safer with generic icon.
-            */
-            items.push({
-                name: cat.name,
-                icon: Sprout, // Default icon
-                path: `/category/${cat.slug}`
-            });
-        });
+        // Add SubCategories as top level links
+        const seenSubs = new Set();
+        rawSubCategories.forEach(sub => {
+            const id = sub._id || sub.id;
+            if (!id || seenSubs.has(id)) return;
+            seenSubs.add(id);
 
-        // Add Combos if not present? "Combos & Packs" is usually in DB.
+            if (sub.status === 'Active') {
+                const subParentId = sub.parent?._id || sub.parent;
+                const parent = categoriesDB.find(c => String(c._id || c.id) === String(subParentId));
+                const parentSlug = parent?.slug || 'all';
+
+                // Find products for this subcategory
+                const subProducts = products.filter(p => {
+                    return (
+                        (p.subcategory && String(p.subcategory) === String(id)) || 
+                        (p.subcategory === sub.name)
+                    ) && p.status !== 'Inactive';
+                }).slice(0, 5); // Take top 5
+
+                items.push({
+                    name: sub.name,
+                    icon: Sprout, // Default icon
+                    path: `/category/${parentSlug}/${sub.slug}`,
+                    hasMenu: subProducts.length > 0,
+                    menuType: 'products',
+                    products: subProducts
+                });
+            }
+        });
         
         return items;
-    }, [categoriesDB, shopMenuData]);
+    }, [categoriesDB, shopMenuData, rawSubCategories, products]);
+
+    const activeItem = navItems.find(c => c.name === activeMenu);
 
     return (
-        <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg px-4 lg:px-12 relative" style={{ zIndex: 10000 }}>
-            <div className="flex justify-between items-center text-[10px] lg:text-[11px] font-black tracking-widest uppercase items-center">
+        <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg relative" style={{ zIndex: 10000 }}>
+            <div className="flex items-center overflow-x-auto no-scrollbar px-4 lg:px-12 text-[10px] lg:text-[11px] font-black tracking-widest uppercase">
                 {navItems.map((cat, index) => {
                     const Icon = cat.icon;
                     return (
                         <div
                             key={index}
-                            className="flex items-center"
+                            className="flex items-center shrink-0"
                             onMouseEnter={() => cat.hasMenu && setActiveMenu(cat.name)}
                             onMouseLeave={() => cat.hasMenu && setActiveMenu(null)}
                         >
@@ -173,7 +196,7 @@ const CategoryNav = () => {
 
             {/* Popup Mega Menu */}
             <AnimatePresence>
-                {activeMenu && (
+                {activeMenu && activeItem && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -185,31 +208,70 @@ const CategoryNav = () => {
                         onMouseLeave={() => setActiveMenu(null)}
                     >
                         <div className="max-w-[1500px] mx-auto px-12 py-12">
-                            <div className={`grid ${activeMenu.startsWith('Shop') ? 'grid-cols-6' : 'grid-cols-4'} gap-x-10 gap-y-12`}>
-                                {navItems.find(c => c.name === activeMenu)?.menuData?.map((section, idx) => (
-                                    <div key={idx} className="space-y-6">
-                                        <h4 className="text-footerBg font-black text-[12px] tracking-[0.15em] mb-6 border-b border-gray-100 pb-3 uppercase">
-                                            {section.title}
-                                        </h4>
-                                        <ul className="space-y-4">
-                                            {section.items.map((item, i) => (
-                                                <li key={i} className="group/item">
-                                                    <div className="flex items-start gap-2.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] mt-[6px] flex-shrink-0" />
-                                                        <Link
-                                                            to={`/category/${section.slug}/${item.slug}`}
-                                                            onClick={() => setActiveMenu(null)}
-                                                            className="text-[#374151] group-hover/item:text-primary font-black text-[12px] leading-tight transition-all duration-200 tracking-wide uppercase"
-                                                        >
-                                                            {item.name}
-                                                        </Link>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
+                            {activeItem.menuType === 'products' ? (
+                                <div>
+                                    <h4 className="text-footerBg font-black text-[12px] tracking-[0.15em] mb-6 border-b border-gray-100 pb-3 uppercase">
+                                        Top Products in {activeItem.name}
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                                        {activeItem.products.map((product) => (
+                                            <Link 
+                                                key={product.id || product._id} 
+                                                to={`/product/${product.slug || product.id}`}
+                                                className="group bg-gray-50 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 block"
+                                                onClick={() => setActiveMenu(null)}
+                                            >
+                                                <div className="aspect-[4/5] w-full overflow-hidden rounded-lg mb-3 bg-white p-2">
+                                                     <img 
+                                                       src={product.image || product.images?.[0]} 
+                                                       alt={product.name}
+                                                       className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                                                     />
+                                                </div>
+                                                <h5 className="font-bold text-gray-800 text-[11px] leading-tight mb-1 line-clamp-2 min-h-[2.5em]">
+                                                    {product.name}
+                                                </h5>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-primary font-black text-xs">
+                                                        ₹{product.price}
+                                                    </span>
+                                                    {product.mrp && product.mrp > product.price && (
+                                                        <span className="text-gray-400 text-[10px] line-through">
+                                                            ₹{product.mrp}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ) : (
+                                <div className={`grid ${activeMenu.startsWith('Shop') ? 'grid-cols-6' : 'grid-cols-4'} gap-x-10 gap-y-12`}>
+                                    {activeItem.menuData?.map((section, idx) => (
+                                        <div key={idx} className="space-y-6">
+                                            <h4 className="text-footerBg font-black text-[12px] tracking-[0.15em] mb-6 border-b border-gray-100 pb-3 uppercase">
+                                                {section.title}
+                                            </h4>
+                                            <ul className="space-y-4">
+                                                {section.items.map((item, i) => (
+                                                    <li key={i} className="group/item">
+                                                        <div className="flex items-start gap-2.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] mt-[6px] flex-shrink-0" />
+                                                            <Link
+                                                                to={`/category/${section.slug}/${item.slug}`}
+                                                                onClick={() => setActiveMenu(null)}
+                                                                className="text-[#374151] group-hover/item:text-primary font-black text-[12px] leading-tight transition-all duration-200 tracking-wide uppercase"
+                                                            >
+                                                                {item.name}
+                                                            </Link>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
