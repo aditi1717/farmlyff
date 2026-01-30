@@ -134,7 +134,7 @@ const CategoryNav = () => {
             if (!id || seenSubs.has(id)) return;
             seenSubs.add(id);
 
-            if (sub.status === 'Active') {
+            if (sub.status === 'Active' && sub.showInShopByCategory !== false) {
                 const subParentId = sub.parent?._id || sub.parent;
                 const parent = categoriesDB.find(c => String(c._id || c.id) === String(subParentId));
                 const parentSlug = parent?.slug || 'all';
