@@ -6,7 +6,8 @@ import {
     XCircle, 
     MessageSquare,
     Loader,
-    Search
+    Search,
+    Clock
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -182,23 +183,32 @@ const AdminReviewsPage = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-end gap-2">
-                                            {review.status === 'Pending' && (
-                                                <>
-                                                    <button 
-                                                        onClick={() => handleStatusUpdate(review._id, 'Approved')}
-                                                        className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                        title="Approve"
-                                                    >
-                                                        <CheckCircle size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleStatusUpdate(review._id, 'Rejected')}
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Reject"
-                                                    >
-                                                        <XCircle size={16} />
-                                                    </button>
-                                                </>
+                                            {review.status !== 'Approved' && (
+                                                <button 
+                                                    onClick={() => handleStatusUpdate(review._id, 'Approved')}
+                                                    className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    title="Approve"
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </button>
+                                            )}
+                                            {review.status !== 'Rejected' && (
+                                                <button 
+                                                    onClick={() => handleStatusUpdate(review._id, 'Rejected')}
+                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Reject"
+                                                >
+                                                    <XCircle size={16} />
+                                                </button>
+                                            )}
+                                            {review.status !== 'Pending' && (
+                                                <button 
+                                                    onClick={() => handleStatusUpdate(review._id, 'Pending')}
+                                                    className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"
+                                                    title="Mark as Pending"
+                                                >
+                                                    <Clock size={16} />
+                                                </button>
                                             )}
                                             <button 
                                                 onClick={() => handleDelete(review._id)}
