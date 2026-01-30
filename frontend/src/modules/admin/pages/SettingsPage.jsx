@@ -37,7 +37,9 @@ const SettingsPage = () => {
         extraDiscount: '15',
         extraDiscountSuffix: '%',
         couponCode: 'REPUBLICJOY',
-        topBadge: 'Hot Deal'
+        topBadge: 'Hot Deal',
+        showCouponCode: true,
+        isVisible: true
     });
     const [loadingHero, setLoadingHero] = useState(false);
 
@@ -193,6 +195,23 @@ const SettingsPage = () => {
                         {activeTab === 'hero' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <h3 className="text-sm font-black text-footerBg uppercase tracking-widest border-b border-gray-50 pb-4">Promo Card Configuration</h3>
+                                
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl mb-6">
+                                    <div>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Show Promo Card</p>
+                                        <p className="text-xs font-bold text-gray-600">Toggle visibility of the floating card</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={heroSettings.isVisible} 
+                                            onChange={(e) => setHeroSettings(prev => ({ ...prev, isVisible: e.target.checked }))}
+                                            className="sr-only peer" 
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="flex flex-col gap-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Top Badge Text</label>
@@ -275,10 +294,28 @@ const SettingsPage = () => {
                                             className="w-full bg-gray-50 border border-transparent rounded-2xl p-4 text-sm font-bold outline-none focus:bg-white focus:border-primary transition-all" 
                                         />
                                     </div>
+                                    <div className="flex flex-col gap-2 md:col-span-2">
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                            <div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Show Coupon Code</p>
+                                                <p className="text-xs font-bold text-gray-600">Display the code on the card</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={heroSettings.showCouponCode} 
+                                                    onChange={(e) => setHeroSettings(prev => ({ ...prev, showCouponCode: e.target.checked }))}
+                                                    className="sr-only peer" 
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 mt-4">
                                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Preview</h4>
-                                     <div className="flex flex-col items-center justify-center p-6 bg-white/80 border border-gray-200 rounded-2xl shadow-sm max-w-[200px] mx-auto relative">
+                                     {heroSettings.isVisible ? (
+                                        <div className="flex flex-col items-center justify-center p-6 bg-white/80 border border-gray-200 rounded-2xl shadow-sm max-w-[200px] mx-auto relative">
                                         <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-tighter">
                                             {heroSettings.topBadge}
                                         </div>
@@ -298,10 +335,18 @@ const SettingsPage = () => {
                                                 <span className="text-sm font-bold text-gray-800">{heroSettings.extraDiscountSuffix}</span>
                                             </div>
                                         </div>
-                                        <div className="mt-4 bg-gray-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase">
-                                            {heroSettings.couponCode}
-                                        </div>
+                                        {heroSettings.showCouponCode && (
+                                            <div className="mt-4 bg-gray-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                                                {heroSettings.couponCode}
+                                            </div>
+                                        )}
                                      </div>
+                                     ) : (
+                                        <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400">
+                                            <EyeOff size={24} className="mb-2 opacity-50" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">Card Hidden</p>
+                                        </div>
+                                     )}
                                 </div>
                             </div>
                         )}

@@ -9,7 +9,8 @@ const promoCardSchema = new mongoose.Schema({
   subtitle: { type: String, default: 'EXTRA SAVE' },
   extraDiscount: { type: String, default: '15' },
   extraDiscountSuffix: { type: String, default: '%' },
-  couponCode: { type: String, default: 'REPUBLICJOY' }
+  showCouponCode: { type: Boolean, default: true },
+  isVisible: { type: Boolean, default: true }
 }, { timestamps: true });
 
 export default mongoose.model('PromoCard', promoCardSchema);
