@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
@@ -78,23 +79,60 @@ const ProductDetailPage = () => {
     const [previewError, setPreviewError] = useState('');
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [newReview, setNewReview] = useState({ rating: 5, title: '', text: '' });
-    const [reviewsList, setReviewsList] = useState([
-        { name: 'Vinod Kumar', date: '01/19/2024', rating: 5, title: 'Walnuts', text: 'Excellent product although a little expensive' },
-        { name: 'chunduru nageswara r.', date: '09/08/2023', rating: 4, title: 'SMALL AND BIG PICES CAME', text: '' },
-        { name: 'SAIRAM V.', date: '09/02/2023', rating: 5, title: 'Nice quality', text: '' }
-    ]);
+    const [reviewsList, setReviewsList] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(null);
 
-    const handleReviewSubmit = (e) => {
+    const fetchReviews = async () => {
+        if (!product) return;
+        try {
+            setReviewsLoading(true);
+            const API_URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${API_URL}/reviews/product/${product.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setReviewsList(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
         e.preventDefault();
-        const review = {
-            ...newReview,
-            name: user?.name || 'Anonymous User',
-            date: new Date().toLocaleDateString(),
-        };
-        setReviewsList([review, ...reviewsList]);
-        setShowReviewForm(false);
-        setNewReview({ rating: 5, title: '', text: '' });
+        if (!user) {
+            toast.error('Please login to write a review');
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${API_URL}/reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: product.id,
+                    rating: newReview.rating,
+                    title: newReview.title,
+                    comment: newReview.text
+                }),
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                toast.success('Review submitted for approval!');
+                setNewReview({ rating: 5, title: '', text: '' });
+                setShowReviewForm(false);
+            } else {
+                const data = await res.json();
+                toast.error(data.message || 'Failed to submit review');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        }
     };
 
     useEffect(() => {
@@ -110,9 +148,17 @@ const ProductDetailPage = () => {
                 addToRecentlyViewed(user.id, foundProduct.id);
             }
         }
-        window.scrollTo(0, 0);
-    }, [slug, user, products]); // Added products to dependency
+    }, [slug, user, products]);
 
+    useEffect(() => {
+        if (product) {
+             fetchReviews();
+        }
+    }, [product]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [slug]);
     if (!product) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#fcfcfc]">
@@ -799,9 +845,16 @@ const ProductDetailPage = () => {
                                         <div className="text-center md:text-left">
                                             <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                                                 <div className="flex text-primary">
-                                                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={16} fill={i <= 4.8 ? "currentColor" : "none"} />)}
+                                                    {[1, 2, 3, 4, 5].map(i => {
+                                                        const avg = reviewsList.reduce((acc, r) => acc + r.rating, 0) / (reviewsList.length || 1);
+                                                        return <Star key={i} size={16} fill={i <= Math.round(avg) ? "currentColor" : "none"} />;
+                                                    })}
                                                 </div>
-                                                <span className="text-lg font-black text-footerBg tracking-tight">4.82</span>
+                                                <span className="text-lg font-black text-footerBg tracking-tight">
+                                                    {reviewsList.length > 0 
+                                                        ? (reviewsList.reduce((acc, r) => acc + r.rating, 0) / reviewsList.length).toFixed(1) 
+                                                        : '0.0'}
+                                                </span>
                                             </div>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Based on {reviewsList.length} reviews</p>
                                         </div>
@@ -866,23 +919,29 @@ const ProductDetailPage = () => {
                                     </AnimatePresence>
 
                                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
-                                        {reviewsList.map((review, idx) => (
-                                            <div key={idx} className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl border border-gray-50 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 flex flex-col justify-between h-full">
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-2.5">
-                                                        <div className="flex text-primary">
-                                                            {[...Array(5)].map((_, i) => <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />)}
+                                        {reviewsLoading ? (
+                                             <div className="col-span-full text-center py-8"><Loader className="animate-spin inline text-gray-300"/></div>
+                                        ) : reviewsList.length === 0 ? (
+                                            <div className="col-span-full text-center py-8 text-gray-300 font-bold uppercase text-xs tracking-widest">No reviews yet</div>
+                                        ) : (
+                                            reviewsList.map((review, idx) => (
+                                                <div key={review._id || idx} className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl border border-gray-50 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 flex flex-col justify-between h-full">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2.5">
+                                                            <div className="flex text-primary">
+                                                                {[...Array(5)].map((_, i) => <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />)}
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-300">{new Date(review.createdAt).toLocaleDateString()}</span>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-gray-300">{review.date}</span>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="font-black text-footerBg text-sm">{review.user?.name || 'Anonymous'}</span>
+                                                        </div>
+                                                        {review.title && <h4 className="font-bold text-[15px] text-footerBg mb-2 leading-tight">{review.title}</h4>}
+                                                        {review.comment && <p className="text-xs text-gray-500 leading-relaxed">{review.comment}</p>}
                                                     </div>
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="font-black text-footerBg text-sm">{review.name}</span>
-                                                    </div>
-                                                    {review.title && <h4 className="font-bold text-[15px] text-footerBg mb-2 leading-tight">{review.title}</h4>}
-                                                    {review.text && <p className="text-xs text-gray-500 leading-relaxed">{review.text}</p>}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             )}

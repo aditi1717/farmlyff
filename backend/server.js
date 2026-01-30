@@ -16,6 +16,7 @@ import reelRoutes from './routes/reelRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import promoCardRoutes from './routes/promoCardRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -54,6 +55,7 @@ app.use('/api/reels', reelRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/promo-card', promoCardRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // 404 Handler
 app.use((req, res) => {
