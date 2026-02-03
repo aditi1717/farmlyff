@@ -1,0 +1,110 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Minus } from 'lucide-react';
+
+const faqs = [
+    {
+        id: 1,
+        question: "Are your dry fruits and nuts fresh?",
+        answer: "Absolutely! We source our dry fruits and nuts directly from the best farms worldwide. They are carefully processed and packed to retain maximum freshness, crunch, and nutritional value."
+    },
+    {
+        id: 2,
+        question: "Do you offer free shipping?",
+        answer: "Yes, we offer free shipping on all orders above ₹999. For orders below that amount, a standard shipping fee applies which will be calculated at checkout."
+    },
+    {
+        id: 3,
+        question: "What is the estimated delivery time?",
+        answer: "Most orders are delivered within 3-5 business days across major cities. For remote locations, it may take 5-7 business days. You can track your order status in real-time."
+    },
+    {
+        id: 4,
+        question: "Can I return or exchange a product?",
+        answer: "We have a hassle-free 7-day return policy for damaged or incorrect items. Please ensure the product is unused and in its original packaging. Check our Returns & Refunds page for more details."
+    },
+    {
+        id: 5,
+        question: "Do you offer bulk or corporate gifting options?",
+        answer: "Yes! We specialize in premium corporate gifting and bulk orders for weddings and events. Please contact our support team or check our 'Shop by Packs' section for special bundles."
+    }
+];
+
+const FAQItem = ({ item, isOpen, onClick }) => {
+    return (
+        <div className="border-b border-gray-100 last:border-0">
+            <button
+                onClick={onClick}
+                className="w-full py-3 md:py-4 flex items-center justify-between text-left group transition-colors"
+                aria-expanded={isOpen}
+            >
+                <span className={`text-base md:text-lg font-semibold font-['Poppins'] transition-colors ${isOpen ? 'text-primary' : 'text-gray-800 group-hover:text-primary'}`}>
+                    {item.question}
+                </span>
+                <div className={`flex-shrink-0 ml-4 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isOpen ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-primary/10 group-hover:text-primary'}`}>
+                    {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                </div>
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                    >
+                        <div className="pb-4 text-gray-600 leading-relaxed text-sm md:text-base pr-4 md:pr-12">
+                            {item.answer}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const FAQSection = () => {
+    const [openIndex, setOpenIndex] = useState(0);
+
+    const toggleFAQ = (index) => {
+        setOpenIndex(openIndex === index ? -1 : index);
+    };
+
+    return (
+        <section className="bg-white pt-0 pb-8 md:pt-0 md:pb-12">
+            <div className="container mx-auto px-4 md:px-12">
+
+                {/* Centered Heading */}
+                <div className="text-center mb-6 md:mb-8">
+                    <motion.h2
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-3xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3"
+                    >
+                        Frequently Asked <span className="text-primary">Questions</span>
+                    </motion.h2>
+                    <div className="w-24 md:w-32 h-1 bg-primary mx-auto rounded-full" />
+                </div>
+
+                {/* Centered FAQ List */}
+                <div className="max-w-7xl mx-auto">
+                    <div className="bg-gray-50/50 rounded-3xl p-4 md:p-6 border border-gray-100">
+                        {faqs.map((faq, index) => (
+                            <FAQItem
+                                key={faq.id}
+                                item={faq}
+                                isOpen={openIndex === index}
+                                onClick={() => toggleFAQ(index)}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    );
+};
+
+export default FAQSection;

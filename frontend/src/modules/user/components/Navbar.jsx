@@ -11,7 +11,7 @@ import logo from '../../../assets/logo.png';
 const Navbar = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    
+
     // Zustand Stores
     const cartItemsMap = useCartStore(state => state.cartItems);
     const wishlistMap = useUserStore(state => state.wishlist);
@@ -40,16 +40,16 @@ const Navbar = () => {
     }, [rawCategories]);
 
     const subCategories = React.useMemo(() => {
-         const unique = [];
-         const seen = new Set();
-         for (const sub of rawSubCategories) {
-             const id = sub._id || sub.id;
-             if (id && !seen.has(id)) {
-                 seen.add(id);
-                 unique.push(sub);
-             }
-         }
-         return unique;
+        const unique = [];
+        const seen = new Set();
+        for (const sub of rawSubCategories) {
+            const id = sub._id || sub.id;
+            if (id && !seen.has(id)) {
+                seen.add(id);
+                unique.push(sub);
+            }
+        }
+        return unique;
     }, [rawSubCategories]);
 
     const [showCategories, setShowCategories] = React.useState(false);
@@ -59,13 +59,13 @@ const Navbar = () => {
 
     const { filteredProducts, filteredCats, filteredSubs } = React.useMemo(() => {
         if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [] };
-        
+
         const q = searchQuery.toLowerCase();
-        
-        let fp = products.filter(p => 
-            (p.name?.toLowerCase().includes(q) || 
-            p.description?.toLowerCase().includes(q) ||
-            p.id?.toLowerCase().includes(q)) &&
+
+        let fp = products.filter(p =>
+            (p.name?.toLowerCase().includes(q) ||
+                p.description?.toLowerCase().includes(q) ||
+                p.id?.toLowerCase().includes(q)) &&
             p.status !== 'Inactive'
         );
 
@@ -80,11 +80,11 @@ const Navbar = () => {
         }
 
         // Only show matching categories if NO category is selected (otherwise it's redundant)
-        const fc = !selectedCategory ? categories.filter(c => 
+        const fc = !selectedCategory ? categories.filter(c =>
             c.name?.toLowerCase().includes(q) && c.status === 'Active'
         ) : [];
 
-        const fs = subCategories.filter(s => 
+        const fs = subCategories.filter(s =>
             s.name?.toLowerCase().includes(q) && s.status === 'Active'
         );
 
@@ -122,7 +122,7 @@ const Navbar = () => {
                 <div className="hidden md:flex flex-1 max-w-2xl relative group z-50">
                     <div className="flex w-full items-center border border-gray-300 rounded-full bg-white transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 hover:border-gray-400 relative">
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setShowCategories(!showCategories)}
                                 onBlur={() => setTimeout(() => setShowCategories(false), 200)}
                                 className="px-4 py-2.5 text-textSecondary text-sm font-medium border-r border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1 rounded-l-full h-full whitespace-nowrap"
@@ -130,7 +130,7 @@ const Navbar = () => {
                                 {selectedCategory ? selectedCategory.name : 'All Categories'}
                                 <svg className={`w-3 h-3 transition-transform ${showCategories ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
-                            
+
                             {/* Dropdown Menu */}
                             {showCategories && (
                                 <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2" style={{ zIndex: 10006 }}>
@@ -142,8 +142,8 @@ const Navbar = () => {
                                     </button>
                                     {categories.filter(c => c.status === 'Active').length > 0 ? (
                                         categories.filter(c => c.status === 'Active').map(cat => (
-                                            <button 
-                                                key={cat.id || cat._id} 
+                                            <button
+                                                key={cat.id || cat._id}
                                                 onClick={() => { setSelectedCategory(cat); setShowCategories(false); }}
                                                 className={`block w-full text-left px-4 py-2.5 text-sm transition-colors font-medium border-b border-gray-50 last:border-0 ${selectedCategory && (selectedCategory.id === cat.id || selectedCategory._id === cat._id) ? 'text-primary bg-primary/5' : 'text-gray-600 hover:bg-gray-50 hover:text-primary'}`}
                                             >
@@ -156,7 +156,7 @@ const Navbar = () => {
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="flex-1 relative">
                             <input
                                 type="text"
@@ -168,27 +168,27 @@ const Navbar = () => {
                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
-                            
+
                             {/* Search Suggestions Dropdown */}
                             {showSuggestions && searchQuery.length > 0 && (
-                                <div 
-                                    className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2" 
+                                <div
+                                    className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2"
                                     style={{ zIndex: 10006 }}
                                     onMouseDown={(e) => e.preventDefault()} // Prevent blur on click
                                 >
-                                    
+
                                     {/* Products */}
                                     {filteredProducts.length > 0 && (
                                         <div className="mb-2">
                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Products</div>
                                             {filteredProducts.slice(0, 5).map(p => (
-                                                <Link 
-                                                    key={p.id} 
-                                                    to={`/product/${p.slug || p.id}`} 
+                                                <Link
+                                                    key={p.id}
+                                                    to={`/product/${p.slug || p.id}`}
                                                     onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
                                                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors"
                                                 >
-                                                    <img src={p.image} className="w-8 h-8 object-contain mix-blend-multiply" alt=""/>
+                                                    <img src={p.image} className="w-8 h-8 object-contain mix-blend-multiply" alt="" />
                                                     <div>
                                                         <div className="text-sm font-bold text-footerBg">{p.name}</div>
                                                     </div>
@@ -200,34 +200,34 @@ const Navbar = () => {
                                     {/* Categories */}
                                     {filteredCats.length > 0 && (
                                         <div className="mb-2">
-                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Categories</div>
-                                             {filteredCats.map(c => (
-                                                 <Link
+                                            <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Categories</div>
+                                            {filteredCats.map(c => (
+                                                <Link
                                                     key={c.id || c._id}
                                                     to={`/category/${c.slug}`}
                                                     onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
                                                     className="block px-4 py-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-gray-50"
-                                                 >
-                                                     {c.name}
-                                                 </Link>
-                                             ))}
+                                                >
+                                                    {c.name}
+                                                </Link>
+                                            ))}
                                         </div>
                                     )}
 
                                     {/* Subcategories */}
                                     {filteredSubs.length > 0 && (
                                         <div className="mb-1">
-                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Collections</div>
-                                             {filteredSubs.map(s => (
-                                                 <Link
+                                            <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Collections</div>
+                                            {filteredSubs.map(s => (
+                                                <Link
                                                     key={s.id || s._id}
                                                     to={getSubLink(s)}
                                                     onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
                                                     className="block px-4 py-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-gray-50"
-                                                 >
-                                                     {s.name}
-                                                 </Link>
-                                             ))}
+                                                >
+                                                    {s.name}
+                                                </Link>
+                                            ))}
                                         </div>
                                     )}
 
@@ -240,7 +240,7 @@ const Navbar = () => {
                             )}
                         </div>
 
-                        <button 
+                        <button
                             onClick={handleSearch}
                             className="px-5 py-2.5 text-gray-500 hover:text-primary transition-colors rounded-r-full"
                         >
@@ -253,7 +253,7 @@ const Navbar = () => {
                 <div className="flex items-center gap-4 md:gap-7 lg:gap-8 shrink-0">
                     {/* Industry Standard Order: Shop | Profile | Wishlist | Vault | Cart */}
                     {/* Shop Dropdown */}
-                   
+
 
                     <Link to={user ? "/profile" : "/login"} className="flex flex-col items-center gap-0.5 text-textPrimary hover:text-primary transition-colors group border-l border-gray-100 pl-4 md:pl-7">
                         <User size={22} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
@@ -302,8 +302,8 @@ const Navbar = () => {
 
             {/* Navigation Links Row */}
             <div className="hidden md:flex items-center justify-center gap-8 mt-0 pt-0 border-t border-gray-50 overflow-x-auto no-scrollbar">
-                
-                
+
+
                 {/* Dynamic Subcategories Removed as per request (now in Blue Bar) */}
             </div>
 

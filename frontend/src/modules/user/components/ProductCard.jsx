@@ -11,17 +11,16 @@ const ProductCard = ({ product }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
     // const { addToCart, toggleWishlist, isInWishlist } = useShop(); // Removed
-    const addItemToCart = useCartStore(state => state.addItem);
-    const { addItem: addToWishlist, removeItem: removeFromWishlist, items: wishlistItems } = useUserStore();
-    
-    // Helper to check wishlist
-    const isInWishlist = (productId) => wishlistItems.some(id => id === productId); // Assuming wishlistItems is array of IDs or objects. 
-    // Wait, useUserStore structure: wishlist: [] (ids? or objects?)
-    // Checking useUserStore.js previously: it had toggleWishlist.
-    // Let's verify useUserStore content. I'll make a safe assumption or check file first.
+    const toggleWishlist = useUserStore(state => state.toggleWishlist);
+    const wishlistMap = useUserStore(state => state.wishlist);
+    const userWishlist = user ? (wishlistMap[user.id] || []) : [];
 
     // Handle products with variants (Flipkart style)
     const hasVariants = product.variants && product.variants.length > 0;
+
+    // Helper to check wishlist
+    const itemId = hasVariants ? product.variants[0].id : product.id;
+    const isWishlisted = userWishlist.includes(itemId);
 
     // Get lowest price for "From ₹X" look
     const displayPrice = hasVariants
@@ -75,11 +74,9 @@ const ProductCard = ({ product }) => {
                 <div className="flex items-center justify-between mb-1 md:mb-2">
                     <div className="flex items-center gap-1">
                         <img src={logo} alt="FarmLyf" className="h-2.5 md:h-3.5 w-auto object-contain" />
-                        {product.brand && product.brand.replace(/FARMLYF/i, '').trim() && (
-                            <span className="font-brand font-bold text-[7px] md:text-[10px] uppercase tracking-wide text-footerBg line-clamp-1">
-                                {product.brand.replace(/FARMLYF/i, '').trim()}
-                            </span>
-                        )}
+                        <span className="font-brand font-bold text-[7px] md:text-[10px] uppercase tracking-wide text-footerBg line-clamp-1">
+                            PREMIUM
+                        </span>
                     </div>
                 </div>
 
@@ -89,43 +86,49 @@ const ProductCard = ({ product }) => {
 
                 <div className="mt-auto space-y-2 md:space-y-4">
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap">
-                        <span className="text-[10px] md:text-sm font-black text-footerBg tracking-tight">₹{displayPrice}</span>
-                        <span className="text-[8px] md:text-[10px] text-gray-300 line-through">₹{displayMrp}</span>
-                        <div className="bg-footerBg text-white flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold ml-auto shrink-0">
-                            <Star size={7} md:size={9} fill="currentColor" />
-                            <span>{product.rating}</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-[10px] md:text-sm font-black text-footerBg tracking-tight">₹{displayPrice}</span>
+                            <span className="text-[8px] md:text-[10px] text-gray-300 line-through">₹{displayMrp}</span>
+                            {displayUnitPrice && (
+                                <span className="text-[8px] md:text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                    (₹{displayUnitPrice}/kg)
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="ml-auto flex items-center gap-2">
+                            <div className="bg-footerBg text-white flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold shrink-0">
+                                <Star size={7} md:size={9} fill="currentColor" />
+                                <span>{product.rating}</span>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!user) {
+                                        // Optionally show toast
+                                        return navigate('/login');
+                                    }
+                                    toggleWishlist(user.id, itemId);
+                                }}
+                                className="text-gray-300 hover:text-red-500 transition-colors p-0.5 active:scale-95"
+                            >
+                                <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1 md:gap-2">
+                    <div className="w-full">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (!user) return navigate('/login');
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
-                                const itemToAdd = hasVariants ? product.variants[0] : product; // Simplified: usually we need full item or just ID? useCartStore expects object with id, price, etc?
-                                // Checking useCartStore previously: items: [{...product, qty}]
-                                // So we need to pass the product object.
-                                // But addToCart in ShopContext might have just taken ID.
-                                // Let's check logic. useCartStore.addItem(item, qty).
-                                // But here we don't have the full variant object easily if it's deeper.
-                                // Actually we do.
-                                addItemToCart(user.id, { ...itemToAdd, id: itemId }); // Passing object
+                                const itemToAdd = hasVariants ? product.variants[0] : product;
+                                addItemToCart(user.id, { ...itemToAdd, id: itemId });
                             }}
-                            className="bg-white border border-footerBg text-footerBg hover:bg-footerBg hover:text-white py-1.5 md:py-2 rounded-md md:rounded-lg text-[7px] md:text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                            className="w-full bg-footerBg hover:bg-primary text-white py-2 md:py-2.5 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md"
                         >
-                            CART
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!user) return navigate('/login');
-                                const itemId = hasVariants ? product.variants[0].id : product.id;
-                                navigate('/checkout', { state: { directBuyItem: { packId: itemId, qty: 1 } } });
-                            }}
-                            className="bg-footerBg hover:bg-primary text-white py-1.5 md:py-2 rounded-md md:rounded-lg text-[7px] md:text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md"
-                        >
-                            BUY
+                            Add to Cart
                         </button>
                     </div>
                 </div>

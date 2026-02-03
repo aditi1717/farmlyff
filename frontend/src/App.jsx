@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
 import UserLayout from './modules/user/layouts/UserLayout';
+import SmoothScroll from './modules/user/components/SmoothScroll';
 import HomePage from './modules/user/pages/HomePage';
 import CatalogPage from './modules/user/pages/CatalogPage';
 import ProductDetailPage from './modules/user/pages/ProductDetailPage';
@@ -52,6 +53,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <SmoothScroll>
           <Router>
             <ScrollToTop />
             <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#fff', color: '#333' } }} />
@@ -81,9 +83,9 @@ function App() {
                 <Route path="contact-us" element={<InfoPage type="contact" />} />
                 <Route path="login" element={<AuthPage />} />
               </Route>
-  
+
               <Route path="/admin/login" element={<LoginPage />} />
-  
+
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
@@ -112,10 +114,11 @@ function App() {
                 <Route path="reviews" element={<AdminReviewsPage />} />
                 <Route path="reels" element={<ReelsPage />} />
               </Route>
-  
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
+        </SmoothScroll>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -9,7 +9,16 @@ export const useProducts = () => {
         queryFn: async () => {
             const res = await fetch(`${API_URL}/products`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch products');
-            return res.json();
+            const data = await res.json();
+
+            // Inject dummy data for consistent UI as requested
+            return data.map(p => ({
+                ...p,
+                rating: p.rating || (4.0 + Math.random()).toFixed(1), // Random rating 4.0-5.0
+                tag: p.tag || 'BESTSELLER',
+                unitPrice: p.unitPrice || Math.floor((p.price || 500) * 2), // Dummy per kg price logic
+                reviews: p.reviews || Math.floor(Math.random() * 500) + 50
+            }));
         }
     });
 };
@@ -31,12 +40,12 @@ export const useCategories = () => {
         queryKey: ['categories'],
         queryFn: async () => {
             const [catRes, subRes] = await Promise.all([
-                 fetch(`${API_URL}/categories`, { credentials: 'include' }),
-                 fetch(`${API_URL}/subcategories`, { credentials: 'include' })
+                fetch(`${API_URL}/categories`, { credentials: 'include' }),
+                fetch(`${API_URL}/subcategories`, { credentials: 'include' })
             ]);
             if (!catRes.ok || !subRes.ok) throw new Error('Failed to fetch categories');
             const categories = await catRes.json();
-            return categories; 
+            return categories;
         }
     });
 };
@@ -57,19 +66,19 @@ export const useAddProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (productData) => {
-             const res = await fetch(`${API_URL}/products`, {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json',
-                 },
-                 body: JSON.stringify(productData),
-                 credentials: 'include'
-             });
-             if (!res.ok) {
-                 const error = await res.json();
-                 throw new Error(error.message || 'Failed to create product');
-             }
-             return res.json();
+            const res = await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(productData),
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || 'Failed to create product');
+            }
+            return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -133,13 +142,13 @@ export const useUploadImage = () => {
         mutationFn: async (file) => {
             const formData = new FormData();
             formData.append('image', file);
-            
+
             const res = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
             });
-            
+
             if (!res.ok) {
                 const text = await res.text();
                 let errorMessage = 'Upload failed';
@@ -166,7 +175,7 @@ export const usePack = (id, products) => {
     // Packs logic (assuming Packs are legacy or mixed in)
     // Re-using logic from ShopContext
     // const pack = packs.find(...) // We don't have packs separately anymore, seemingly merged or static
-    
+
     // Fallback to variant search
     for (const product of products) {
         const variant = product.variants?.find(v => v.id === id);

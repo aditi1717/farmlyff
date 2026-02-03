@@ -28,19 +28,19 @@ const HeroSection = () => {
 
     useEffect(() => {
         const fetchPromoSettings = async () => {
-             const API_URL = import.meta.env.VITE_API_URL;
-             try {
-                 const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
-                 if (res.ok) {
-                     const data = await res.json();
-                     if (data) {
-                         // Backend returns the object directly now
-                         setPromoSettings(prev => ({ ...prev, ...data }));
-                     }
-                 }
-             } catch (error) {
-                 console.error('Failed to fetch promo settings:', error);
-             }
+            const API_URL = import.meta.env.VITE_API_URL;
+            try {
+                const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        // Backend returns the object directly now
+                        setPromoSettings(prev => ({ ...prev, ...data }));
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch promo settings:', error);
+            }
         };
         fetchPromoSettings();
     }, []);
@@ -62,8 +62,11 @@ const HeroSection = () => {
 
     const currentSlide = banners[currentIndex];
 
+    // Safety check for undefined slide
+    if (!currentSlide) return null;
+
     return (
-        <div className="w-full bg-background py-2 md:py-6 px-3 md:px-12">
+        <div className="w-full bg-background py-4 md:py-6 px-3 md:px-12">
             <div className="w-full">
                 <div className="relative w-full rounded-3xl overflow-hidden aspect-[16/9] md:aspect-[21/6] bg-[#fdfdfd] shadow-2xl border border-mint/20 group">
 

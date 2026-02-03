@@ -2,15 +2,27 @@
 import React from 'react';
 import HeroSection from '../components/HeroSection';
 import CategoryStrip from '../components/CategoryStrip';
-import PromoSlider from '../components/PromoSlider';
-import ShopByPacks from '../components/ShopByPacks';
+
+import TopSellingProducts from '../components/TopSellingProducts';
+import WhyChooseUs from '../components/WhyChooseUs';
+import AboutSection from '../components/AboutSection';
+import HealthBenefitsSection from '../components/HealthBenefitsSection';
+import ReviewSection from '../components/ReviewSection';
+import BlogSection from '../components/BlogSection';
+import FAQSection from '../components/FAQSection';
+
 const HomePage = () => {
     return (
         <div className="bg-white min-h-screen">
             <HeroSection />
             <CategoryStrip />
-            <PromoSlider />
-            <ShopByPacks />
+            <TopSellingProducts />
+            <WhyChooseUs />
+            <AboutSection />
+            <HealthBenefitsSection />
+            <ReviewSection />
+            <BlogSection />
+            <FAQSection />
         </div>
     );
 };

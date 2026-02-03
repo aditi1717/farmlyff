@@ -98,7 +98,7 @@ const CategoryNav = () => {
                 const subParentId = sub.parent?._id || sub.parent;
                 return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
             });
-            
+
             return {
                 title: cat.name,
                 slug: cat.slug,
@@ -111,12 +111,12 @@ const CategoryNav = () => {
     const navItems = React.useMemo(() => {
         const items = [
             { name: 'Home', icon: Home, path: '/' },
-            { 
-                name: `Shop (${categoriesDB.length})`, // Debug count as requested, or remove
-                icon: Store, 
-                path: '/catalog', 
-                hasMenu: true, 
-                menuData: shopMenuData 
+            {
+                name: 'Shop',
+                icon: Store,
+                path: '/catalog',
+                hasMenu: true,
+                menuData: shopMenuData
             },
             {
                 name: 'Combos & Packs',
@@ -124,54 +124,50 @@ const CategoryNav = () => {
                 path: '/category/combos-packs',
                 hasMenu: true,
                 menuData: comboMenuData
-            }
+            },
         ];
 
-        // Add SubCategories as top level links
-        const seenSubs = new Set();
-        rawSubCategories.forEach(sub => {
-            const id = sub._id || sub.id;
-            if (!id || seenSubs.has(id)) return;
-            seenSubs.add(id);
+        // Add Categories as top level links
+        categoriesDB.forEach(cat => {
+            const catId = cat._id || cat.id;
 
-            if (sub.status === 'Active' && sub.showInShopByCategory !== false) {
+            // Find subcategories for this category
+            const catSubs = rawSubCategories.filter(sub => {
                 const subParentId = sub.parent?._id || sub.parent;
-                const parent = categoriesDB.find(c => String(c._id || c.id) === String(subParentId));
-                const parentSlug = parent?.slug || 'all';
+                return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
+            });
 
-                // Find products for this subcategory
-                const subProducts = products.filter(p => {
-                    return (
-                        (p.subcategory && String(p.subcategory) === String(id)) || 
-                        (p.subcategory === sub.name)
-                    ) && p.status !== 'Inactive';
-                }).slice(0, 5); // Take top 5
+            // Prepare menu data
+            const menuData = [{
+                title: 'Collections',
+                slug: cat.slug,
+                items: catSubs.map(s => ({ name: s.name, slug: s.slug }))
+            }];
 
-                items.push({
-                    name: sub.name,
-                    icon: Sprout, // Default icon
-                    path: `/category/${parentSlug}/${sub.slug}`,
-                    hasMenu: subProducts.length > 0,
-                    menuType: 'products',
-                    products: subProducts
-                });
-            }
+            items.push({
+                name: cat.name,
+                icon: Store,
+                path: `/category/${cat.slug}`,
+                hasMenu: catSubs.length > 0,
+                menuType: 'categories',
+                menuData: menuData
+            });
         });
-        
+
         return items;
-    }, [categoriesDB, shopMenuData, rawSubCategories, products]);
+    }, [categoriesDB, rawSubCategories, shopMenuData]);
 
     const activeItem = navItems.find(c => c.name === activeMenu);
 
     return (
         <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg relative" style={{ zIndex: 10000 }}>
-            <div className="flex items-center overflow-x-auto no-scrollbar px-4 lg:px-12 text-[10px] lg:text-[11px] font-black tracking-widest uppercase">
+            <div className="w-full flex items-center justify-between px-4 lg:px-12 text-[10px] lg:text-[11px] font-black tracking-widest uppercase">
                 {navItems.map((cat, index) => {
                     const Icon = cat.icon;
                     return (
                         <div
                             key={index}
-                            className="flex items-center shrink-0"
+                            className="flex items-center"
                             onMouseEnter={() => cat.hasMenu && setActiveMenu(cat.name)}
                             onMouseLeave={() => cat.hasMenu && setActiveMenu(null)}
                         >
@@ -187,7 +183,7 @@ const CategoryNav = () => {
 
                             {/* Vertical Divider */}
                             {index !== navItems.length - 1 && (
-                                <div className="h-4 w-[1px] bg-white/10 mx-3 lg:mx-6" />
+                                <div className="h-4 w-[1px] bg-white/10 hidden md:block ml-4 lg:ml-8" />
                             )}
                         </div>
                     );
@@ -215,18 +211,18 @@ const CategoryNav = () => {
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                                         {activeItem.products.map((product) => (
-                                            <Link 
-                                                key={product.id || product._id} 
+                                            <Link
+                                                key={product.id || product._id}
                                                 to={`/product/${product.slug || product.id}`}
                                                 className="group bg-gray-50 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 block"
                                                 onClick={() => setActiveMenu(null)}
                                             >
                                                 <div className="aspect-[4/5] w-full overflow-hidden rounded-lg mb-3 bg-white p-2">
-                                                     <img 
-                                                       src={product.image || product.images?.[0]} 
-                                                       alt={product.name}
-                                                       className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-                                                     />
+                                                    <img
+                                                        src={product.image || product.images?.[0]}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                                                    />
                                                 </div>
                                                 <h5 className="font-bold text-gray-800 text-[11px] leading-tight mb-1 line-clamp-2 min-h-[2.5em]">
                                                     {product.name}
