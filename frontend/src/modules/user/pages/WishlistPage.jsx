@@ -9,26 +9,26 @@ import ProductCard from '../components/ProductCard';
 const WishlistPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    
+
     // Stores
-    const { getWishlist } = useUserStore(); // Actually useUserStore default export is the hook.
-    // Wait, import was `import useUserStore from ...`?
-    // In Navbar I successfully used: `import useUserStore from '../../../store/useUserStore';`
-    // And `useUserStore(state => state.getWishlist(...))`.
-    // Here I will use the hook directly.
-    const wishlistIds = user ? useUserStore(state => state.getWishlist(state.user?.id || user.id)) : [];
-    
+    const wishlistMap = useUserStore(state => state.wishlist);
+    const wishlistIds = user ? (wishlistMap[user.id] || []) : [];
+
     // Data
     const { data: products = [] } = useProducts();
-    
+
     const wishlistItems = wishlistIds.map(id => {
-        const product = products.find(p => p.id === id); // assuming packId/productId matches id
-        if (!product) return null;
-        
-        // Handle variant structure if needed, or if product is pack
-        // For simplified logic:
-        return product;
-    }).filter(Boolean);
+        // Find product by its ID OR by checking if it contains a variant with that ID
+        return products.find(p =>
+            p.id === id ||
+            (p.variants && p.variants.some(v => v.id === id))
+        );
+    })
+        .filter(Boolean)
+        // Remove duplicates (in case mixed IDs point to same product)
+        .filter((product, index, self) =>
+            index === self.findIndex((p) => p.id === product.id)
+        );
 
     if (wishlistItems.length === 0) {
         return (

@@ -170,87 +170,111 @@ const ProfilePage = () => {
         setUserData({ ...userData, addresses: updatedAddresses });
     };
 
-    const renderDashboard = () => (
-        <div className="max-w-4xl p-4 md:p-10">
-            <div className="mb-6 md:mb-10 flex items-center gap-3 md:gap-5">
-                <button
-                    onClick={() => navigate('/')}
-                    className="p-2 md:p-2.5 bg-slate-50 text-footerBg rounded-lg md:rounded-xl hover:bg-footerBg hover:text-white transition-all group"
-                >
-                    <ChevronRight size={14} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
-                </button>
-                <div>
-                    <h1 className="text-lg md:text-xl font-bold text-footerBg tracking-tight uppercase">Product Dashboard</h1>
-                    <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manage profile, orders, and rewards</p>
-                </div>
-            </div>
+    const renderDashboard = () => {
+        // Mobile View Items
+        const shoppingItems = [
+            { id: 'orders', label: 'Order History', icon: Package, desc: 'Track shipments and reorder', action: () => navigate('/orders') },
+            { id: 'returns', label: 'Returns', icon: RefreshCw, desc: 'Refunds and exchanges', action: () => navigate('/returns') },
+            { id: 'wishlist', label: 'Wishlist', icon: Heart, desc: 'Manage your favorite items', action: () => navigate('/wishlist') },
+            { id: 'coupons', label: 'Coupons', icon: Ticket, desc: 'Discover extra discounts', action: () => navigate('/profile/coupons') },
+        ];
 
-            {/* Dashboard Sections */}
-            <div className="space-y-6 md:space-y-10">
-                {/* Group 1: Shopping & Rewards */}
-                <div>
-                    <h4 className="text-[9px] md:text-[10px] font-bold text-primary uppercase tracking-[0.25em] mb-3 md:mb-6 px-2 flex items-center gap-2">
-                        <span className="w-3 md:w-4 h-[1px] bg-primary"></span>
-                        Shopping & Rewards
-                    </h4>
-                    <div className="bg-white rounded-2xl md:rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-                        {[
-                            { id: 'orders', label: 'Order History', icon: Package, desc: 'Track shipments and reorder', action: () => navigate('/orders') },
-                            { id: 'Returns', label: 'Returns', icon: RefreshCw, desc: 'Refunds and exchanges', action: () => navigate('/returns') },
-                            { id: 'Wishlist', label: 'Wishlist', icon: Heart, desc: 'Manage your favorite items', action: () => navigate('/wishlist') },
-                            { id: 'Coupons', label: 'Coupons', icon: Ticket, desc: 'Discover extra discounts', action: () => navigate('/profile/coupons') },
-                        ].map((item, idx) => (
+        const accountItems = [
+            { id: 'settings', label: 'Settings', icon: User, desc: 'Update profile and security', action: () => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+            { id: 'addresses', label: 'Addresses', icon: MapPin, desc: 'Manage shipping locations', action: () => navigate('/profile/addresses') },
+            { id: 'support', label: 'Support', icon: Headphones, desc: 'Help with order related queries', action: () => navigate('/profile/support') },
+        ];
+
+        // Desktop View Items
+        const desktopItems = [
+            { id: 'orders', label: 'Orders', icon: Package, desc: 'Check your orders status and history here', action: () => navigate('/orders') },
+            { id: 'returns', label: 'Returns', icon: RefreshCw, desc: 'Manage refunds and exchanges requests', action: () => navigate('/returns') },
+            { id: 'coupons', label: 'Coupons', icon: Ticket, desc: 'Explore great coupon deals to get extra discounts', action: () => navigate('/profile/coupons') },
+            { id: 'support', label: 'Help and Support', icon: Headphones, desc: 'Get help for your account and orders', action: () => navigate('/profile/support') },
+            { id: 'settings', label: 'Profile Settings', icon: User, desc: 'Update your password, profile details and more', action: () => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+            { id: 'addresses', label: 'Addresses', icon: Home, desc: 'Add, edit, or manage your address easily', action: () => navigate('/profile/addresses') },
+            { id: 'wishlist', label: 'Wishlist', icon: Heart, desc: 'Shop your specially saved items from here', action: () => navigate('/wishlist') }
+        ];
+
+        return (
+            <div className="w-full max-w-7xl p-4 md:p-10">
+                {/* MOBILE VIEW: List Layout */}
+                <div className="md:hidden space-y-6">
+                    {/* Group 1 */}
+                    <div>
+                        <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.25em] mb-3 px-2 flex items-center gap-2">
+                            <span className="w-3 h-[1px] bg-primary"></span>
+                            Shopping & Rewards
+                        </h4>
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            {shoppingItems.map((item, idx) => (
+                                <button key={idx} onClick={item.action} className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition-all border-b last:border-0 border-gray-50 group text-left">
+                                    <div className="flex items-center gap-3">
+                                        <item.icon size={18} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
+                                        <div className="min-w-0">
+                                            <h5 className="font-semibold text-footerBg text-xs truncate">{item.label}</h5>
+                                            <p className="text-[9px] text-slate-400 font-medium truncate">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-all shrink-0" />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Group 2 */}
+                    <div>
+                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-3 px-2 flex items-center gap-2">
+                            <span className="w-3 h-[1px] bg-slate-200"></span>
+                            Account & Support
+                        </h4>
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            {accountItems.map((item, idx) => (
+                                <button key={idx} onClick={item.action} className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition-all border-b last:border-0 border-gray-50 group text-left">
+                                    <div className="flex items-center gap-3">
+                                        <item.icon size={18} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
+                                        <div className="min-w-0">
+                                            <h5 className="font-semibold text-footerBg text-xs truncate">{item.label}</h5>
+                                            <p className="text-[9px] text-slate-400 font-medium truncate">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-all shrink-0" />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* DESKTOP VIEW: Grid Layout */}
+                <div className="hidden md:block">
+                    <div className="mb-10 flex items-center gap-5">
+                        <div>
+                            <h1 className="text-2xl font-bold text-footerBg tracking-tight">Dashboard Overview</h1>
+                            <p className="text-sm text-slate-500 font-medium mt-1">Manage your account and view orders</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+                        {desktopItems.map((item, idx) => (
                             <button
                                 key={idx}
                                 onClick={item.action}
-                                className="w-full flex items-center justify-between p-3.5 md:p-5 hover:bg-slate-50 transition-all border-b last:border-0 border-gray-50 group text-left"
+                                className="flex flex-col items-start p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group text-left h-full"
                             >
-                                <div className="flex items-center gap-3 md:gap-5">
-                                    <item.icon size={18} md:size={20} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                                    <div className="min-w-0">
-                                        <h5 className="font-semibold text-footerBg text-xs md:text-base group-hover:text-primary transition-colors truncate">{item.label}</h5>
-                                        <p className="text-[9px] md:text-[10px] text-slate-400 font-medium truncate">{item.desc}</p>
+                                <div className="flex items-center gap-4 mb-2 w-full">
+                                    <div className="flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                        <item.icon size={42} strokeWidth={1.5} className="text-green-600" />
                                     </div>
+                                    <h3 className="text-lg font-bold text-footerBg group-hover:text-green-600 transition-colors">{item.label}</h3>
                                 </div>
-                                <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-all group-hover:translate-x-1 shrink-0" />
+                                <p className="text-[11px] text-slate-500 font-medium leading-relaxed pl-1">{item.desc}</p>
                             </button>
                         ))}
                     </div>
                 </div>
-
-                {/* Group 2: Account & Support */}
-                <div>
-                    <h4 className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-3 md:mb-6 px-2 flex items-center gap-2">
-                        <span className="w-3 md:w-4 h-[1px] bg-slate-200"></span>
-                        Account & Support
-                    </h4>
-                    <div className="bg-white rounded-2xl md:rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-                        {[
-                            { id: 'Settings', label: 'Settings', icon: User, desc: 'Update profile and security', action: () => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-                            { id: 'Addresses', label: 'Addresses', icon: MapPin, desc: 'Manage shipping locations', action: () => navigate('/profile/addresses') },
-                            { id: 'Vault', label: 'Farm Vault', icon: Bookmark, desc: 'Saved dry fruit treasures', action: () => navigate('/vault') },
-                            { id: 'Support', label: 'Support', icon: Headphones, desc: 'Help with order related queries', action: () => navigate('/profile/support') },
-                        ].map((item, idx) => (
-                            <button
-                                key={idx}
-                                onClick={item.action}
-                                className="w-full flex items-center justify-between p-3.5 md:p-5 hover:bg-slate-50 transition-all border-b last:border-0 border-gray-50 group text-left"
-                            >
-                                <div className="flex items-center gap-3 md:gap-5">
-                                    <item.icon size={18} md:size={20} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                                    <div className="min-w-0">
-                                        <h5 className="font-semibold text-footerBg text-xs md:text-base group-hover:text-primary transition-colors truncate">{item.label}</h5>
-                                        <p className="text-[9px] md:text-[10px] text-slate-400 font-medium truncate">{item.desc}</p>
-                                    </div>
-                                </div>
-                                <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-all group-hover:translate-x-1 shrink-0" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
 
 

@@ -126,12 +126,12 @@ const BlogSection = () => {
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+                                    <h3 className="text-sm md:text-base font-bold text-gray-900 mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
                                         {post.title}
                                     </h3>
 
                                     {/* Excerpt */}
-                                    <p className="text-sm text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                                    <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-relaxed">
                                         {post.excerpt}
                                     </p>
 

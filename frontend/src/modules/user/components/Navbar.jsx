@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
@@ -56,6 +57,7 @@ const Navbar = () => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [showSuggestions, setShowSuggestions] = React.useState(false);
     const [selectedCategory, setSelectedCategory] = React.useState(null);
+    const [hoveredCategoryInMenu, setHoveredCategoryInMenu] = React.useState(null);
 
     const { filteredProducts, filteredCats, filteredSubs } = React.useMemo(() => {
         if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [] };
@@ -121,40 +123,85 @@ const Navbar = () => {
                 {/* Search Bar - Functional */}
                 <div className="hidden md:flex flex-1 max-w-2xl relative group z-50">
                     <div className="flex w-full items-center border border-gray-300 rounded-full bg-white transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 hover:border-gray-400 relative">
-                        <div className="relative">
+                        <div
+                            className="relative h-full"
+                            onMouseEnter={() => setShowCategories(true)}
+                            onMouseLeave={() => setShowCategories(false)}
+                        >
                             <button
-                                onClick={() => setShowCategories(!showCategories)}
-                                onBlur={() => setTimeout(() => setShowCategories(false), 200)}
-                                className="px-4 py-2.5 text-textSecondary text-sm font-medium border-r border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1 rounded-l-full h-full whitespace-nowrap"
+                                className="px-5 py-2.5 text-textSecondary text-sm font-bold bg-white hover:bg-gray-50 transition-colors flex items-center gap-2 rounded-l-full h-full whitespace-nowrap min-w-[160px] border-r border-gray-200"
                             >
                                 {selectedCategory ? selectedCategory.name : 'All Categories'}
-                                <svg className={`w-3 h-3 transition-transform ${showCategories ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <ChevronDown size={14} className={`transition-transform duration-300 ${showCategories ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {/* Dropdown Menu */}
-                            {showCategories && (
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2" style={{ zIndex: 10006 }}>
-                                    <button
-                                        onClick={() => { setSelectedCategory(null); setShowCategories(false); }}
-                                        className={`block w-full text-left px-4 py-2.5 text-sm transition-colors font-medium border-b border-gray-50 ${!selectedCategory ? 'text-primary bg-primary/5' : 'text-gray-600 hover:bg-gray-50 hover:text-primary'}`}
+                            {/* MEGA MENU POPUP */}
+                            <AnimatePresence>
+                                {showCategories && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        className="absolute top-full left-0 mt-[1px] w-[650px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden flex min-h-[280px]"
+                                        style={{ zIndex: 10006 }}
                                     >
-                                        All Categories
-                                    </button>
-                                    {categories.filter(c => c.status === 'Active').length > 0 ? (
-                                        categories.filter(c => c.status === 'Active').map(cat => (
-                                            <button
-                                                key={cat.id || cat._id}
-                                                onClick={() => { setSelectedCategory(cat); setShowCategories(false); }}
-                                                className={`block w-full text-left px-4 py-2.5 text-sm transition-colors font-medium border-b border-gray-50 last:border-0 ${selectedCategory && (selectedCategory.id === cat.id || selectedCategory._id === cat._id) ? 'text-primary bg-primary/5' : 'text-gray-600 hover:bg-gray-50 hover:text-primary'}`}
-                                            >
-                                                {cat.name}
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="px-4 py-3 text-sm text-gray-400 italic">No categories found</div>
-                                    )}
-                                </div>
-                            )}
+                                        {/* Left Column: Categories */}
+                                        <div className="w-[180px] bg-white py-2 border-r border-black">
+                                            <div className="flex flex-col">
+                                                {categories.filter(c => c.status === 'Active').map(cat => (
+                                                    <button
+                                                        key={cat.id || cat._id}
+                                                        onMouseEnter={() => setHoveredCategoryInMenu(cat)}
+                                                        onClick={() => { setSelectedCategory(cat); setShowCategories(false); }}
+                                                        className={`w-full text-left px-6 py-2 text-[13px] font-bold transition-all relative group
+                                                            ${(hoveredCategoryInMenu?.id === cat.id || hoveredCategoryInMenu?._id === cat._id)
+                                                                ? 'text-black'
+                                                                : 'text-gray-500 hover:text-black'}`}
+                                                    >
+                                                        {cat.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Middle Column: Subcategories */}
+                                        <div className="flex-1 bg-white py-4 px-7 border-r border-gray-50">
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                {(hoveredCategoryInMenu || (categories.filter(c => c.status === 'Active')[0])) && (
+                                                    (subCategories.filter(s => {
+                                                        const hoveredId = hoveredCategoryInMenu?._id || hoveredCategoryInMenu?.id;
+                                                        const firstId = categories.filter(c => c.status === 'Active')[0]?.id || categories.filter(c => c.status === 'Active')[0]?._id;
+                                                        const targetId = hoveredId || firstId;
+                                                        const parentId = s.parent?._id || s.parent;
+                                                        return String(parentId) === String(targetId);
+                                                    }).map(sub => (
+                                                        <Link
+                                                            key={sub.id || sub._id}
+                                                            to={getSubLink(sub)}
+                                                            onClick={() => setShowCategories(false)}
+                                                            className="text-[13px] font-medium text-gray-700 hover:text-black transition-colors"
+                                                        >
+                                                            {sub.name}
+                                                        </Link>
+                                                    )))
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Right Column: Permanent Image */}
+                                        <div className="w-[220px] p-3 flex items-center justify-center bg-white">
+                                            <div className="relative w-full h-[220px] rounded-lg overflow-hidden group shadow-sm">
+                                                <img
+                                                    src="https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?q=80&w=1000&auto=format&fit=crop"
+                                                    alt="Featured"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
+                                                <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         <div className="flex-1 relative">

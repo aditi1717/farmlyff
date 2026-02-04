@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import CategoryNav from '../components/CategoryNav';
 import OfferStrip from '../components/OfferStrip';
 import Footer from '../components/Footer';
+import FloatingContact from '../components/FloatingContact';
 
 const UserLayout = () => {
     return (
@@ -20,6 +21,7 @@ const UserLayout = () => {
                 <Outlet />
             </main>
             <Footer />
+            <FloatingContact />
         </div>
     );
 };

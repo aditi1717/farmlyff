@@ -25,7 +25,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Heart size={64} strokeWidth={1.5} />,
                 title: "Heart Health",
                 description: "Rich in omega-3 fatty acids and antioxidants that support cardiovascular health.",
-                bgColor: "bg-[#006071]",
+                baseColor: "#006071",
                 borderColor: "border-[#006071]",
                 textColor: "text-[#006071]"
             },
@@ -33,7 +33,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Brain size={64} strokeWidth={1.5} />,
                 title: "Brain Function",
                 description: "Enhance cognitive function, memory, and mental clarity with essential nutrients.",
-                bgColor: "bg-[#67705B]",
+                baseColor: "#67705B",
                 borderColor: "border-[#67705B]",
                 textColor: "text-[#67705B]"
             },
@@ -41,7 +41,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Zap size={64} strokeWidth={1.5} />,
                 title: "Energy Boost",
                 description: "Natural sustained energy from healthy fats and proteins.",
-                bgColor: "bg-[#902D45]",
+                baseColor: "#902D45",
                 borderColor: "border-[#902D45]",
                 textColor: "text-[#902D45]"
             },
@@ -49,7 +49,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Shield size={64} strokeWidth={1.5} />,
                 title: "Immunity",
                 description: "Strengthen your immune system with vitamin E and antioxidants.",
-                bgColor: "bg-[#7E3021]",
+                baseColor: "#7E3021",
                 borderColor: "border-[#7E3021]",
                 textColor: "text-[#7E3021]"
             },
@@ -57,7 +57,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Scale size={64} strokeWidth={1.5} />,
                 title: "Weight Balance",
                 description: "High protein and fiber content helps maintain healthy weight goals.",
-                bgColor: "bg-[#C08552]",
+                baseColor: "#C08552",
                 borderColor: "border-[#C08552]",
                 textColor: "text-[#C08552]"
             },
@@ -65,7 +65,7 @@ const HealthBenefitsSection = ({ data }) => {
                 icon: <Sparkles size={64} strokeWidth={1.5} />,
                 title: "Skin & Hair",
                 description: "Essential fatty acids promote glowing skin and lustrous hair.",
-                bgColor: "bg-[#7D5A5A]",
+                baseColor: "#7D5A5A",
                 borderColor: "border-[#7D5A5A]",
                 textColor: "text-[#7D5A5A]"
             }
@@ -75,8 +75,13 @@ const HealthBenefitsSection = ({ data }) => {
     const sectionData = data || defaultData;
 
     return (
-        <section className="bg-white py-4 md:py-6 relative overflow-hidden">
-            <div className="w-full px-4 md:px-12">
+        <section className="bg-gray-50 py-4 md:py-6 relative overflow-hidden">
+            {/* Background Decorative Blobs for Glassmorphism Context */}
+            <div className="absolute top-0 left-0 w-96 h-96 bg-[#006071]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#C08552]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 w-full h-full max-w-4xl bg-gradient-to-tr from-[#902D45]/5 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <div className="w-full px-4 md:px-12 relative z-10">
                 {/* Section Header */}
                 <div className="text-center mb-10 md:mb-14 space-y-2 md:space-y-3">
                     <motion.h2
@@ -132,9 +137,14 @@ const HealthBenefitsSection = ({ data }) => {
                                 </AnimatePresence>
 
                                 {/* Card Container */}
-                                <div className={`
+                                <div
+                                    style={{
+                                        background: `linear-gradient(145deg, ${benefit.baseColor}40, ${benefit.baseColor}10)`,
+                                        borderColor: `${benefit.baseColor}4D`
+                                    }}
+                                    className={`
                                         relative h-52 md:h-64 rounded-[24px] md:rounded-[32px] 
-                                        ${benefit.bgColor}
+                                        backdrop-blur-xl border
                                         shadow-lg hover:shadow-2xl
                                         transition-all duration-500
                                         overflow-hidden
@@ -152,7 +162,7 @@ const HealthBenefitsSection = ({ data }) => {
                                                 transition={{ duration: 0.3 }}
                                                 className="flex items-center justify-center h-full w-full text-center pt-6"
                                             >
-                                                <h3 className="text-white font-bold text-lg md:text-xl px-2 leading-tight">
+                                                <h3 className={`font-bold text-lg md:text-xl px-2 leading-tight ${benefit.textColor}`}>
                                                     {benefit.title}
                                                 </h3>
                                             </motion.div>
@@ -165,7 +175,7 @@ const HealthBenefitsSection = ({ data }) => {
                                                 transition={{ duration: 0.4, delay: 0.2 }}
                                                 className="flex items-center justify-center h-full w-full"
                                             >
-                                                <p className="text-white text-xs md:text-sm leading-relaxed font-medium px-4 text-center">
+                                                <p className={`text-xs md:text-sm leading-relaxed font-semibold px-4 text-center ${benefit.textColor}`}>
                                                     {benefit.description}
                                                 </p>
                                             </motion.div>
