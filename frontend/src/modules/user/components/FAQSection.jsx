@@ -72,16 +72,16 @@ const FAQSection = () => {
     };
 
     return (
-        <section className="bg-white pt-0 pb-8 md:pt-0 md:pb-12">
+        <section className="bg-white pt-0 pb-2 md:pt-0 md:pb-12">
             <div className="container mx-auto px-4 md:px-12">
 
                 {/* Centered Heading */}
-                <div className="text-center mb-6 md:mb-8">
+                <div className="text-center mb-8 md:mb-14">
                     <motion.h2
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-3xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3"
+                        className="text-2xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3"
                     >
                         Frequently Asked <span className="text-primary">Questions</span>
                     </motion.h2>

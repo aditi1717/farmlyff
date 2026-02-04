@@ -9,14 +9,14 @@ const FloatingContact = () => {
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
     return (
-        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-[9999]">
+        <div className="fixed bottom-[85px] md:bottom-6 right-4 md:right-6 flex flex-col gap-2 md:gap-3 z-[9999]">
             {/* Chat Icon - Nutraj Style */}
             <button
-                className="w-12 h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300 group"
+                className="w-10 h-10 md:w-12 md:h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300 group"
                 title="Chat with us"
             >
-                <div className="bg-white/20 p-2 rounded-full">
-                    <MessageCircle size={24} fill="white" />
+                <div className="bg-white/20 p-1.5 md:p-2 rounded-full">
+                    <MessageCircle className="w-5 h-5 md:w-6 md:h-6" fill="white" />
                 </div>
             </button>
 
@@ -25,13 +25,12 @@ const FloatingContact = () => {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-12 h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300"
+                className="w-10 h-10 md:w-12 md:h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300"
                 title="WhatsApp us"
             >
                 <svg
                     viewBox="0 0 24 24"
-                    width="28"
-                    height="28"
+                    className="w-[22px] h-[22px] md:w-7 md:h-7"
                     stroke="currentColor"
                     strokeWidth="0"
                     fill="currentColor"

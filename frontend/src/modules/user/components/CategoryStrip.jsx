@@ -64,12 +64,12 @@ const CategoryStrip = () => {
     // ... variants ...
 
     return (
-        <section className="bg-white py-4 md:py-6 px-4 md:px-12 relative overflow-hidden">
+        <section className="bg-white pt-10 pb-1 md:pt-16 md:pb-4 px-4 md:px-12 relative overflow-hidden">
             {/* ... header ... */}
             <div className="container mx-auto">
                 {/* ... header content ... */}
 
-                <div className="text-center mb-4 md:mb-6 space-y-1 md:space-y-2">
+                <div className="text-center mb-2 md:mb-14 space-y-1 md:space-y-2">
                     <motion.span
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -81,11 +81,11 @@ const CategoryStrip = () => {
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-3xl md:text-4xl font-['Poppins'] font-bold text-footerBg tracking-tight"
+                        className="text-2xl md:text-4xl font-['Poppins'] font-bold text-footerBg tracking-tight"
                     >
                         Shop By <span className="text-primary">Category</span>
                     </motion.h2>
-                    <div className="w-32 md:w-48 h-1.5 bg-primary mx-auto rounded-full mt-2" />
+                    <div className="w-32 md:w-48 h-1 bg-primary mx-auto rounded-full mt-2" />
                 </div>
 
                 <div className="relative flex items-center group">
@@ -93,7 +93,7 @@ const CategoryStrip = () => {
 
                     <motion.div
                         ref={scrollRef}
-                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-12 items-center w-full min-h-[150px]"
+                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-12 items-center w-full min-h-[90px] md:min-h-[150px]"
                     >
                         {isLoading ? (
                             <div className="text-center w-full text-gray-400 text-sm">

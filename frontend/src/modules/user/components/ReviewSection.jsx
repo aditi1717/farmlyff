@@ -46,8 +46,8 @@ const ReviewSection = () => {
     return (
         <section className="mt-10 md:mt-20">
             {/* Section Header - Outside Background */}
-            <div className="container mx-auto px-4 md:px-12 text-center mb-8 md:mb-12">
-                <h2 className="text-3xl md:text-4xl font-['Poppins'] font-bold mb-3 text-gray-900">Customer Reviews</h2>
+            <div className="container mx-auto px-4 md:px-12 text-center mb-8 md:mb-14">
+                <h2 className="text-2xl md:text-4xl font-['Poppins'] font-bold mb-3 text-gray-900">Customer Reviews</h2>
                 <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto font-medium">
                     See what our happy customers have to say about their healthy journey with us
                 </p>
@@ -88,10 +88,10 @@ const ReviewSection = () => {
                                     viewport={{ once: true }}
                                     className="flex-shrink-0 w-[85vw] md:w-[calc(50%-12px)]"
                                 >
-                                    <div className="flex flex-col md:flex-row h-full rounded-2xl overflow-hidden min-h-[280px] md:h-[320px] border border-gray-100">
+                                    <div className="flex flex-col md:flex-row h-full rounded-2xl overflow-hidden min-h-[180px] md:h-[320px] border border-gray-100">
                                         {/* Left: Avatar Section */}
-                                        <div className="w-full md:w-2/5 bg-[#f5f5f5] flex items-center justify-center p-6 relative">
-                                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white">
+                                        <div className="w-full md:w-2/5 bg-[#f5f5f5] flex items-center justify-center p-2 md:p-6 relative">
+                                            <div className="w-14 h-14 md:w-32 md:h-32 rounded-full overflow-hidden border-2 md:border-4 border-white">
                                                 <img
                                                     src={review.image}
                                                     alt={review.name}
@@ -101,14 +101,14 @@ const ReviewSection = () => {
                                         </div>
 
                                         {/* Right: Content Section */}
-                                        <div className="w-full md:w-3/5 bg-black/40 backdrop-blur-md p-5 md:p-6 flex flex-col justify-center relative">
-                                            <Quote className="text-white/80 w-8 h-8 md:w-10 md:h-10 mb-4 md:mb-6" />
+                                        <div className="w-full md:w-3/5 bg-black/40 backdrop-blur-md p-3 md:p-6 flex flex-col justify-center relative">
+                                            <Quote className="text-white/80 w-4 h-4 md:w-10 md:h-10 mb-1.5 md:mb-6" />
 
-                                            <p className="text-white text-sm md:text-lg leading-relaxed mb-6 font-medium">
+                                            <p className="text-white text-[10px] md:text-lg leading-relaxed mb-2 md:mb-6 font-medium">
                                                 {review.review}
                                             </p>
 
-                                            <h4 className="text-white font-bold text-lg md:text-xl">
+                                            <h4 className="text-white font-bold text-xs md:text-xl">
                                                 {review.name}
                                             </h4>
                                         </div>

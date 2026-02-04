@@ -37,7 +37,7 @@ const WhyChooseUs = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6 }}
-                    className="bg-footerBg rounded-2xl md:rounded-[40px] px-6 py-8 md:py-12 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 relative overflow-hidden"
+                    className="bg-footerBg rounded-2xl md:rounded-[40px] px-4 py-8 md:py-12 grid grid-cols-2 md:flex md:flex-row items-start md:items-center justify-between gap-x-4 gap-y-8 md:gap-4 relative overflow-hidden"
                 >
                     {/* Subtle Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
@@ -71,10 +71,7 @@ const WhyChooseUs = () => {
                                 <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
                             )}
 
-                            {/* Horizontal Divider for Mobile */}
-                            {index < features.length - 1 && (
-                                <div className="md:hidden w-24 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                            )}
+
                         </React.Fragment>
                     ))}
                 </motion.div>

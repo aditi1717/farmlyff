@@ -751,11 +751,11 @@ const ProfilePage = () => {
     const ordersData = orders; // getOrders(userData.id);
 
     return (
-        <div className="bg-[#f8fafc] min-h-screen pb-20 font-['Inter']">
+        <div className="bg-[#f8fafc] lg:min-h-screen pb-20 font-['Inter']">
 
 
             <div className="w-full">
-                <div className="flex flex-col lg:flex-row items-stretch min-h-screen">
+                <div className="flex flex-col lg:flex-row items-stretch lg:min-h-screen">
 
                     {/* LEFT SIDEBAR - Integrated Profile Info */}
                     <div className="w-full lg:w-[350px] bg-footerBg text-white relative overflow-hidden shrink-0 flex flex-col lg:sticky lg:top-0 h-auto lg:h-screen">
@@ -955,9 +955,8 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* Mobile-only Logout Button (Bottom) - Only show on Overview */}
                 {activeTab === 'Overview' && (
-                    <div className="lg:hidden p-4 mt-auto">
+                    <div className="lg:hidden px-4 pb-1 pt-2">
                         <button
                             onClick={handleLogout}
                             className="w-full flex items-center bg-[#ef4444] text-white rounded-2xl overflow-hidden shadow-lg shadow-red-500/10 active:scale-[0.98] transition-all"

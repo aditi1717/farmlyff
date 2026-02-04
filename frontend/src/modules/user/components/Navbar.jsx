@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown, Menu, Home, Package } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
@@ -58,6 +58,8 @@ const Navbar = () => {
     const [showSuggestions, setShowSuggestions] = React.useState(false);
     const [selectedCategory, setSelectedCategory] = React.useState(null);
     const [hoveredCategoryInMenu, setHoveredCategoryInMenu] = React.useState(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [expandedMenu, setExpandedMenu] = React.useState(null); // Accordion State
 
     const { filteredProducts, filteredCats, filteredSubs } = React.useMemo(() => {
         if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [] };
@@ -113,15 +115,16 @@ const Navbar = () => {
     const wishlistCount = wishlist.length;
 
     return (
-        <nav className="bg-background sticky top-0 md:relative border-b border-gray-100 py-3 md:py-4 px-4 md:px-12" style={{ zIndex: 10005 }}>
-            <div className="flex justify-between items-center gap-4 md:gap-8">
+        <nav className="bg-white sticky top-0 md:relative border-b border-gray-100 py-2.5 md:py-4 px-4 md:px-12" style={{ zIndex: 10005 }}>
+            {/* Desktop View Header */}
+            <div className="hidden md:flex justify-between items-center gap-4 md:gap-8">
                 {/* Logo */}
                 <Link to="/" className="flex-shrink-0 flex items-center gap-1.5">
                     <img src={logo} alt="FarmLyf" className="h-7 md:h-9 w-auto object-contain" />
                 </Link>
 
                 {/* Search Bar - Functional */}
-                <div className="hidden md:flex flex-1 max-w-2xl relative group z-50">
+                <div className="flex flex-1 max-w-2xl relative group z-50">
                     <div className="flex w-full items-center border border-gray-300 rounded-full bg-white transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 hover:border-gray-400 relative">
                         <div
                             className="relative h-full"
@@ -145,7 +148,6 @@ const Navbar = () => {
                                         className="absolute top-full left-0 mt-[1px] w-[650px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden flex min-h-[280px]"
                                         style={{ zIndex: 10006 }}
                                     >
-                                        {/* Left Column: Categories */}
                                         <div className="w-[180px] bg-white py-2 border-r border-black">
                                             <div className="flex flex-col">
                                                 {categories.filter(c => c.status === 'Active').map(cat => (
@@ -164,7 +166,6 @@ const Navbar = () => {
                                             </div>
                                         </div>
 
-                                        {/* Middle Column: Subcategories */}
                                         <div className="flex-1 bg-white py-4 px-7 border-r border-gray-50">
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                                 {(hoveredCategoryInMenu || (categories.filter(c => c.status === 'Active')[0])) && (
@@ -188,7 +189,6 @@ const Navbar = () => {
                                             </div>
                                         </div>
 
-                                        {/* Right Column: Permanent Image */}
                                         <div className="w-[220px] p-3 flex items-center justify-center bg-white">
                                             <div className="relative w-full h-[220px] rounded-lg overflow-hidden group shadow-sm">
                                                 <img
@@ -216,15 +216,12 @@ const Navbar = () => {
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
 
-                            {/* Search Suggestions Dropdown */}
                             {showSuggestions && searchQuery.length > 0 && (
                                 <div
                                     className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2"
                                     style={{ zIndex: 10006 }}
-                                    onMouseDown={(e) => e.preventDefault()} // Prevent blur on click
+                                    onMouseDown={(e) => e.preventDefault()}
                                 >
-
-                                    {/* Products */}
                                     {filteredProducts.length > 0 && (
                                         <div className="mb-2">
                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Products</div>
@@ -244,7 +241,6 @@ const Navbar = () => {
                                         </div>
                                     )}
 
-                                    {/* Categories */}
                                     {filteredCats.length > 0 && (
                                         <div className="mb-2">
                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Categories</div>
@@ -261,7 +257,6 @@ const Navbar = () => {
                                         </div>
                                     )}
 
-                                    {/* Subcategories */}
                                     {filteredSubs.length > 0 && (
                                         <div className="mb-1">
                                             <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Collections</div>
@@ -298,10 +293,6 @@ const Navbar = () => {
 
                 {/* Icons */}
                 <div className="flex items-center gap-4 md:gap-7 lg:gap-8 shrink-0">
-                    {/* Industry Standard Order: Shop | Profile | Wishlist | Vault | Cart */}
-                    {/* Shop Dropdown */}
-
-
                     <Link to={user ? "/profile" : "/login"} className="flex flex-col items-center gap-0.5 text-textPrimary hover:text-primary transition-colors group border-l border-gray-100 pl-4 md:pl-7">
                         <User size={22} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
                         <span className="text-[10px] font-medium hidden md:block">
@@ -347,22 +338,190 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* Navigation Links Row */}
-            <div className="hidden md:flex items-center justify-center gap-8 mt-0 pt-0 border-t border-gray-50 overflow-x-auto no-scrollbar">
+            {/* Mobile View Header - Matched to Screenshot */}
+            <div className="flex md:hidden items-center justify-between w-full h-10">
+                {/* Hamburger */}
+                <button
+                    className="p-1 text-black"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                >
+                    <Menu size={24} strokeWidth={2.5} />
+                </button>
 
+                {/* Centered Logo */}
+                <Link to="/" className="flex-shrink-0 absolute left-1/2 -translate-x-1/2">
+                    <img src={logo} alt="FarmLyf" className="h-6 w-auto object-contain" />
+                </Link>
 
-                {/* Dynamic Subcategories Removed as per request (now in Blue Bar) */}
+                {/* Right Icons */}
+                <div className="flex items-center gap-4">
+                    <button className="p-1 text-black">
+                        <Search size={22} strokeWidth={2.5} />
+                    </button>
+                    <Link to="/cart" className="relative p-1 text-black">
+                        <ShoppingCart size={22} strokeWidth={2.5} />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-[#8B0000] text-white text-[8px] font-black h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                                {cartCount}
+                            </span>
+                        )}
+                    </Link>
+                </div>
             </div>
 
-            {/* Mobile Search (Visible only on mobile) */}
-            <div className="mt-3 md:hidden relative">
-                <input
-                    type="text"
-                    placeholder="Search for amazing dry fruits..."
-                    className="w-full px-4 py-2 border border-gray-200 rounded-full text-sm outline-none focus:border-primary"
-                />
-                <Search size={18} className="absolute right-3 top-2.5 text-gray-400" />
-            </div>
+            {/* Mobile Menu Sidebar (Drawer) */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="fixed inset-0 bg-black/50 z-[10010] md:hidden"
+                        />
+
+                        {/* Sidebar */}
+                        <motion.div
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'tween', duration: 0.3 }}
+                            className="fixed top-0 left-0 h-full w-[85%] bg-[#0B1221] z-[10011] shadow-2xl md:hidden overflow-y-auto"
+                        >
+                            <div className="flex flex-col h-full text-white">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-5 border-b border-gray-800">
+                                    <img src={logo} alt="FarmLyf" className="h-6 w-auto object-contain brightness-0 invert" />
+                                    <button
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors text-white"
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 overflow-y-auto py-4">
+                                    <div className="flex flex-col gap-1 px-3">
+                                        {/* Home */}
+                                        <Link
+                                            to="/"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-[#25D366]">
+                                                <Home size={22} />
+                                            </span>
+                                            <span className="font-bold tracking-wide text-sm">HOME</span>
+                                        </Link>
+
+                                        {/* Shop */}
+                                        <Link
+                                            to="/catalog"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-[#25D366]">
+                                                <LayoutGrid size={22} />
+                                            </span>
+                                            <span className="font-bold tracking-wide text-sm">SHOP</span>
+                                        </Link>
+
+                                        {/* Combos & Packs */}
+                                        <Link
+                                            to="/category/combos-packs"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-[#25D366]">
+                                                <Package size={22} />
+                                            </span>
+                                            <span className="font-bold tracking-wide text-sm">COMBOS & PACKS</span>
+                                        </Link>
+
+                                        {/* Categories */}
+                                        {categories.filter(c => c.status === 'Active').map((category) => {
+                                            const isExpanded = expandedMenu === (category.id || category._id);
+                                            const catSubs = subCategories.filter(s => {
+                                                const parentId = s.parent?._id || s.parent;
+                                                return String(parentId) === String(category.id || category._id) && s.status === 'Active';
+                                            });
+                                            const hasSubs = catSubs.length > 0;
+
+                                            return (
+                                                <div key={category.id || category._id} className="flex flex-col">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (hasSubs) {
+                                                                setExpandedMenu(isExpanded ? null : (category.id || category._id));
+                                                            } else {
+                                                                navigate(`/category/${category.slug}`);
+                                                                setIsMobileMenuOpen(false);
+                                                            }
+                                                        }}
+                                                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl hover:bg-white/5 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-[#25D366]">
+                                                                <LayoutGrid size={22} />
+                                                            </span>
+                                                            <span className="font-bold tracking-wide text-sm uppercase">{category.name}</span>
+                                                        </div>
+                                                        {hasSubs && (
+                                                            <ChevronDown
+                                                                size={16}
+                                                                className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                                            />
+                                                        )}
+                                                    </button>
+
+                                                    {/* Subcategories Dropdown */}
+                                                    <AnimatePresence>
+                                                        {isExpanded && hasSubs && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className="overflow-hidden bg-black/20 rounded-lg mx-2"
+                                                            >
+                                                                <div className="flex flex-col py-2">
+                                                                    <Link
+                                                                        to={`/category/${category.slug}`}
+                                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                                        className="px-11 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2"
+                                                                    >
+                                                                        <span>View All {category.name}</span>
+                                                                    </Link>
+                                                                    {catSubs.map(sub => (
+                                                                        <Link
+                                                                            key={sub.id || sub._id}
+                                                                            to={getSubLink(sub)}
+                                                                            onClick={() => setIsMobileMenuOpen(false)}
+                                                                            className="px-11 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                                                                        >
+                                                                            {sub.name}
+                                                                        </Link>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            );
+                                        })}
+
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </nav>
     );
 };

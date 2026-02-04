@@ -66,8 +66,8 @@ const BlogSection = () => {
         <section className="bg-white pt-12 pb-2 md:pt-16 md:pb-4 overflow-hidden">
             <div className="container mx-auto px-4 md:px-12">
                 {/* Section Header */}
-                <div className="text-center mb-10 md:mb-14">
-                    <h2 className="text-3xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3">
+                <div className="text-center mb-8 md:mb-14">
+                    <h2 className="text-2xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3">
                         Our Recent <span className="text-primary">Blogs</span>
                     </h2>
                     <div className="w-24 md:w-32 h-1 bg-primary mx-auto rounded-full" />
@@ -91,10 +91,10 @@ const BlogSection = () => {
                             <motion.div
                                 key={post.id}
                                 whileHover={{ y: -5 }}
-                                className="flex-shrink-0 w-[300px] md:w-[400px] relative mt-4 mb-4"
+                                className="flex-shrink-0 w-[280px] md:w-[400px] relative mt-4 mb-4"
                             >
                                 {/* Image Container (Background Layer) */}
-                                <div className="h-[240px] md:h-[280px] w-full rounded-2xl overflow-hidden relative z-0 shadow-sm">
+                                <div className="h-[160px] md:h-[280px] w-full rounded-2xl overflow-hidden relative z-0 shadow-sm">
                                     <img
                                         src={post.image}
                                         alt={post.title}
@@ -105,11 +105,11 @@ const BlogSection = () => {
                                 </div>
 
                                 {/* Floating Content Card (Top Layer) */}
-                                <div className="bg-white rounded-2xl shadow-xl p-3 md:p-4 mx-4 relative z-10 -mt-28 border border-gray-100">
+                                <div className="bg-white rounded-2xl shadow-xl p-2 md:p-3 mx-2 md:mx-4 relative z-10 -mt-16 md:-mt-28 border border-gray-100">
                                     {/* Meta Header */}
                                     <div className="flex justify-between items-center mb-2 text-xs text-gray-500 font-medium">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm">
+                                            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm">
                                                 <img src={logoImg} alt="FarmLyf" className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex flex-col">
@@ -126,17 +126,17 @@ const BlogSection = () => {
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-sm md:text-base font-bold text-gray-900 mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+                                    <h3 className="text-xs md:text-base font-bold text-gray-900 mb-1 md:mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
                                         {post.title}
                                     </h3>
 
                                     {/* Excerpt */}
-                                    <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                                    <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-2 line-clamp-2 leading-relaxed">
                                         {post.excerpt}
                                     </p>
 
                                     {/* Read More */}
-                                    <button className="text-sm font-bold text-gray-900 hover:text-primary flex items-center gap-1 group transition-colors">
+                                    <button className="text-[10px] md:text-sm font-bold text-gray-900 hover:text-primary flex items-center gap-1 group transition-colors">
                                         Read More
                                     </button>
                                 </div>

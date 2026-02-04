@@ -135,13 +135,13 @@ const TopSellingProducts = () => {
     if (topProducts.length === 0) return null;
 
     return (
-        <section className="bg-white py-4 md:py-6 px-4 md:px-12 relative overflow-hidden bg-gradient-to-b from-white to-gray-50/50">
+        <section className="bg-white pt-6 pb-4 md:py-6 px-4 md:px-12 relative overflow-hidden bg-gradient-to-b from-white to-gray-50/50">
             <div className="container mx-auto">
-                <div className="text-center mb-6 md:mb-10 space-y-2">
+                <div className="text-center mb-4 md:mb-14 space-y-2">
                     <motion.h2
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        className="text-3xl md:text-4xl font-['Poppins'] font-bold text-footerBg tracking-tight"
+                        className="text-2xl md:text-4xl font-['Poppins'] font-bold text-footerBg tracking-tight"
                     >
                         Top Selling <span className="text-primary">Products</span>
                     </motion.h2>

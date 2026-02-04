@@ -12,7 +12,9 @@ import {
     ChevronDown,
     Sparkles,
     LayoutGrid,
-    List
+    List,
+    X,
+    Check
 } from 'lucide-react';
 import { useProducts, useCategories, useSubCategories } from '../../../hooks/useProducts';
 import ProductCard from '../components/ProductCard';
@@ -29,7 +31,7 @@ const CatalogPage = () => {
     const { data: subCategories = [] } = useSubCategories();
 
     // States for Filters
-    const [openFilters, setOpenFilters] = useState(['Price', 'Availability', 'Brand', 'Discount', 'Shop By Category', 'Shop By Weight']);
+    const [openFilters, setOpenFilters] = useState([]); // Start closed to prevent mobile clutter
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
     const [selectedAvailability, setSelectedAvailability] = useState([]);
     const [selectedBrands, setSelectedBrands] = useState([]);
@@ -38,6 +40,33 @@ const CatalogPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredFilterCategory, setHoveredFilterCategory] = useState(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+    const [isDesktopSortOpen, setIsDesktopSortOpen] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setOpenFilters(prev => prev.length === 6 ? prev : ['Price', 'Availability', 'Brand', 'Discount', 'Shop By Category', 'Shop By Weight']);
+            } else {
+                setOpenFilters([]);
+            }
+        };
+
+        handleResize(); // Run on mount
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const sortOptions = [
+        { value: 'featured', label: 'Featured' },
+        { value: 'best-selling', label: 'Best Selling' },
+        { value: 'alphabetical-az', label: 'Alphabetically: A-Z' },
+        { value: 'alphabetical-za', label: 'Alphabetically: Z-A' },
+        { value: 'price-low', label: 'Price: Low to High' },
+        { value: 'price-high', label: 'Price: High to Low' },
+        { value: 'newest', label: 'Date: New to Old' },
+    ];
 
     const toggleFilterAccordion = (filterName) => {
         setOpenFilters(prev =>
@@ -211,27 +240,117 @@ const CatalogPage = () => {
         <div className="bg-white min-h-screen font-['Inter']">
 
             {/* Breadcrumb */}
-            <div className="container mx-auto px-4 md:px-12 py-4 flex items-center gap-2 text-[12px] font-medium text-gray-400">
+            <div className="container mx-auto px-4 md:px-12 py-2 md:py-4 flex items-center gap-2 text-[12px] font-medium text-gray-400">
                 <Link to="/" className="hover:text-[#842A35]">Home</Link>
                 <ChevronRight size={14} />
                 <span className="text-black font-semibold">Shop</span>
             </div>
 
-            <div className="container mx-auto px-4 md:px-12 flex flex-col lg:flex-row gap-8 pb-12">
+            {/* Mobile Action Bar - Sticky Top or Inline */}
+            <div className="lg:hidden container mx-auto px-4 mb-3 flex gap-2 sticky top-[70px] z-30 bg-white py-2">
+                {/* All Filters Button */}
+                <button
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    className="flex-1 border border-black rounded-lg py-2 flex items-center justify-center gap-1.5 bg-white"
+                >
+                    <span className="text-[10px] font-black text-black uppercase tracking-widest">All Filters</span>
+                    <Filter size={12} strokeWidth={2.5} />
+                </button>
 
-                {/* SIDEBAR */}
-                <aside className="w-full lg:w-72 shrink-0">
-                    {/* Header for Filter Sidebar */}
-                    <div className="lg:hidden mb-4">
+                {/* Sort By Dropdown - Mobile */}
+                <div className="flex-1 relative">
+                    <button
+                        onClick={() => setIsSortMenuOpen(true)}
+                        className="w-full border border-black rounded-lg py-2 flex items-center justify-center gap-1.5 bg-white"
+                    >
+                        <span className="text-[10px] font-black text-black uppercase tracking-widest">Sort By</span>
+                        <ChevronDown size={12} strokeWidth={2.5} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="container mx-auto px-4 md:px-12 flex flex-col lg:flex-row gap-8 pb-12 relative">
+
+                {/* Mobile Sort Menu Drawer */}
+                <AnimatePresence>
+                    {isSortMenuOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsSortMenuOpen(false)}
+                                className="fixed inset-0 bg-black/60 z-[80] lg:hidden backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ y: '100%' }}
+                                animate={{ y: 0 }}
+                                exit={{ y: '100%' }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                                className="fixed bottom-0 left-0 right-0 bg-white z-[90] lg:hidden rounded-t-[20px] overflow-hidden shadow-2xl"
+                            >
+                                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                                    <span className="text-sm font-black text-[#842A35] uppercase tracking-widest">Sort By</span>
+                                    <button onClick={() => setIsSortMenuOpen(false)} className="p-1.5 bg-gray-50 rounded-full">
+                                        <X size={16} className="text-gray-500" />
+                                    </button>
+                                </div>
+                                <div className="p-4 pb-8 space-y-1.5 max-h-[60vh] overflow-y-auto">
+                                    {sortOptions.map(option => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                setSortBy(option.value);
+                                                setIsSortMenuOpen(false);
+                                            }}
+                                            className={`w-full text-left py-2.5 px-3 rounded-xl flex items-center justify-between transition-colors border ${sortBy === option.value
+                                                ? 'bg-[#842A35]/5 border-[#842A35] text-[#842A35] font-bold'
+                                                : 'border-transparent text-gray-600 hover:bg-gray-50 font-medium'
+                                                }`}
+                                        >
+                                            <span className="text-xs">{option.label}</span>
+                                            {sortBy === option.value && <Check size={14} strokeWidth={3} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* Mobile Filter Backdrop */}
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="fixed inset-0 bg-black/50 z-[60] lg:hidden backdrop-blur-sm"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* SIDEBAR - Mobile Bottom Sheet & Desktop Sidebar */}
+                <aside
+                    className={`
+                        fixed bottom-0 left-0 right-0 z-[100] w-full bg-white h-[85vh] overflow-y-auto shadow-2xl transition-transform duration-300 ease-in-out rounded-t-[24px]
+                        lg:static lg:w-72 lg:shrink-0 lg:shadow-none lg:translate-x-0 lg:translate-y-0 lg:z-auto lg:h-auto lg:overflow-visible lg:bg-transparent lg:rounded-none
+                        ${isMobileMenuOpen ? 'translate-y-0' : 'translate-y-full'}
+                    `}
+                >
+                    {/* Mobile Drawer Header */}
+                    <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+                        <span className="text-sm font-black text-[#842A35] uppercase tracking-widest">Filters</span>
                         <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="w-full border border-[#842A35] text-[#842A35] py-3 rounded flex items-center justify-center gap-2 font-bold text-sm uppercase"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="p-1.5 bg-gray-50 rounded-full hover:bg-gray-100"
                         >
-                            <Filter size={16} /> {isMobileMenuOpen ? 'Hide Filters' : 'Show Filters'}
+                            <X size={16} className="text-black" />
                         </button>
                     </div>
 
-                    <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:block border border-[#842A35] rounded-sm overflow-hidden sticky top-24`}>
+                    <div className="lg:border lg:border-[#842A35] lg:rounded-sm lg:overflow-hidden lg:sticky lg:top-24 pb-24 lg:pb-0">
                         <FilterSection title="Price">
                             <div className="flex items-center gap-2 mt-2">
                                 <div className="relative flex-1">
@@ -333,6 +452,9 @@ const CatalogPage = () => {
                                                         key={sub}
                                                         onClick={() => {
                                                             navigate(`/category/${sub.toLowerCase().replace(/ /g, '-')}`);
+                                                            // Keep mobile menu open or close it? Usually close it after selection.
+                                                            // setIsMobileMenuOpen(false); // Let user close it manually if they want multiple filters? 
+                                                            // Wait, categories usually navigate. Let's close it.
                                                             setIsMobileMenuOpen(false);
                                                         }}
                                                         className={`w-full text-left py-0.5 text-xs transition-all ${selectedSubcategory === sub ? 'text-[#842A35] font-bold' : 'text-gray-400 hover:text-black font-medium'}`}
@@ -376,9 +498,9 @@ const CatalogPage = () => {
                 {/* MAIN GRID */}
                 <main className="flex-1">
                     {/* Toolbar */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-4 border-b border-gray-100 gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 pb-2 md:mb-8 md:pb-4 border-b border-gray-100 gap-2 md:gap-4">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-2xl font-black text-black">
+                            <h1 className="text-xl md:text-2xl font-black text-black">
                                 {category ? category.replace(/-/g, ' ').toUpperCase() : 'ALL PRODUCTS'}
                             </h1>
                             <span className="text-xs text-gray-400 font-bold bg-gray-50 px-3 py-1 rounded-full">
@@ -386,26 +508,53 @@ const CatalogPage = () => {
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            {/* Sort By Dropdown - Pill Shape Screenmatch */}
-                            <div className="relative group">
-                                <div className="flex items-center gap-2.5 px-6 py-2 border border-black rounded-xl bg-white transition-all cursor-pointer">
-                                    <span className="text-[13px] font-bold text-black font-['Poppins']">Sort By</span>
-                                    <ChevronDown size={14} className="text-black" />
-                                </div>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        <div className="hidden md:flex items-center gap-4">
+                            {/* Sort By Dropdown - Desktop Custom UI */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsDesktopSortOpen(!isDesktopSortOpen)}
+                                    className="flex items-center gap-2.5 px-4 py-1.5 md:px-6 md:py-2 border border-black rounded-xl bg-white transition-all hover:bg-gray-50"
                                 >
-                                    <option value="featured">Featured</option>
-                                    <option value="best-selling">Best Selling</option>
-                                    <option value="alphabetical-az">Alphabetically: A-Z</option>
-                                    <option value="alphabetical-za">Alphabetically: Z-A</option>
-                                    <option value="price-low">Price: Low to High</option>
-                                    <option value="price-high">Price: High to Low</option>
-                                    <option value="newest">Date: New to Old</option>
-                                </select>
+                                    <span className="text-xs md:text-[13px] font-bold text-black font-['Poppins']">
+                                        Sort By
+                                    </span>
+                                    <ChevronDown size={14} className={`text-black transition-transform ${isDesktopSortOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Desktop Sort Menu */}
+                                <AnimatePresence>
+                                    {isDesktopSortOpen && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-10 cursor-default"
+                                                onClick={() => setIsDesktopSortOpen(false)}
+                                            />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden"
+                                            >
+                                                <div className="py-1">
+                                                    {sortOptions.map(option => (
+                                                        <button
+                                                            key={option.value}
+                                                            onClick={() => {
+                                                                setSortBy(option.value);
+                                                                setIsDesktopSortOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${sortBy === option.value ? 'font-bold text-[#842A35] bg-[#842A35]/5' : 'text-gray-600'
+                                                                }`}
+                                                        >
+                                                            {option.label}
+                                                            {sortBy === option.value && <Check size={16} />}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
