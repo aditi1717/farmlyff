@@ -16,7 +16,7 @@ const AdminLayout = () => {
     return (
         <div className="bg-[#fcfcfc] min-h-screen">
             <AdminSidebar />
-            <div className="pl-64 flex flex-col min-h-screen">
+            <div className="pl-72 flex flex-col min-h-screen">
                 <AdminHeader />
                 <main className="flex-1 p-8">
                     <Outlet />

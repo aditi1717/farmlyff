@@ -9,9 +9,9 @@ export const getProductReviews = async (req, res) => {
         // We expect custom productId in params (e.g. "prod_001")
         // But if it's an ObjectId string, we need to handle that?
         // Let's assume params is the custom ID or we resolve it.
-        
+
         let targetId = req.params.productId;
-        
+
         // Verify product exists and get its custom ID just in case
         let product = await Product.findOne({ id: targetId });
         if (!product) product = await Product.findById(targetId);
@@ -19,9 +19,9 @@ export const getProductReviews = async (req, res) => {
 
         const reviews = await Review.aggregate([
             {
-                $match: { 
+                $match: {
                     product: product._id, // Match on ObjectId
-                    status: 'Approved' 
+                    status: 'Approved'
                 }
             },
             {
@@ -51,7 +51,7 @@ export const getProductReviews = async (req, res) => {
                 isBanned: r.userDetails?.isBanned
             }
         }));
-        
+
         res.json(formattedReviews);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -64,11 +64,11 @@ export const getProductReviews = async (req, res) => {
 export const createReview = async (req, res) => {
     try {
         const { productId, rating, title, comment, images } = req.body;
-        
+
         // Find product by custom ID or _id
         let product = await Product.findOne({ id: productId });
         if (!product) {
-             product = await Product.findById(productId);
+            product = await Product.findById(productId);
         }
 
         if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -84,7 +84,7 @@ export const createReview = async (req, res) => {
         });
 
         await review.save();
-        
+
         res.status(201).json(review);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -127,7 +127,7 @@ export const getAllReviewsAdmin = async (req, res) => {
                     comment: 1,
                     status: 1,
                     createdAt: 1,
-                    user: { 
+                    user: {
                         name: { $ifNull: ['$userDetails.name', 'Admin/Unknown'] },
                         email: '$userDetails.email',
                         id: '$userDetails.id',
@@ -180,5 +180,27 @@ export const deleteReview = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+// @desc    Create an admin review (Homepage Testimonial)
+// @route   POST /api/reviews/admin
+// @access  Private/Admin
+export const createAdminReview = async (req, res) => {
+    try {
+        const { name, comment, image } = req.body;
+
+        const review = new Review({
+            user: req.user.id,
+            name,
+            comment,
+            image,
+            status: 'Approved',
+            rating: 5 // Default for admin reviews
+        });
+
+        await review.save();
+        res.status(201).json(review);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 };

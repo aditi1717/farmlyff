@@ -8,11 +8,14 @@ import {
     Eye,
     EyeOff,
     Upload,
-    Loader
+    Loader,
+    CheckCircle2,
+    Boxes
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import Pagination from '../components/Pagination';
 import { useQueryClient } from '@tanstack/react-query';
+import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const CategoriesPage = () => {
     const queryClient = useQueryClient();
@@ -31,14 +34,14 @@ const CategoriesPage = () => {
     const [submitLoading, setSubmitLoading] = useState(false);
 
     // Form State
-    const [newItem, setNewItem] = useState({ 
-        name: '', 
+    const [newItem, setNewItem] = useState({
+        name: '',
         image: '', // URL
-        status: 'Active', 
-        showInNavbar: false, 
-        showInShopByCategory: false 
+        status: 'Active',
+        showInNavbar: false,
+        showInShopByCategory: false
     });
-    
+
     // File inputs
     const [imageFile, setImageFile] = useState(null);
     const [preview, setPreview] = useState(null);
@@ -96,7 +99,7 @@ const CategoriesPage = () => {
 
         try {
             let imageUrl = isEdit ? editingCategory.image : newItem.image;
-            
+
             if (imageFile) {
                 imageUrl = await uploadImage(imageFile);
             }
@@ -105,10 +108,10 @@ const CategoriesPage = () => {
             // Ensure no parent for top-level categories
             itemData.parent = null;
 
-            const url = isEdit 
-                ? `http://localhost:5000/api/categories/${editingCategory.id}` 
+            const url = isEdit
+                ? `http://localhost:5000/api/categories/${editingCategory.id}`
                 : 'http://localhost:5000/api/categories';
-            
+
             const method = isEdit ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -142,7 +145,7 @@ const CategoriesPage = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure? Sub-categories might rely on this.')) return;
         const toastId = toast.loading('Deleting...');
-        
+
         try {
             const res = await fetch(`http://localhost:5000/api/categories/${id}`, { method: 'DELETE' });
             if (res.ok) {
@@ -166,7 +169,7 @@ const CategoriesPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
             });
-            if(res.ok) {
+            if (res.ok) {
                 toast.success(`Status changed to ${newStatus}`);
                 fetchCategories();
                 refreshGlobalCategories();
@@ -197,7 +200,7 @@ const CategoriesPage = () => {
     return (
         <div className="space-y-8 font-['Inter']">
             <Toaster position="top-right" />
-            
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -215,6 +218,43 @@ const CategoriesPage = () => {
                 >
                     <Plus size={18} strokeWidth={3} /> Add Category
                 </button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{categories.length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <Boxes size={22} />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{categories.filter(c => c.status === 'Active').length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <CheckCircle2 size={22} />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hidden Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{categories.filter(c => c.status !== 'Active').length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <EyeOff size={22} />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Filter Bar */}
@@ -243,51 +283,54 @@ const CategoriesPage = () => {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-                {loading ? <div className="flex justify-center items-center h-64"><Loader className="animate-spin text-gray-300" /></div> : 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-gray-50 bg-gray-50/50">
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category Info</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Visibility</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
+                {loading ? <div className="flex justify-center items-center h-64"><Loader className="animate-spin text-gray-300" /></div> :
+                    <AdminTable>
+                        <AdminTableHeader>
+                            <AdminTableHead>Category Info</AdminTableHead>
+                            <AdminTableHead className="text-center">Products</AdminTableHead>
+                            <AdminTableHead className="text-center">Visibility</AdminTableHead>
+                            <AdminTableHead>Status</AdminTableHead>
+                            <AdminTableHead className="text-right">Actions</AdminTableHead>
+                        </AdminTableHeader>
+                        <AdminTableBody>
                             {paginatedCategories.map((category) => (
-                                <tr key={category.id} className="group hover:bg-gray-50/50 transition-all">
-                                    <td className="px-6 py-4">
+                                <AdminTableRow key={category.id}>
+                                    <AdminTableCell>
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center p-1.5 overflow-hidden shrink-0">
-                                                {category.image ? <img src={category.image} alt="" className="w-full h-full object-cover rounded-lg" /> : <ImageIcon size={20} className="text-gray-300" />}
+                                            <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                                                {category.image ? <img src={category.image} alt="" className="w-full h-full object-cover rounded-md" /> : <ImageIcon size={20} className="text-gray-300" />}
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-footerBg uppercase tracking-tight text-sm">{category.name}</h3>
+                                                <h3 className="font-medium text-gray-900 text-sm">{category.name}</h3>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
+                                    </AdminTableCell>
+                                    <AdminTableCell className="text-center">
+                                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded inline-block min-w-[30px]">
+                                            {category.productCount || 0}
+                                        </span>
+                                    </AdminTableCell>
+                                    <AdminTableCell className="text-center">
                                         <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-[150px] mx-auto">
-                                            {category.showInNavbar && <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full uppercase border border-blue-100">Navbar</span>}
-                                            {category.showInShopByCategory && <span className="text-[9px] font-black bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full uppercase border border-purple-100">Home Tiles</span>}
-                                            {!category.showInNavbar && !category.showInShopByCategory && <span className="text-[9px] font-bold text-gray-300 italic uppercase">Private</span>}
+                                            {category.showInNavbar && <span className="text-xs font-medium bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">Navbar</span>}
+                                            {category.showInShopByCategory && <span className="text-xs font-medium bg-purple-50 text-purple-600 px-2 py-0.5 rounded border border-purple-100">Shop Strip</span>}
+                                            {!category.showInNavbar && !category.showInShopByCategory && <span className="text-xs text-gray-400 italic">Private</span>}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">
+                                    </AdminTableCell>
+                                    <AdminTableCell>
                                         <button
                                             onClick={() => toggleStatus(category)}
-                                            className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${category.status === 'Active'
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                                : 'bg-gray-50 text-gray-400 border-gray-100'
+                                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-2 border w-fit ${category.status === 'Active'
+                                                ? 'bg-green-50 text-green-700 border-green-100'
+                                                : 'bg-gray-50 text-gray-500 border-gray-100'
                                                 }`}
                                         >
                                             {category.status === 'Active' ? <Eye size={12} /> : <EyeOff size={12} />}
                                             {category.status}
                                         </button>
-                                    </td>
-                                    <td className="px-6 py-4">
+                                    </AdminTableCell>
+                                    <AdminTableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => {
@@ -295,23 +338,22 @@ const CategoriesPage = () => {
                                                     setPreview(category.image);
                                                     setImageFile(null);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-[#2c5336] hover:bg-white rounded-lg transition-all"
+                                                className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(category.id)}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all"
+                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </AdminTableCell>
+                                </AdminTableRow>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
+                        </AdminTableBody>
+                    </AdminTable>
                 }
                 <Pagination
                     currentPage={currentPage}
@@ -325,8 +367,8 @@ const CategoriesPage = () => {
             {/* Modal */}
             {(showAddModal || editingCategory) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-footerBg/60 backdrop-blur-sm" 
-                         onClick={() => { setShowAddModal(false); setEditingCategory(null); }} />
+                    <div className="absolute inset-0 bg-footerBg/60 backdrop-blur-sm"
+                        onClick={() => { setShowAddModal(false); setEditingCategory(null); }} />
                     <div className="bg-white rounded-[2rem] w-full max-w-sm relative z-10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                             <h2 className="text-lg font-black text-footerBg uppercase tracking-tight">
@@ -343,9 +385,9 @@ const CategoriesPage = () => {
                                     required
                                     type="text"
                                     value={editingCategory ? editingCategory.name : newItem.name}
-                                    onChange={(e) => editingCategory 
-                                        ? setEditingCategory({...editingCategory, name: e.target.value}) 
-                                        : setNewItem({...newItem, name: e.target.value})}
+                                    onChange={(e) => editingCategory
+                                        ? setEditingCategory({ ...editingCategory, name: e.target.value })
+                                        : setNewItem({ ...newItem, name: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-footerBg outline-none focus:border-[#2c5336] transition-all text-sm"
                                     placeholder="e.g. Exotic Nuts"
                                 />
@@ -385,9 +427,9 @@ const CategoriesPage = () => {
                                     <input
                                         type="checkbox"
                                         checked={editingCategory ? (editingCategory.showInNavbar || false) : (newItem.showInNavbar || false)}
-                                        onChange={(e) => editingCategory 
-                                            ? setEditingCategory({...editingCategory, showInNavbar: e.target.checked})
-                                            : setNewItem({...newItem, showInNavbar: e.target.checked})}
+                                        onChange={(e) => editingCategory
+                                            ? setEditingCategory({ ...editingCategory, showInNavbar: e.target.checked })
+                                            : setNewItem({ ...newItem, showInNavbar: e.target.checked })}
                                         className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
                                     />
                                     <span className="text-[8px] font-black text-footerBg uppercase">Navbar</span>
@@ -396,9 +438,9 @@ const CategoriesPage = () => {
                                     <input
                                         type="checkbox"
                                         checked={editingCategory ? (editingCategory.showInShopByCategory || false) : (newItem.showInShopByCategory || false)}
-                                        onChange={(e) => editingCategory 
-                                            ? setEditingCategory({...editingCategory, showInShopByCategory: e.target.checked})
-                                            : setNewItem({...newItem, showInShopByCategory: e.target.checked})}
+                                        onChange={(e) => editingCategory
+                                            ? setEditingCategory({ ...editingCategory, showInShopByCategory: e.target.checked })
+                                            : setNewItem({ ...newItem, showInShopByCategory: e.target.checked })}
                                         className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
                                     />
                                     <span className="text-[8px] font-black text-footerBg uppercase">Show in Shop Strip</span>
@@ -409,7 +451,7 @@ const CategoriesPage = () => {
                                 type="submit"
                                 disabled={submitLoading}
                                 className="w-full bg-[#2c5336] text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#1f3b26] transition-all flex items-center justify-center gap-2 group shadow-lg shadow-[#2c5336]/20"
-                            > 
+                            >
                                 {submitLoading && <Loader size={12} className="animate-spin text-white/50" />}
                                 {editingCategory ? 'Save Changes' : 'Create Category'}
                             </button>

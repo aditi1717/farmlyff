@@ -39,9 +39,7 @@ const AuthPage = () => {
         if (isLogin) {
             const res = await login(formData.email, formData.password);
             if (res.success) {
-                // If coming from a protected route or action, go back, else home
-                // For now just go home or back
-                navigate(-1);
+                navigate('/otp-verification', { state: { contact: formData.email } });
             } else {
                 setError(res.message);
             }
@@ -60,7 +58,7 @@ const AuthPage = () => {
                 password: formData.password
             });
             if (res.success) {
-                navigate(-1);
+                navigate('/otp-verification', { state: { contact: formData.email } });
             } else {
                 setError(res.message);
             }

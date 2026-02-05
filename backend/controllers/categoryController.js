@@ -3,11 +3,25 @@ import Category from '../models/Category.js';
 // @desc    Get all categories
 // @route   GET /api/categories
 // @access  Public
+import Product from '../models/Product.js';
+
+// @desc    Get all categories
+// @route   GET /api/categories
+// @access  Public
 export const getCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
-    // Transform data for easier consumption if needed, or send as is
-    res.json(categories);
+
+    // Get product counts
+    const categoriesWithCounts = await Promise.all(categories.map(async (cat) => {
+      const count = await Product.countDocuments({ category: cat.slug });
+      return {
+        ...cat.toObject(),
+        productCount: count
+      };
+    }));
+
+    res.json(categoriesWithCounts);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -18,7 +32,7 @@ export const getCategories = async (req, res) => {
 // @access  Private (Admin)
 export const createCategory = async (req, res) => {
   const { name, image, status, showInNavbar, showInShopByCategory } = req.body;
-  
+
   try {
     const slug = name.toLowerCase().replace(/\s+/g, '-');
     const category = new Category({

@@ -85,3 +85,9 @@
     scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   }
 }
+
+/* React Quill Hyperlink Styling */
+.ql-snow .ql-editor a {
+    color: #2563EB !important; /* Bright Blue */
+    text-decoration: underline !important;
+}

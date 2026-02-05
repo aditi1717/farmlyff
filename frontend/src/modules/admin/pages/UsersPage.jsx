@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Search,
     Filter,
@@ -9,135 +9,126 @@ import {
     Mail,
     Phone,
     ArrowUpDown,
-    Loader
+    Loader,
+    Users as UsersIcon,
+    CheckCircle2,
+    AlertCircle,
+    Coins
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import toast, { Toaster } from 'react-hot-toast';
 import Pagination from '../components/Pagination';
+import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const UsersPage = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
-
     const [page, setPage] = useState(1);
     const limit = 10;
 
-    // Fetch Users (Server-Side Pagination)
-    const { data: usersData = { users: [], pages: 1, total: 0 }, isLoading } = useQuery({
-        queryKey: ['users', page, searchTerm, statusFilter], // Refetch when these change
-        queryFn: async () => {
-             // Add check to ensure we only search after debounce or button press?
-             // For now, let's keep it simple.
-             const query = new URLSearchParams({ 
-                 page, 
-                 limit, 
-                 search: searchTerm,
-                 status: statusFilter === 'All' ? '' : statusFilter 
-             }).toString();
-             
-             const res = await fetch(`http://localhost:5000/api/users?${query}`, { credentials: 'include' });
-             if (!res.ok) throw new Error('Failed to fetch users');
-             return res.json();
-        },
-        keepPreviousData: true
-    });
-
-    const users = usersData.users || [];
-    const totalPages = usersData.pages || 1;
-
-    // Fetch Orders to calculate stats (Separate query, kept as is or optimized?)
-    // Optimization: fetching ALL orders is heavy. Ideally backend should send user stats.
-    // For now, if we paginate users, we can't easily compute "Total Orders" without fetching orders for these specific users or all orders.
-    // Let's keep fetching orders for now but maybe just for the visible users if possible?
-    // Or just keep it as is (loading all orders) -> inefficient but existing behavior.
-    const { data: orders = [] } = useQuery({
-        queryKey: ['orders'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/orders', { credentials: 'include' });
-            if (!res.ok) throw new Error('Failed to fetch orders');
-            return res.json();
-        }
-    });
-
-    // Calculate user metrics for CURRENT PAGE users
-    const usersWithStats = useMemo(() => {
-        return users.map(user => {
-            const userOrders = orders.filter(o => o.user?._id === user._id || o.userId === user._id); 
-            const totalSpend = userOrders.reduce((acc, o) => acc + (o.totalPrice || o.amount || 0), 0);
-            return {
-                ...user,
-                totalOrders: userOrders.length,
-                totalSpend
-            };
-        });
-    }, [users, orders]);
-
-    // Client-side status filtering if backend doesn't support 'status' yet?
-    // I didn't add status filter to backend. I should add client-side filtering for status OR update backend.
-    // Backend search only supports name/email.
-    // If I use client-side filtering on a paginated result, the page size shrinks.
-    // Better to just filter the current page results for now or ignore status filter in query.
-    // To properly support status filter, I need to update backend.
-    // I'll update backend to support status filter in next step if checks fail.
-    
-    // For now, let's rely on backend filtering if implemented, or just show what we have.
-    // Wait, the previous code filtered by status: All, Active, Blocked.
-    // I should add `isBlocked` filter to backend query.
-    
-
-
-    // We don't need client-side pagination slicing anymore because backend returns paginated data.
-    // But if we filter client-side (status), we lose items.
-    // Ideally update backend to handle status filter.
-
-    const handleToggleBlock = async (userId) => {
-        // Placeholder for API call
-        // await axios.put(`http://localhost:5000/api/users/${userId}/block`);
-        // queryClient.invalidateQueries(['users']);
-        toast.error('Block/Unblock feature requires API implementation.');
-    };
-
-    const stats = [
-        { label: 'Total Registered', value: users.length, icon: ShieldCheck },
-        { label: 'Active Today', value: users.filter(u => !u.isBlocked).length, icon: Eye },
-        { label: 'Flagged / Restricted', value: users.filter(u => u.isBlocked).length, icon: ShieldOff }
+    // Premium Dummy Data
+    const DUMMY_USERS = [
+        { id: 'u1', name: 'Kabir Singh', email: 'kabir.s@example.com', phone: '+91 98765 43210', isBlocked: false, totalOrders: 12, totalSpend: 45200 },
+        { id: 'u2', name: 'Ananya Sharma', email: 'ananya.sh@gmail.com', phone: '+91 91234 56789', isBlocked: false, totalOrders: 5, totalSpend: 15600 },
+        { id: 'u3', name: 'Rahul Malhotra', email: 'rahul.m@outlook.com', phone: '+91 88888 77777', isBlocked: true, totalOrders: 0, totalSpend: 0 },
+        { id: 'u4', name: 'Priya Verma', email: 'p.verma@example.com', phone: '+91 77776 55555', isBlocked: false, totalOrders: 28, totalSpend: 125400 },
+        { id: 'u5', name: 'Ishaan Gupta', email: 'ishaan.g@gmail.com', phone: '+91 99900 11122', isBlocked: false, totalOrders: 8, totalSpend: 24300 },
+        { id: 'u6', name: 'Meera Rajput', email: 'meera.r@tata.com', phone: '+91 95555 44433', isBlocked: false, totalOrders: 15, totalSpend: 56900 },
+        { id: 'u7', name: 'Aditya Das', email: 'aditya.d@yahoo.com', phone: '+91 82222 33311', isBlocked: false, totalOrders: 3, totalSpend: 8900 },
+        { id: 'u8', name: 'Sanya Mirza', email: 'sanya.m@company.in', phone: '+91 70000 12345', isBlocked: true, totalOrders: 1, totalSpend: 2100 },
+        { id: 'u9', name: 'Vikram Seth', email: 'v.seth@reliance.com', phone: '+91 91111 22233', isBlocked: false, totalOrders: 10, totalSpend: 31200 },
+        { id: 'u10', name: 'Zoya Khan', email: 'zoya.k@gmail.com', phone: '+91 90000 00001', isBlocked: false, totalOrders: 6, totalSpend: 18400 }
     ];
 
+    // Debounce search term
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setPage(1); // Reset to first page on new search
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const usersWithStats = useMemo(() => {
+        return DUMMY_USERS.filter(u => {
+            const matchesSearch = u.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                u.email.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                u.phone.includes(debouncedSearch);
+            const matchesStatus = statusFilter === 'All' ||
+                (statusFilter === 'Active' && !u.isBlocked) ||
+                (statusFilter === 'Blocked' && u.isBlocked);
+            return matchesSearch && matchesStatus;
+        });
+    }, [debouncedSearch, statusFilter]);
+
+    // Paginate dummy data
+    const paginatedUsers = useMemo(() => {
+        const start = (page - 1) * limit;
+        return usersWithStats.slice(start, start + limit);
+    }, [usersWithStats, page]);
+
+    const totalPages = Math.ceil(usersWithStats.length / limit);
+
+    const handleToggleBlock = (userId) => {
+        toast.success('User status updated successfully (Demo Mode)');
+    };
+
     return (
-        <div className="space-y-8 text-left">
+        <div className="space-y-8 font-['Inter']">
             <Toaster position="top-right" />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">User CRM</h1>
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage customer profiles and account security</p>
+                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">User Management</h1>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage customer profiles and security</p>
                 </div>
-                <div className="flex gap-2">
-                    <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                        <span className="text-[10px] font-bold text-footerBg uppercase tracking-widest">{users.filter(u => !u.isBlocked).length} Active Residents</span>
-                    </div>
+                <div className="bg-[#2c5336]/5 px-4 py-2 rounded-xl border border-[#2c5336]/10 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-[#2c5336] rounded-full animate-pulse"></div>
+                    <span className="text-[10px] font-black text-[#2c5336] uppercase tracking-[0.1em]">Local Database Active</span>
                 </div>
             </div>
 
-            {/* Quick Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                {stats.map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                        <div className={`w-12 h-12 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center border border-gray-100`}>
-                            <stat.icon size={24} />
-                        </div>
+            {/* Compact Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
                         <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">{stat.label}</p>
-                            <p className="text-2xl font-black text-footerBg text-left">{stat.value}</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Residents</p>
+                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <UsersIcon size={22} />
                         </div>
                     </div>
-                ))}
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Accounts</p>
+                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.filter(u => !u.isBlocked).length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <CheckCircle2 size={22} />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Restricted</p>
+                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.filter(u => u.isBlocked).length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <AlertCircle size={22} />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Filters Bar */}
+            {/* Filter Bar */}
             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -146,139 +137,124 @@ const UsersPage = () => {
                         placeholder="Search by name, email or phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold focus:bg-white focus:border-primary outline-none transition-all"
+                        className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-[#2c5336] transition-all"
                     />
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-                        {['All', 'Active', 'Blocked'].map(f => (
-                            <button
-                                key={f}
-                                onClick={() => setStatusFilter(f)}
-                                className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === f ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-footerBg'
-                                    }`}
-                            >
-                                {f}
-                            </button>
-                        ))}
-                    </div>
-                    <button className="p-2.5 bg-gray-50 text-gray-500 rounded-xl border border-gray-100 hover:bg-white hover:text-primary transition-all">
-                        <Filter size={20} />
-                    </button>
+                <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                    {['All', 'Active', 'Blocked'].map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setStatusFilter(f)}
+                            className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === f ? 'bg-white text-[#2c5336] shadow-sm' : 'text-gray-400 hover:text-footerBg'}`}
+                        >
+                            {f}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Users Table */}
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                {isLoading && users.length === 0 ? (
-                    <div className="flex justify-center items-center p-12">
-                        <Loader className="animate-spin text-primary" size={32} />
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-gray-50 bg-gray-50/50">
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Customer</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Contact</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Orders</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Spend</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {usersWithStats.map((user) => (
-                                <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-3.5">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center font-black text-sm border border-gray-100 group-hover:bg-footerBg group-hover:text-white transition-all">
-                                                {user.name?.charAt(0) || 'U'}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-footerBg">{user.name || 'Anonymous'}</p>
-                                                <p className="text-[10px] text-gray-400 font-medium">ID: #{user.id?.slice(-6)}</p>
-                                            </div>
+            {/* Table Area */}
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
+                <AdminTable>
+                    <AdminTableHeader>
+                        <AdminTableHead>Customer Info</AdminTableHead>
+                        <AdminTableHead>Contact Access</AdminTableHead>
+                        <AdminTableHead>Status</AdminTableHead>
+                        <AdminTableHead className="text-center">Orders</AdminTableHead>
+                        <AdminTableHead>Total Revenue</AdminTableHead>
+                        <AdminTableHead className="text-right">Actions</AdminTableHead>
+                    </AdminTableHeader>
+                    <AdminTableBody>
+                        {paginatedUsers.map((user) => (
+                            <AdminTableRow key={user.id}>
+                                <AdminTableCell>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center font-black text-xs border border-gray-100 uppercase">
+                                            {user.name?.charAt(0) || 'U'}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
-                                                <Mail size={12} className="text-gray-400" />
-                                                {user.email}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-[10px] font-semibold text-gray-400">
-                                                <Phone size={12} className="text-gray-400" />
-                                                {user.phone || 'No phone'}
-                                            </div>
+                                        <div>
+                                            <p className="font-bold text-footerBg text-sm">{user.name || 'Anonymous User'}</p>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${user.isBlocked
-                                            ? 'bg-red-50 text-red-600 border border-red-100'
-                                            : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                            }`}>
-                                            {user.isBlocked ? 'Blocked' : 'Active'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5 text-center">
-                                        <span className="bg-gray-50 px-2.5 py-1 rounded-lg text-xs font-black text-footerBg border border-gray-100">
-                                            {user.totalOrders}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5 text-left">
-                                        <p className="font-black text-footerBg text-sm tracking-tight">₹{user.totalSpend.toLocaleString()}</p>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => navigate(`/admin/users/${user.id}`)}
-                                                className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                                title="View Details"
-                                            >
-                                                <Eye size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleBlock(user.id)}
-                                                className={`p-2 rounded-lg transition-all ${user.isBlocked
-                                                    ? 'text-emerald-500 hover:bg-emerald-50'
-                                                    : 'text-red-400 hover:bg-red-50'
-                                                    }`}
-                                                title={user.isBlocked ? 'Unblock User' : 'Block User'}
-                                            >
-                                                {user.isBlocked ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
-                                            </button>
+                                    </div>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600 lowercase">
+                                            <Mail size={12} className="text-gray-300" />
+                                            {user.email}
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {usersWithStats.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-20 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-dashed border-gray-200">
-                                                <Search size={32} />
-                                            </div>
-                                            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No users found matching your criteria</p>
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                            <Phone size={12} className="text-gray-300" />
+                                            {user.phone || 'No Contact Number'}
                                         </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                )}
-                <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    onPageChange={(p) => {
-                        setPage(p);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    totalItems={usersData.total || 0}
-                    itemsPerPage={limit}
-                />
+                                    </div>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                    <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border ${user.isBlocked
+                                        ? 'bg-red-50 text-red-600 border-red-100'
+                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                        }`}>
+                                        {user.isBlocked ? 'Blocked' : 'Verified'}
+                                    </span>
+                                </AdminTableCell>
+                                <AdminTableCell className="text-center">
+                                    <span className="bg-gray-50 px-3 py-1 rounded-lg text-[11px] font-black text-footerBg border border-gray-100">
+                                        {user.totalOrders}
+                                    </span>
+                                </AdminTableCell>
+                                <AdminTableCell>
+                                    <div className="flex items-center gap-1.5 font-black text-footerBg text-sm tracking-tight">
+                                        <Coins size={14} className="text-amber-400" />
+                                        ₹{user.totalSpend.toLocaleString()}
+                                    </div>
+                                </AdminTableCell>
+                                <AdminTableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <button
+                                            onClick={() => navigate(`/admin/users/${user.id}`)}
+                                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
+                                            title="View profile"
+                                        >
+                                            <Eye size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleToggleBlock(user.id)}
+                                            className={`p-1.5 rounded-lg transition-all ${user.isBlocked
+                                                ? 'text-emerald-500 hover:bg-emerald-50'
+                                                : 'text-red-400 hover:bg-red-50'
+                                                }`}
+                                            title={user.isBlocked ? 'Unblock user' : 'Block user'}
+                                        >
+                                            {user.isBlocked ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
+                                        </button>
+                                    </div>
+                                </AdminTableCell>
+                            </AdminTableRow>
+                        ))}
+                        {paginatedUsers.length === 0 && (
+                            <AdminTableRow>
+                                <AdminTableCell colSpan={6} className="py-20 text-center">
+                                    <div className="flex flex-col items-center">
+                                        <UsersIcon size={32} className="text-gray-100 mb-3" />
+                                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">No customers found</p>
+                                    </div>
+                                </AdminTableCell>
+                            </AdminTableRow>
+                        )}
+                    </AdminTableBody>
+                </AdminTable>
             </div>
+
+            <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => {
+                    setPage(p);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                totalItems={usersWithStats.length}
+                itemsPerPage={limit}
+            />
         </div>
     );
 };

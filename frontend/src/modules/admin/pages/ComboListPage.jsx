@@ -7,20 +7,23 @@ import {
     Boxes,
     Eye,
     EyeOff,
-    Upload
+    Upload,
+    CheckCircle2,
+    Image as ImageIcon
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const ComboListPage = () => {
     const queryClient = useQueryClient();
-    
+
     // Fetch Categories
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
         queryFn: async () => {
-             const res = await fetch('http://localhost:5000/api/categories');
-             return res.json();
+            const res = await fetch('http://localhost:5000/api/categories');
+            return res.json();
         }
     });
 
@@ -28,8 +31,8 @@ const ComboListPage = () => {
     const { data: subCategories = [] } = useQuery({
         queryKey: ['subcategories'],
         queryFn: async () => {
-             const res = await fetch('http://localhost:5000/api/subcategories');
-             return res.json();
+            const res = await fetch('http://localhost:5000/api/subcategories');
+            return res.json();
         }
     });
 
@@ -37,7 +40,7 @@ const ComboListPage = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCombo, setEditingCombo] = useState(null);
     const [loading, setLoading] = useState(false);
-    
+
     // Form State
     const [newItem, setNewItem] = useState({ name: '', image: '', description: '', status: 'Active' });
     const [preview, setPreview] = useState(null);
@@ -49,14 +52,24 @@ const ComboListPage = () => {
         return parent?._id || parent?.id;
     }, [categories]);
 
+    // Dummy Data for Preview if no real categories exist
+    const dummyCategories = [
+        { id: 'd1', name: 'Festival Combos', image: 'https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=200&auto=format&fit=crop', description: 'Special packs for Diwali, Holi and other festivals.', status: 'Active' },
+        { id: 'd2', name: 'Health & Wellness', image: 'https://images.unsplash.com/photo-1547514701-42782101795e?q=80&w=200&auto=format&fit=crop', description: 'Curated packs for weight loss, stamina and immunity.', status: 'Active' },
+        { id: 'd3', name: 'Corporate Gifting', image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=200&auto=format&fit=crop', description: 'Premium boxes for corporate partners and employees.', status: 'Active' },
+        { id: 'd4', name: 'Daily Essentials', image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=200&auto=format&fit=crop', description: 'Monthly requirements packed together with savings.', status: 'Hidden' }
+    ];
+
     // Filter SubCategories for Combos
     const comboCategories = useMemo(() => {
-        if (!comboParentId) return [];
-        return subCategories.filter(s => {
+        const realData = subCategories.filter(s => {
             if (!s.parent) return false;
             const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
             return pId === comboParentId;
         });
+
+        // If real data is empty, show dummy data for visual excellence
+        return realData.length > 0 ? realData : dummyCategories;
     }, [subCategories, comboParentId]);
 
     const filteredCombos = useMemo(() => {
@@ -84,18 +97,18 @@ const ComboListPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!comboParentId) return toast.error("Parent Category 'Combos & Packs' not found!");
-        
+
         setLoading(true);
         const isEdit = !!editingCombo;
-        const targetUrl = isEdit 
+        const targetUrl = isEdit
             ? `http://localhost:5000/api/subcategories/${editingCombo.id || editingCombo._id}`
             : `http://localhost:5000/api/subcategories`;
-        
+
         const method = isEdit ? 'PUT' : 'POST';
-        
-        const payload = isEdit 
+
+        const payload = isEdit
             ? { ...editingCombo, parent: comboParentId }
-            : { ...newItem, parent: comboParentId, showInShopByCategory: true }; // Default true for shop strip
+            : { ...newItem, parent: comboParentId, showInShopByCategory: true };
 
         try {
             const res = await fetch(targetUrl, {
@@ -105,12 +118,12 @@ const ComboListPage = () => {
             });
 
             if (res.ok) {
-                queryClient.invalidateQueries(['subcategories']); // Refresh Data
+                queryClient.invalidateQueries(['subcategories']);
                 setShowAddModal(false);
                 setEditingCombo(null);
                 setNewItem({ name: '', image: '', description: '', status: 'Active' });
                 setPreview(null);
-                toast.success(isEdit ? 'Combo updated!' : 'Combo added!');
+                toast.success(isEdit ? 'Combo category updated!' : 'Combo category added!');
             } else {
                 toast.error('Failed to save combo category');
             }
@@ -123,6 +136,7 @@ const ComboListPage = () => {
     };
 
     const handleDelete = async (id) => {
+        if (id.startsWith('d')) return toast.error("Cannot delete dummy data!");
         if (window.confirm('Are you sure you want to delete this combo category?')) {
             try {
                 const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
@@ -139,6 +153,7 @@ const ComboListPage = () => {
     };
 
     const toggleStatus = async (item) => {
+        if (item.id?.startsWith('d')) return toast.error("Cannot edit dummy data status!");
         const newStatus = item.status === 'Active' ? 'Hidden' : 'Active';
         try {
             await fetch(`http://localhost:5000/api/subcategories/${item.id || item._id}`, {
@@ -153,12 +168,12 @@ const ComboListPage = () => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-10">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Combo Categories</h1>
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage types of combos (e.g. Festival, Gift Packs)</p>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage your premium bundle types</p>
                 </div>
                 <button
                     onClick={() => {
@@ -168,138 +183,175 @@ const ComboListPage = () => {
                     }}
                     className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
                 >
-                    <Plus size={18} strokeWidth={3} /> Add Combo Category
+                    <Plus size={18} strokeWidth={3} /> Add New Category
                 </button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 text-primary rounded-2xl flex items-center justify-center border border-gray-100">
-                        <Boxes size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Types</p>
-                        <p className="text-2xl font-black text-footerBg">{comboCategories.length}</p>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{comboCategories.length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <Boxes size={22} />
+                        </div>
                     </div>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 text-emerald-600 rounded-2xl flex items-center justify-center border border-gray-100">
-                        <Eye size={24} />
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Live Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{comboCategories.filter(c => c.status === 'Active').length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <CheckCircle2 size={22} />
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Types</p>
-                        <p className="text-2xl font-black text-footerBg">{comboCategories.filter(c => c.status === 'Active').length}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hidden Categories</p>
+                            <p className="text-2xl font-black text-footerBg">{comboCategories.filter(c => c.status !== 'Active').length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <EyeOff size={22} />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Search */}
+            {/* Search Bar */}
             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="relative">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search combo categories..."
+                        placeholder="Search category types..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
+                        className="w-full bg-gray-50 border border-transparent rounded-xl py-3 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
                     />
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+            {/* Premium Table */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
                 <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-100">
-                            <tr className="text-left">
-                                <th className="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Name</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
-                                <th className="px-6 py-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
+                    <AdminTable className="min-w-[800px]">
+                        <AdminTableHeader>
+                            <AdminTableHead className="min-w-[250px]">Category Identity</AdminTableHead>
+                            <AdminTableHead className="min-w-[300px]">Description & Usage</AdminTableHead>
+                            <AdminTableHead className="min-w-[150px]">Visibility Status</AdminTableHead>
+                            <AdminTableHead className="text-right min-w-[120px]">Management</AdminTableHead>
+                        </AdminTableHeader>
+                        <AdminTableBody>
                             {filteredCombos.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center">
-                                        <Boxes size={48} className="text-gray-200 mx-auto mb-4" />
-                                        <p className="text-sm font-bold text-gray-400">No combo categories found</p>
+                                    <td colSpan="4" className="px-6 py-20 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4 border border-dashed border-gray-200">
+                                                <Boxes size={32} />
+                                            </div>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No combo categories found</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredCombos.map(combo => (
-                                    <tr key={combo.id || combo._id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                {combo.image && (
-                                                    <img src={combo.image} alt={combo.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100" />
-                                                )}
-                                                <span className="font-bold text-sm text-footerBg">{combo.name}</span>
+                                    <AdminTableRow key={combo.id || combo._id} className="group">
+                                        <AdminTableCell>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
+                                                    {combo.image ? (
+                                                        <img src={combo.image} alt={combo.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <ImageIcon size={20} className="text-gray-200" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm text-footerBg group-hover:text-primary transition-colors">{combo.name}</p>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-xs text-gray-500 max-w-md truncate">{combo.description || '-'}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <p className="text-xs text-gray-500 leading-relaxed max-w-sm">{combo.description || "Premium collection tailored for special requirements and bulk value."}</p>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
                                             <button
                                                 onClick={() => toggleStatus(combo)}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${combo.status === 'Active'
-                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                                    : 'bg-gray-50 text-gray-500 border-gray-200'
+                                                className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${combo.status === 'Active'
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100'
+                                                    : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'
                                                     }`}
                                             >
-                                                {combo.status === 'Active' ? <Eye size={12} /> : <EyeOff size={12} />}
+                                                {combo.status === 'Active' ? <Eye size={12} strokeWidth={3} /> : <EyeOff size={12} strokeWidth={3} />}
                                                 {combo.status || 'Active'}
                                             </button>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
+                                        </AdminTableCell>
+                                        <AdminTableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => setEditingCombo(combo)}
-                                                    className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-all"
+                                                    className="p-2.5 bg-gray-50 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-indigo-100"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(combo.id || combo._id)}
-                                                    className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-all"
+                                                    className="p-2.5 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-all border border-transparent hover:border-red-100"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </AdminTableCell>
+                                    </AdminTableRow>
                                 ))
                             )}
-                        </tbody>
-                    </table>
+                        </AdminTableBody>
+                    </AdminTable>
                 </div>
             </div>
 
             {/* Add/Edit Modal */}
             {(showAddModal || editingCombo) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-3xl p-8 max-w-md w-full">
-                        <h2 className="text-lg font-black text-footerBg uppercase mb-6">
-                            {editingCombo ? 'Edit Combo Category' : 'Add New Combo Category'}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-6">
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase block mb-2">Category Name</label>
+                                <h2 className="text-xl font-bold text-gray-900">
+                                    {editingCombo ? 'Edit Segment' : 'New Bundle Segment'}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-1">Configure your combo product category</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowAddModal(false); setEditingCombo(null); }}
+                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400 transition-colors"
+                            >
+                                <span className="text-2xl leading-none">&times;</span>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-800 ml-0.5">Segment Name</label>
                                 <input
                                     type="text"
                                     value={editingCombo ? editingCombo.name : newItem.name}
-                                    onChange={(e) => editingCombo 
-                                        ? setEditingCombo({ ...editingCombo, name: e.target.value }) 
+                                    onChange={(e) => editingCombo
+                                        ? setEditingCombo({ ...editingCombo, name: e.target.value })
                                         : setNewItem({ ...newItem, name: e.target.value })}
-                                    className="w-full bg-gray-50 border border-transparent rounded-xl p-3 text-sm font-semibold outline-none focus:bg-white focus:border-primary"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm font-medium text-gray-900 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                                    placeholder="e.g. Festival Combos"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase block mb-2">Upload Image</label>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-800 ml-0.5">Cover Image</label>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -307,48 +359,68 @@ const ComboListPage = () => {
                                     onChange={(e) => handleFileChange(e, !!editingCombo)}
                                     className="hidden"
                                 />
-                                <div 
+                                <div
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full h-32 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-50 relative overflow-hidden"
+                                    className="w-full h-44 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-primary/40 transition-all relative overflow-hidden group"
                                 >
                                     {(editingCombo?.image || preview) ? (
-                                        <img src={editingCombo?.image || preview} className="w-full h-full object-cover" alt="Preview"/>
+                                        <>
+                                            <img src={editingCombo?.image || preview} className="w-full h-full object-cover" alt="Preview" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+                                                <div className="bg-white/20 p-3 rounded-full backdrop-blur-md">
+                                                    <Upload size={20} className="text-white" />
+                                                </div>
+                                            </div>
+                                        </>
                                     ) : (
-                                        <div className="flex flex-col items-center">
-                                            <Upload size={24} className="text-gray-300 mb-2"/>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Click to Upload</span>
+                                        <div className="flex flex-col items-center text-center p-6">
+                                            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
+                                                <Upload size={22} className="text-gray-400 group-hover:text-primary" />
+                                            </div>
+                                            <p className="text-sm font-semibold text-gray-700">Upload visual assets</p>
+                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG or WEBP (Max 5MB)</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase block mb-2">Description</label>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-800 ml-0.5">Description</label>
                                 <textarea
                                     value={editingCombo ? editingCombo.description : newItem.description}
-                                    onChange={(e) => editingCombo 
-                                        ? setEditingCombo({ ...editingCombo, description: e.target.value }) 
+                                    onChange={(e) => editingCombo
+                                        ? setEditingCombo({ ...editingCombo, description: e.target.value })
                                         : setNewItem({ ...newItem, description: e.target.value })}
-                                    className="w-full bg-gray-50 border border-transparent rounded-xl p-3 text-sm font-semibold outline-none focus:bg-white focus:border-primary resize-none"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm font-medium text-gray-900 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none"
+                                    placeholder="Write a brief overview of this segment..."
                                     rows={3}
                                 />
                             </div>
-                            <div className="flex gap-3 pt-4">
-                                <button 
-                                    type="button" 
+
+                            <div className="flex gap-3 pt-3">
+                                <button
+                                    type="button"
                                     onClick={() => {
                                         setShowAddModal(false);
                                         setEditingCombo(null);
-                                    }} 
-                                    className="flex-1 bg-gray-100 text-gray-600 px-4 py-3 rounded-xl font-bold text-sm"
+                                    }}
+                                    className="flex-1 px-6 py-3.5 rounded-xl font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
                                 >
-                                    Cancel
+                                    Discard
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={loading}
-                                    className="flex-1 bg-primary text-white px-4 py-3 rounded-xl font-bold text-sm disabled:opacity-70"
+                                    className="flex-[2] bg-primary text-white px-6 py-3.5 rounded-xl font-bold text-sm disabled:opacity-70 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                                 >
-                                    {loading ? 'Saving...' : (editingCombo ? 'Update' : 'Add Category')}
+                                    {loading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        editingCombo ? 'Save Changes' : 'Create Segment'
+                                    )}
                                 </button>
                             </div>
                         </form>

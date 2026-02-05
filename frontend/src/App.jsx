@@ -20,6 +20,7 @@ import ReturnRequestPage from './modules/user/pages/ReturnRequestPage';
 import ProfilePage from './modules/user/pages/ProfilePage';
 import InfoPage from './modules/user/pages/InfoPage';
 import VaultPage from './modules/user/pages/VaultPage';
+import OTPPage from './modules/user/pages/OTPPage';
 import AdminLayout from './modules/admin/layout/AdminLayout';
 import DashboardPage from './modules/admin/pages/DashboardPage';
 import UsersPage from './modules/admin/pages/UsersPage';
@@ -82,6 +83,7 @@ function App() {
                 <Route path="privacy-policy" element={<InfoPage type="privacy" />} />
                 <Route path="contact-us" element={<InfoPage type="contact" />} />
                 <Route path="login" element={<AuthPage />} />
+                <Route path="otp-verification" element={<OTPPage />} />
               </Route>
 
               <Route path="/admin/login" element={<LoginPage />} />

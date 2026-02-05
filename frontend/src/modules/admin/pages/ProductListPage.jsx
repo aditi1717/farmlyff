@@ -8,10 +8,15 @@ import {
     Package,
     Tag as TagIcon,
     ArrowUpDown,
-    AlertCircle,
     CheckCircle2,
     XCircle,
-    Copy
+    Copy,
+    ChevronDown,
+    ChevronUp,
+    Star,
+    Calendar,
+    Settings,
+    AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,17 +24,23 @@ import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/use
 import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
+import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const ProductListPage = () => {
     const navigate = useNavigate();
     const { data: products = [] } = useProducts();
     const queryClient = useQueryClient();
-    
+
     const deleteProductMutation = useDeleteProduct();
-    
+
     const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            deleteProductMutation.mutate(id);
+        deleteProductMutation.mutate(id);
+    };
+
+    const handleBulkDelete = () => {
+        if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) {
+            selectedProducts.forEach(id => deleteProductMutation.mutate(id));
+            setSelectedProducts([]);
         }
     };
 
@@ -40,10 +51,47 @@ const ProductListPage = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const itemsPerPage = 8;
 
-    // Reset to page 1 when search or filters change
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, filterCategory]);
+    const [expandedProductId, setExpandedProductId] = useState(null);
+    const [selectedProducts, setSelectedProducts] = useState([]);
+
+    // Toggle Row Expansion for Variants
+    const toggleExpand = (id) => {
+        setExpandedProductId(prev => prev === id ? null : id);
+    };
+
+    // Checkbox Logic
+    const toggleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedProducts(paginatedProducts.map(p => p.id));
+        } else {
+            setSelectedProducts([]);
+        }
+    };
+
+    const toggleSelectProduct = (id) => {
+        setSelectedProducts(prev =>
+            prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+        );
+    };
+
+    const getPriceRange = (variants) => {
+        if (!variants || variants.length === 0) return 'N/A';
+        const prices = variants.map(v => v.price);
+        const minFn = (arr) => Math.min(...arr);
+        const maxFn = (arr) => Math.max(...arr);
+        const min = minFn(prices);
+        const max = maxFn(prices);
+
+        if (min === max) return `₹${min}`;
+        return `₹${min} – ₹${max}`;
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        });
+    };
 
     const filteredProducts = useMemo(() => {
         return products
@@ -65,8 +113,8 @@ const ProductListPage = () => {
     const suggestions = useMemo(() => {
         if (searchTerm.length < 2) return [];
         return products
-            .filter(p => 
-                p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            .filter(p =>
+                p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
             )
             .slice(0, 6);
@@ -101,44 +149,25 @@ const ProductListPage = () => {
                     <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Product Inventory</h1>
                     <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage your premium dry fruit catalog</p>
                 </div>
-                <button
-                    onClick={() => navigate('/admin/products/add')}
-                    className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
-                >
-                    <Plus size={18} strokeWidth={3} /> Add New Product
-                </button>
+                <div className="flex items-center gap-3">
+                    {selectedProducts.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="bg-red-50 text-red-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all border border-red-100 animate-in fade-in zoom-in duration-200"
+                        >
+                            <Trash2 size={18} strokeWidth={3} /> Delete ({selectedProducts.length})
+                        </button>
+                    )}
+                    <button
+                        onClick={() => navigate('/admin/products/add')}
+                        className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
+                    >
+                        <Plus size={18} strokeWidth={3} /> Add New Product
+                    </button>
+                </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center">
-                        <Package size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total SKUs</p>
-                        <p className="text-2xl font-black text-footerBg">{products.reduce((acc, p) => acc + (p.variants?.length || 0), 0)}</p>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center">
-                        <CheckCircle2 size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">In Stock</p>
-                        <p className="text-2xl font-black text-footerBg">{products.filter(p => p.variants?.some(v => (v.stock || 0) > 0)).length}</p>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center">
-                        <AlertCircle size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Low Stock</p>
-                        <p className="text-2xl font-black text-footerBg">{products.filter(p => p.variants?.some(v => (v.stock || 0) < 10)).length}</p>
-                    </div>
-                </div>
-            </div>
+
 
             {/* Search & Filters */}
             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -151,7 +180,7 @@ const ProductListPage = () => {
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
                             setShowSuggestions(true);
-                        } }
+                        }}
                         onFocus={() => setShowSuggestions(true)}
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                         className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
@@ -160,7 +189,7 @@ const ProductListPage = () => {
                     {/* Suggestions Dropdown */}
                     <AnimatePresence>
                         {showSuggestions && suggestions.length > 0 && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -208,113 +237,189 @@ const ProductListPage = () => {
             </div>
 
             {/* Product Table */}
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-gray-50 bg-gray-50/50 text-left">
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Product Info</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Category</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pricing (Base)</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Variants</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Stock Status</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {paginatedProducts.map((product) => {
-                                const status = getStockStatus(product.variants);
-                                const bestVariant = product.variants?.[0];
+            <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
+                <AdminTable>
+                    <AdminTableHeader>
+                        <AdminTableHead width="30px"></AdminTableHead>
+                        <AdminTableHead width="40px">
+                            <input
+                                type="checkbox"
+                                onChange={toggleSelectAll}
+                                checked={paginatedProducts.length > 0 && selectedProducts.length === paginatedProducts.length}
+                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                            />
+                        </AdminTableHead>
+                        <AdminTableHead>Product Name</AdminTableHead>
+                        <AdminTableHead className="text-center">SKU Count</AdminTableHead>
+                        <AdminTableHead>Category</AdminTableHead>
+                        <AdminTableHead>Price Range</AdminTableHead>
+                        <AdminTableHead>Stock Status</AdminTableHead>
+                        <AdminTableHead>Rating</AdminTableHead>
+                        <AdminTableHead>Status</AdminTableHead>
+                        <AdminTableHead>Created Date</AdminTableHead>
+                        <AdminTableHead className="text-right">Actions</AdminTableHead>
+                    </AdminTableHeader>
+                    <AdminTableBody>
+                        {paginatedProducts.map((product) => {
+                            const status = getStockStatus(product.variants);
+                            const isExpanded = expandedProductId === product.id;
+                            const isSelected = selectedProducts.includes(product.id);
 
-                                return (
-                                    <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-3.5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            return (
+                                <React.Fragment key={product.id}>
+                                    <AdminTableRow
+                                        className={`${isExpanded ? 'bg-gray-50' : ''} ${isSelected ? 'bg-green-50/30' : ''}`}
+                                        onClick={() => toggleExpand(product.id)}
+                                    >
+                                        <AdminTableCell onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => toggleExpand(product.id)} className="p-1.5 text-gray-400 hover:text-primary transition-colors">
+                                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </button>
+                                        </AdminTableCell>
+                                        <AdminTableCell onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelectProduct(product.id)}
+                                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                            />
+                                        </AdminTableCell>
+                                        <AdminTableCell className="cursor-pointer">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
                                                     <img src={product.image} alt="" className="w-full h-full object-contain" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">{product.brand}</p>
-                                                    <p className="font-bold text-footerBg text-sm line-clamp-1">{product.name}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="px-2 py-0.5 bg-gray-50 text-[8px] font-black text-gray-400 uppercase rounded tracking-widest border border-gray-100">{product.tag || 'Standard'}</span>
-                                                    </div>
+                                                    <p className="font-medium text-gray-900 text-sm line-clamp-1">
+                                                        {product.name?.replace(/Farmlyf( Premium)?/gi, '').trim()}
+                                                    </p>
+                                                    {product.brand?.replace(/Farmlyf( Premium)?/gi, '').trim() && (
+                                                        <p className="text-xs text-gray-500">{product.brand?.replace(/Farmlyf( Premium)?/gi, '').trim()}</p>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="space-y-1 text-left">
-                                                <p className="text-[10px] font-black text-footerBg uppercase tracking-tight">{product.category}</p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.subcategory}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 text-left">
-                                            {bestVariant ? (
-                                                <div className="space-y-0.5 text-left">
-                                                    <p className="font-black text-footerBg text-sm">₹{bestVariant.price}</p>
-                                                    <p className="text-[10px] font-bold text-gray-400 line-through">₹{bestVariant.mrp}</p>
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs font-bold text-red-400 text-left">No PriceSet</p>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <span className="bg-gray-50 px-2.5 py-1 rounded-lg text-xs font-black text-footerBg border border-gray-100">
+                                        </AdminTableCell>
+                                        <AdminTableCell className="text-center">
+                                            <span className="bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600">
                                                 {product.variants?.length || 0}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${status.color}`}>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-gray-700">{product.category}</span>
+                                                <span className="text-xs text-gray-400">{product.subcategory || '-'}</span>
+                                            </div>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className="text-sm font-medium text-gray-900">{getPriceRange(product.variants)}</span>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${status.color.replace('bg-', 'bg-opacity-10 bg-').replace('text-', 'text-')}`}>
                                                 {status.label}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-5">
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <div className="flex items-center gap-1">
+                                                <Star size={14} className="text-amber-400 fill-amber-400" />
+                                                <span className="text-sm text-gray-700">{product.rating || '4.5'}</span>
+                                            </div>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.variants?.some(v => (v.stock || 0) > 0) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {product.variants?.some(v => (v.stock || 0) > 0) ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className="text-sm text-gray-500">{formatDate(product.createdAt || product.id?.split('_')[1] || Date.now())}</span>
+                                        </AdminTableCell>
+                                        <AdminTableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => navigate(`/admin/products/edit/${product.id}`)}
-                                                    className="p-2 text-gray-400 hover:text-primary hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100"
-                                                    title="Edit Product"
+                                                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
+                                                    title="Edit"
                                                 >
-                                                    <Edit2 size={18} />
+                                                    <Edit2 size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(product.id)}
-                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-100"
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                     title="Delete"
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Trash2 size={16} />
                                                 </button>
-                                                <div className="relative group/more">
-                                                    <button className="p-2 text-gray-400 hover:text-footerBg rounded-lg">
-                                                        <MoreVertical size={18} />
-                                                    </button>
+                                            </div>
+                                        </AdminTableCell>
+                                    </AdminTableRow>
+                                    {isExpanded && (
+                                        <tr className="bg-gray-50/50">
+                                            <td colSpan="11" className="p-0 border-b border-gray-100">
+                                                <div className="p-4 pl-14">
+                                                    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm w-full md:w-3/4 max-w-full">
+                                                        <table className="text-left border-collapse w-full">
+                                                            <thead>
+                                                                <tr className="bg-gray-100 border-b border-gray-200">
+                                                                    <th className="px-4 py-2 text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SKU / ID</th>
+                                                                    <th className="px-4 py-2 text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Weight</th>
+                                                                    <th className="px-4 py-2 text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Price</th>
+                                                                    <th className="px-4 py-2 text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Stock</th>
+                                                                    <th className="px-4 py-2 text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap text-right">Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-50">
+                                                                {product.variants?.map((variant, idx) => (
+                                                                    <tr key={variant.id || idx} className="hover:bg-gray-50/50">
+                                                                        <td className="px-4 py-2 font-mono text-xs font-bold text-gray-600">
+                                                                            {product.brand?.substring(0, 3).toUpperCase()}-{variant.weight || 'VAR'}-{idx + 1}
+                                                                        </td>
+                                                                        <td className="px-4 py-2 text-sm text-gray-700">{variant.weight}</td>
+                                                                        <td className="px-4 py-2">
+                                                                            <div className="flex items-baseline gap-2">
+                                                                                <span className="text-sm text-gray-900">₹{variant.price}</span>
+                                                                                <span className="text-xs text-gray-400 line-through">₹{variant.mrp}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-4 py-2 text-sm text-gray-700">{variant.stock}</td>
+                                                                        <td className="px-4 py-2 text-right">
+                                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${(variant.stock || 0) > 10 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                                                (variant.stock || 0) > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                                                    'bg-red-50 text-red-600 border-red-100'
+                                                                                }`}>
+                                                                                {(variant.stock || 0) > 10 ? 'Active' : (variant.stock || 0) > 0 ? 'Low' : 'OOS'}
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {filteredProducts.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-20 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-dashed border-gray-200">
-                                                <Search size={32} />
-                                            </div>
-                                            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No products found matching your criteria</p>
-                                            <button 
-                                                onClick={() => { setSearchTerm(''); setFilterCategory('All'); }}
-                                                className="mt-4 text-primary font-black text-[10px] uppercase tracking-widest hover:underline"
-                                            >
-                                                Clear all filters
-                                            </button>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                        {filteredProducts.length === 0 && (
+                            <tr>
+                                <td colSpan="11" className="px-6 py-20 text-center">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-dashed border-gray-200">
+                                            <Search size={32} />
                                         </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No products found matching your criteria</p>
+                                        <button
+                                            onClick={() => { setSearchTerm(''); setFilterCategory('All'); }}
+                                            className="mt-4 text-primary font-black text-[10px] uppercase tracking-widest hover:underline"
+                                        >
+                                            Clear all filters
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+                    </AdminTableBody>
+                </AdminTable>
                 <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}

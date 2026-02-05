@@ -1,236 +1,251 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Mail,
     Phone,
     Calendar,
-    User as UserIcon,
     MapPin,
     Package,
     Heart,
-    Bookmark,
-    Clock,
     ShieldOff,
     ShieldCheck,
     ChevronRight,
-    IndianRupee
+    IndianRupee,
+    User as UserIcon,
+    ShoppingBag,
+    Wallet,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+
 const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    
-    // Fetch user details
-    const { data: user, isLoading: userLoading } = useQuery({
-        queryKey: ['user', id],
-        queryFn: async () => {
-             const res = await fetch(`http://localhost:5000/api/users/${id}`, { credentials: 'include' });
-             if(!res.ok) throw new Error('Failed to fetch user');
-             return res.json();
-        }
-    });
+    const [showAllOrders, setShowAllOrders] = useState(false);
 
-    // Fetch user orders
-    const { data: userOrders = [] } = useQuery({
-         queryKey: ['orders', id],
-         queryFn: async () => {
-             const res = await fetch('http://localhost:5000/api/orders', { credentials: 'include' });
-             if(!res.ok) throw new Error('Failed');
-             const allOrders = await res.json();
-             return allOrders.filter(o => o.user?._id === id || o.userId === id);
-         }
-    });
+    // Premium Dummy Data
+    const DUMMY_USERS = [
+        {
+            id: 'u1',
+            name: 'Kabir Singh',
+            email: 'kabir.s@example.com',
+            phone: '+91 98765 43210',
+            isBlocked: false,
+            totalOrders: 12,
+            totalSpend: 45200,
+            since: 'January 2024',
+            addresses: [
+                { type: 'Home', fullName: 'Kabir Singh', address: 'Apartment 402, Sky High Towers, Worli Sea Face', city: 'Mumbai', state: 'Maharashtra', pincode: '400018', isDefault: true },
+                { type: 'Office', fullName: 'Kabir Singh', address: 'Tech Park South, Level 15, BKC', city: 'Mumbai', state: 'Maharashtra', pincode: '400051', isDefault: false }
+            ]
+        },
+        { id: 'u2', name: 'Ananya Sharma', email: 'ananya.sh@gmail.com', phone: '+91 91234 56789', isBlocked: false, totalOrders: 5, totalSpend: 15600, since: 'March 2024', addresses: [] },
+        { id: 'u3', name: 'Rahul Malhotra', email: 'rahul.m@outlook.com', phone: '+91 88888 77777', isBlocked: true, totalOrders: 0, totalSpend: 0, since: 'May 2024', addresses: [] },
+        { id: 'u4', name: 'Priya Verma', email: 'p.verma@example.com', phone: '+91 77776 55555', isBlocked: false, totalOrders: 28, totalSpend: 125400, since: 'December 2023', addresses: [] },
+        { id: 'u5', name: 'Ishaan Gupta', email: 'ishaan.g@gmail.com', phone: '+91 99900 11122', isBlocked: false, totalOrders: 8, totalSpend: 24300, since: 'June 2024', addresses: [] },
+        { id: 'u6', name: 'Meera Rajput', email: 'meera.r@tata.com', phone: '+91 95555 44433', isBlocked: false, totalOrders: 15, totalSpend: 56900, since: 'February 2024', addresses: [] },
+        { id: 'u7', name: 'Aditya Das', email: 'aditya.d@yahoo.com', phone: '+91 82222 33311', isBlocked: false, totalOrders: 3, totalSpend: 8900, since: 'July 2024', addresses: [] },
+        { id: 'u8', name: 'Sanya Mirza', email: 'sanya.m@company.in', phone: '+91 70000 12345', isBlocked: true, totalOrders: 1, totalSpend: 2100, since: 'August 2024', addresses: [] },
+        { id: 'u9', name: 'Vikram Seth', email: 'v.seth@reliance.com', phone: '+91 91111 22233', isBlocked: false, totalOrders: 10, totalSpend: 31200, since: 'April 2024', addresses: [] },
+        { id: 'u10', name: 'Zoya Khan', email: 'zoya.k@gmail.com', phone: '+91 90000 00001', isBlocked: false, totalOrders: 6, totalSpend: 18400, since: 'September 2024', addresses: [] }
+    ];
 
-    const handleToggleBlock = async () => {
-         try {
-             const res = await fetch(`http://localhost:5000/api/users/${user.id}/ban`, { 
-                 method: 'PUT',
-                 credentials: 'include' 
-             });
-             if(res.ok) {
-                 // Refetch or update local state
-                 window.location.reload(); 
-                 // Ideally use queryClient.invalidateQueries(['user', id]) but quick fix for now
-             }
-         } catch(e) { console.error(e); }
-    };
+    const user = DUMMY_USERS.find(u => u.id === id);
+
+    // Simple Order History for u1
+    const allDummyOrders = [
+        { id: 'ORD-8821', date: '24 Oct 2024', amount: 12400, status: 'Delivered', method: 'Prepaid' },
+        { id: 'ORD-8755', date: '12 Oct 2024', amount: 3500, status: 'Delivered', method: 'COD' },
+        { id: 'ORD-8610', date: '05 Sep 2024', amount: 8200, status: 'Cancelled', method: 'Prepaid' },
+        { id: 'ORD-8502', date: '15 Aug 2024', amount: 15600, status: 'Delivered', method: 'Prepaid' },
+        { id: 'ORD-8411', date: '10 Aug 2024', amount: 2100, status: 'Delivered', method: 'COD' },
+        { id: 'ORD-8390', date: '01 Jul 2024', amount: 5400, status: 'Delivered', method: 'Prepaid' },
+    ];
+
+    const orderHistory = user?.id === 'u1' ? allDummyOrders : [];
+    const displayedOrders = showAllOrders ? orderHistory : orderHistory.slice(0, 4);
 
     if (!user) {
         return (
-            <div className="p-20 text-center">
-                <h2 className="text-2xl font-bold text-gray-400">User Not Found</h2>
-                <button onClick={() => navigate('/admin/users')} className="mt-4 text-primary font-bold hover:underline underline-offset-4 flex items-center gap-2 mx-auto">
-                    <ArrowLeft size={16} /> Back to Users
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                    <UserIcon size={40} className="text-gray-300" />
+                </div>
+                <h2 className="text-2xl font-black text-footerBg mb-2 uppercase tracking-tighter">User Not Found</h2>
+                <button
+                    onClick={() => navigate('/admin/users')}
+                    className="flex items-center gap-2 px-6 py-3 bg-footerBg text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-95 uppercase text-xs tracking-widest"
+                >
+                    <ArrowLeft size={18} /> Back to Users
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 pb-20">
-            {/* Header */}
+        <div className="space-y-6 font-['Inter'] text-footerBg animate-in fade-in duration-500">
+            {/* Simple Top Bar */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={() => navigate('/admin/users')}
-                        className="p-3 bg-white text-footerBg rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:bg-footerBg hover:text-white transition-all group"
-                    >
-                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">User Profile</h1>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Detailed overview of customer #{user.id?.slice(-6)}</p>
-                    </div>
-                </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={handleToggleBlock}
-                        className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${user.isBanned
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white'
-                            : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white'
-                            }`}
-                    >
-                        {user.isBanned ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
-                        {user.isBanned ? 'Unban Account' : 'Ban Account'}
+                <button
+                    onClick={() => navigate('/admin/users')}
+                    className="flex items-center gap-2 text-gray-500 hover:text-footerBg font-black text-[10px] uppercase tracking-[0.2em] transition-colors group"
+                >
+                    <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    Back to CRM
+                </button>
+                <div className="flex items-center gap-3">
+                    <button className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${user.isBlocked
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        : 'bg-red-50 text-red-500 border-red-100'
+                        }`}>
+                        {user.isBlocked ? 'Unlock User' : 'Restrict Account'}
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Profile Card & Addresses */}
-                <div className="lg:col-span-1 space-y-8">
-                    {/* Basic Info Card */}
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
-                        <div className="relative z-10 flex flex-col items-center text-center text-left">
-                            <div className="w-24 h-24 bg-gray-50 text-footerBg rounded-[2rem] flex items-center justify-center font-black text-3xl border-2 border-gray-100 mb-4">
-                                {user.name?.charAt(0) || 'U'}
+            {/* Profile Overview Card */}
+            <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm p-5">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="w-16 h-16 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center font-black text-2xl border border-gray-100">
+                        {user.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                            <h1 className="text-2xl font-black text-footerBg tracking-tight">{user.name}</h1>
+                            <span className={`w-fit mx-auto md:mx-0 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.isBlocked ? 'bg-red-100 text-red-600' : 'bg-green-100 text-[#2c5336]'
+                                }`}>
+                                {user.isBlocked ? 'Restricted' : 'Verified Resident'}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1">
+                            <div className="flex items-center gap-1.5 text-footerBg text-xs font-bold">
+                                <Mail size={14} className="text-gray-400" />
+                                <span className="underline decoration-gray-100 underline-offset-4">{user.email}</span>
                             </div>
-                            <h2 className="text-2xl font-black text-footerBg">{user.name || 'Anonymous User'}</h2>
-                            <p className="text-xs font-bold text-primary uppercase tracking-[0.2em] mt-1">Super Customer</p>
-
-                            <div className="w-full h-px bg-gray-50 my-8"></div>
-
-                            <div className="w-full space-y-4">
-                                <div className="flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                                        <Mail size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Email Address</p>
-                                        <p className="text-sm font-bold text-footerBg">{user.email}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                                        <Phone size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Phone Number</p>
-                                        <p className="text-sm font-bold text-footerBg">{user.phone || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                                        <Calendar size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Member Since</p>
-                                        <p className="text-sm font-bold text-footerBg">Jan 2024</p>
-                                    </div>
-                                </div>
+                            <div className="flex items-center gap-1.5 text-footerBg text-xs font-bold">
+                                <Phone size={14} className="text-gray-400" />
+                                {user.phone}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-400 text-[8px] font-black uppercase tracking-widest">
+                                <Calendar size={12} />
+                                Member since {user.since}
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {/* Saved Addresses */}
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-                        <h3 className="text-sm font-black text-footerBg uppercase tracking-widest flex items-center gap-2">
-                            <MapPin size={18} className="text-gray-400" />
-                            Saved Addresses
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Stats & Addresses */}
+                <div className="space-y-6">
+                    {/* Compact Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white p-6 rounded-[1.5rem] border border-gray-100 shadow-sm transition-transform hover:-translate-y-1">
+                            <div className="w-10 h-10 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center mb-4 border border-gray-100">
+                                <ShoppingBag size={20} />
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Orders</p>
+                            <p className="text-2xl font-black text-footerBg tabular-nums">{user.totalOrders}</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-[1.5rem] border border-gray-100 shadow-sm transition-transform hover:-translate-y-1">
+                            <div className="w-10 h-10 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center mb-4 border border-gray-100">
+                                <Wallet size={20} />
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Spend</p>
+                            <p className="text-2xl font-black text-footerBg tabular-nums">₹{user.totalSpend.toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    {/* Address Book */}
+                    <div className="bg-white p-6 rounded-[1.5rem] border border-gray-100 shadow-sm">
+                        <h3 className="font-black text-footerBg text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-6">
+                            <MapPin size={16} className="text-gray-400" />
+                            Registered Addresses
                         </h3>
-                        {user.addresses?.length > 0 ? (
-                            <div className="space-y-4">
-                                {user.addresses.map((addr, i) => (
-                                    <div key={i} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 relative group">
+                        <div className="space-y-3">
+                            {user.addresses.length > 0 ? (
+                                user.addresses.map((addr, i) => (
+                                    <div key={i} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 transition-colors hover:bg-white hover:border-gray-200 group">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[9px] font-black uppercase tracking-widest bg-white px-2 py-0.5 rounded border border-gray-200">
+                                            <span className="text-[9px] font-black uppercase tracking-widest bg-footerBg text-white px-2 py-0.5 rounded-lg">
                                                 {addr.type}
                                             </span>
-                                            {addr.isDefault && <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>}
+                                            {addr.isDefault && <span className="text-[8px] font-black text-emerald-600 uppercase flex items-center gap-1"><div className="w-1 h-1 bg-emerald-500 rounded-full"></div> Primary</span>}
                                         </div>
-                                        <p className="text-xs font-bold text-footerBg mb-1">{addr.fullName}</p>
-                                        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                                        <p className="text-xs font-black text-footerBg mb-1">{addr.fullName}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold leading-relaxed uppercase tracking-tighter">
                                             {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
                                         </p>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs font-bold text-gray-400 text-center py-4 uppercase tracking-widest">No addresses saved</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Column: Order History & Interests */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Activity Stats */}
-                    <div className="grid grid-cols-3 gap-6">
-                        {[
-                            { label: 'Orders', value: userOrders.length, icon: Package },
-                            { label: 'Spending', value: `₹${userOrders.reduce((acc, o) => acc + (o.amount || 0), 0).toLocaleString()}`, icon: IndianRupee },
-                            { label: 'Items Saved', value: (user.wishlist?.length || 0), icon: Heart },
-                        ].map((stat, i) => (
-                            <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center text-center">
-                                <div className={`bg-gray-50 text-footerBg p-3 rounded-2xl mb-3`}>
-                                    <stat.icon size={20} />
-                                </div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                                <p className="text-xl font-black text-footerBg mt-0.5">{stat.value}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Order History */}
-                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                        <div className="p-8 border-b border-gray-50 flex items-center justify-between">
-                            <h3 className="text-sm font-black text-footerBg uppercase tracking-widest flex items-center gap-2">
-                                <Package size={18} className="text-gray-400" />
-                                Full Order History
-                            </h3>
-                        </div>
-                        <div className="divide-y divide-gray-50">
-                            {userOrders.length > 0 ? userOrders.map((order) => (
-                                <div key={order.id} className="p-6 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer text-left" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 border border-gray-100">
-                                            <Package size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-footerBg">#{order.id?.slice(-8)}</p>
-                                            <p className="text-[10px] text-gray-400 font-medium">{(new Date(order.date)).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-10">
-                                        <div className="text-right">
-                                            <p className="text-sm font-black text-footerBg">₹{order.amount?.toLocaleString()}</p>
-                                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{order.paymentMethod?.toUpperCase()}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600' :
-                                            order.status === 'Processing' ? 'bg-blue-50 text-blue-600' :
-                                                'bg-amber-50 text-amber-600'
-                                            }`}>
-                                            {order.status}
-                                        </span>
-                                        <ChevronRight size={16} className="text-gray-300 group-hover:text-footerBg group-hover:translate-x-1 transition-all" />
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">No orders found for this user</div>
+                                ))
+                            ) : (
+                                <p className="text-center py-10 text-gray-300 text-[10px] font-black uppercase tracking-widest border border-dashed border-gray-100 rounded-2xl">No data found</p>
                             )}
                         </div>
                     </div>
+                </div>
 
+                {/* Right Column - Order History */}
+                <div className="lg:col-span-2">
+                    <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-fit">
+                        <div className="p-6 border-b border-gray-50 bg-gray-50/20 flex items-center justify-between">
+                            <h3 className="font-black text-footerBg text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Package size={16} className="text-gray-400" />
+                                Order History
+                            </h3>
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{orderHistory.length} Total Logs</span>
+                        </div>
+
+                        <div className="divide-y divide-gray-50">
+                            {displayedOrders.length > 0 ? (
+                                displayedOrders.map((order) => (
+                                    <div key={order.id} className="p-4 md:p-5 hover:bg-gray-50 transition-all flex items-center justify-between group cursor-pointer" onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-9 h-9 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-300 group-hover:text-footerBg group-hover:border-footerBg transition-all">
+                                                <Package size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-footerBg uppercase tracking-tighter">{order.id}</p>
+                                                <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{order.date} • {order.method}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-footerBg mb-1 tabular-nums">₹{order.amount.toLocaleString()}</p>
+                                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                                    order.status === 'Cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                            <ChevronRight size={16} className="text-gray-300 group-hover:text-footerBg group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-20 text-center">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                                        <ShoppingBag size={24} className="text-gray-200" />
+                                    </div>
+                                    <p className="text-gray-400 font-black uppercase tracking-widest text-[9px]">Profile has no order history</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {orderHistory.length > 4 && (
+                            <button
+                                onClick={() => setShowAllOrders(!showAllOrders)}
+                                className="w-full py-4 bg-gray-50/30 border-t border-gray-50 text-[10px] font-black text-gray-400 hover:text-footerBg hover:bg-gray-50 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                            >
+                                {showAllOrders ? (
+                                    <>Show Less <ChevronUp size={14} /></>
+                                ) : (
+                                    <>View All {orderHistory.length} Orders <ChevronDown size={14} /></>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

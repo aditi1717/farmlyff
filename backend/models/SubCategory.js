@@ -4,7 +4,6 @@ const subCategorySchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   slug: { type: String }, // e.g., 'almonds'
-  image: { type: String },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   status: { type: String, enum: ['Active', 'Hidden'], default: 'Active' },
   showInShopByCategory: { type: Boolean, default: true },

@@ -751,7 +751,7 @@ const ProfilePage = () => {
     const ordersData = orders; // getOrders(userData.id);
 
     return (
-        <div className="bg-[#f8fafc] lg:min-h-screen pb-20 font-['Inter']">
+        <div className="bg-[#f8fafc] lg:min-h-screen pb-4 md:pb-20 font-['Inter']">
 
 
             <div className="w-full">

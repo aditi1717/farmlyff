@@ -5,14 +5,17 @@ import {
     Edit2,
     Trash2,
     Layers,
-    Image as ImageIcon,
     Loader,
     ChevronDown,
-    Upload
+    CheckCircle2,
+    EyeOff,
+    Boxes
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCategories } from '../../../hooks/useProducts';
+import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+import Pagination from '../components/Pagination';
 
 const SubCategoriesPage = () => {
     const { data: globalParents = [] } = useCategories();
@@ -21,7 +24,7 @@ const SubCategoriesPage = () => {
         queryClient.invalidateQueries({ queryKey: ['categories'] });
         queryClient.invalidateQueries({ queryKey: ['subcategories'] });
     };
-    
+
     // Data State
     // parents state removed, using globalParents
     const [subCategories, setSubCategories] = useState([]); // All sub categories
@@ -30,16 +33,27 @@ const SubCategoriesPage = () => {
     // UI State
     const [searchTerm, setSearchTerm] = useState('');
     const [parentFilter, setParentFilter] = useState('All');
-    
+
     // Modal & Form State
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingSub, setEditingSub] = useState(null);
     const [submitLoading, setSubmitLoading] = useState(false);
-    
-    const [newItem, setNewItem] = useState({ name: '', image: '', parentId: '', status: 'Active', showInShopByCategory: true });
-    const [file, setFile] = useState(null);
-    const [preview, setPreview] = useState(null);
-    const fileInputRef = React.useRef(null);
+
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    const [newItem, setNewItem] = useState({ name: '', parentId: '', status: 'Active', showInShopByCategory: true });
+
+    // Accordion State
+    const [expandedParents, setExpandedParents] = useState({});
+
+    const toggleParent = (id) => {
+        setExpandedParents(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
 
     useEffect(() => {
         fetchData();
@@ -63,22 +77,7 @@ const SubCategoriesPage = () => {
         }
     };
 
-    const handleFileChange = (e) => {
-        const f = e.target.files[0];
-        if (f) {
-            setFile(f);
-            setPreview(URL.createObjectURL(f));
-        }
-    };
 
-    const uploadImage = async (file) => {
-        const formData = new FormData();
-        formData.append('image', file);
-        const res = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Image upload failed');
-        return data.url;
-    };
 
     const handleSubmit = async (e, isEdit = false) => {
         e.preventDefault();
@@ -86,28 +85,21 @@ const SubCategoriesPage = () => {
         const toastId = toast.loading(isEdit ? 'Updating...' : 'Creating...');
 
         try {
-            let imageUrl = isEdit ? editingSub.image : newItem.image;
-            if (file) {
-                imageUrl = await uploadImage(file);
-            }
-
             const method = isEdit ? 'PUT' : 'POST';
-            const url = isEdit 
-                ? `http://localhost:5000/api/subcategories/${editingSub.id}` 
+            const url = isEdit
+                ? `http://localhost:5000/api/subcategories/${editingSub.id}`
                 : 'http://localhost:5000/api/subcategories';
 
             let payload;
             if (isEdit) {
-                payload = { 
-                    ...editingSub, 
-                    image: imageUrl, 
+                payload = {
+                    ...editingSub,
                     parent: editingSub.parent.id || editingSub.parent,
                     showInShopByCategory: editingSub.showInShopByCategory
                 };
             } else {
                 payload = {
                     name: newItem.name,
-                    image: imageUrl,
                     parent: newItem.parentId,
                     status: newItem.status,
                     showInShopByCategory: newItem.showInShopByCategory
@@ -130,9 +122,7 @@ const SubCategoriesPage = () => {
                 refreshGlobalCategories(); // Refresh global context
                 setShowAddModal(false);
                 setEditingSub(null);
-                setNewItem({ name: '', image: '', parentId: '', status: 'Active' });
-                setFile(null);
-                setPreview(null);
+                setNewItem({ name: '', parentId: '', status: 'Active' });
             } else {
                 toast.error(data.message || 'Operation failed', { id: toastId });
             }
@@ -145,29 +135,29 @@ const SubCategoriesPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if(!window.confirm('Delete this sub-category?')) return;
+        if (!window.confirm('Delete this sub-category?')) return;
         try {
             const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
-            if(res.ok) {
+            if (res.ok) {
                 toast.success('Deleted');
                 setSubCategories(subCategories.filter(s => (s._id || s.id) !== id));
                 refreshGlobalCategories();
             } else {
                 toast.error('Failed to delete');
             }
-        } catch(e) { toast.error('Error deleting'); }
+        } catch (e) { toast.error('Error deleting'); }
     };
 
     // --- Filtering & Grouping ---
     const filteredSubs = useMemo(() => {
         return subCategories.filter(sub => {
             const pId = typeof sub.parent === 'object' ? sub.parent?._id || sub.parent?.id : sub.parent;
-            const pName = typeof sub.parent === 'object' ? sub.parent?.name : globalParents.find(p=>p.id===pId)?.name;
-            
-            const matchesSearch = sub.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  (pName && pName.toLowerCase().includes(searchTerm.toLowerCase()));
+            const pName = typeof sub.parent === 'object' ? sub.parent?.name : globalParents.find(p => p.id === pId)?.name;
+
+            const matchesSearch = sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (pName && pName.toLowerCase().includes(searchTerm.toLowerCase()));
             const matchesParent = parentFilter === 'All' || pId === parentFilter;
-            
+
             return matchesSearch && matchesParent;
         });
     }, [subCategories, searchTerm, parentFilter, globalParents]);
@@ -179,40 +169,85 @@ const SubCategoriesPage = () => {
         const relevantParents = parentFilter === 'All' ? globalParents : globalParents.filter(p => p.id === parentFilter);
 
         relevantParents.forEach(p => {
-             // Find subs for this parent
-             const subsForParent = filteredSubs.filter(s => {
-                 const sParentId = typeof s.parent === 'object' ? s.parent?._id || s.parent?.id : s.parent;
-                 return sParentId === p.id;
-             });
-             
-             // Only add if there are subs OR we are specifically looking at this parent (or All)
-             // Actually, showing empty parents is nice encouragement to add subs
-             groups[p.id] = { category: p, subs: subsForParent };
+            // Find subs for this parent
+            const subsForParent = filteredSubs.filter(s => {
+                const sParentId = typeof s.parent === 'object' ? s.parent?._id || s.parent?.id : s.parent;
+                return sParentId === p.id;
+            });
+
+            // Only add if there are subs OR we are specifically looking at this parent (or All)
+            // Actually, showing empty parents is nice encouragement to add subs
+            groups[p.id] = { category: p, subs: subsForParent };
         });
         return groups;
 
     }, [globalParents, filteredSubs, parentFilter]);
 
+    const allGroups = useMemo(() => Object.values(groupedSubs), [groupedSubs]);
+
+    const paginatedGroups = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return allGroups.slice(startIndex, startIndex + itemsPerPage);
+    }, [allGroups, currentPage]);
+
+    const totalPages = Math.ceil(allGroups.length / itemsPerPage);
+
     return (
         <div className="space-y-8 font-['Inter']">
             <Toaster position="top-right" />
 
-             {/* Header */}
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Sub-Category Management</h1>
                     <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage secondary product levels</p>
                 </div>
                 <button
                     onClick={() => {
-                        setNewItem({ name: '', image: '', parentId: '', status: 'Active', showInShopByCategory: true });
-                        setPreview(null);
+                        setNewItem({ name: '', parentId: '', status: 'Active', showInShopByCategory: true });
                         setShowAddModal(true);
                     }}
                     className="bg-[#2c5336] text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-[#1f3b26] transition-all shadow-lg shadow-[#2c5336]/20"
                 >
                     <Plus size={18} strokeWidth={3} /> Add Sub-category
                 </button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Sub-levels</p>
+                            <p className="text-2xl font-black text-footerBg">{subCategories.length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <Layers size={22} />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Live Levels</p>
+                            <p className="text-2xl font-black text-footerBg">{subCategories.filter(s => s.status === 'Active').length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <CheckCircle2 size={22} />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Parent Groups</p>
+                            <p className="text-2xl font-black text-footerBg">{globalParents.length}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                            <Boxes size={22} />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Filters */}
@@ -245,84 +280,102 @@ const SubCategoriesPage = () => {
             </div>
 
             {/* List */}
-            {loading ? <div className="p-12 text-center"><Loader className="animate-spin inline-block text-gray-300"/></div> : 
-            <div className="space-y-6">
-                {Object.values(groupedSubs).map(({ category, subs }) => (
-                    subs.length > 0 || parentFilter !== 'All' ? ( // Hide empty parents in general view to reduce clutter, optional
-                    <div key={category._id || category.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:border-[#2c5336]/20">
-                        <div className="bg-gray-50/50 px-6 py-4 flex items-center justify-between border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white rounded-xl border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
-                                    {category.image ? <img src={category.image} className="w-full h-full object-contain" alt=""/> : <Layers size={16}/>}
+            {loading ? <div className="p-12 text-center"><Loader className="animate-spin inline-block text-gray-300" /></div> :
+                <div className="space-y-6">
+                    {paginatedGroups.map(({ category, subs }) => (
+                        subs.length > 0 || parentFilter !== 'All' ? ( // Hide empty parents in general view to reduce clutter, optional
+                            <div key={category._id || category.id} className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden transition-all hover:border-[#2c5336]/20">
+                                <div
+                                    className="bg-white px-6 py-4 flex items-center justify-between border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+                                    onClick={() => toggleParent(category._id || category.id)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`transition-transform duration-200 ${expandedParents[category._id || category.id] ? 'rotate-180' : ''}`}>
+                                            <ChevronDown size={18} className="text-gray-400" />
+                                        </div>
+                                        <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center p-1.5 shadow-sm">
+                                            {category.image ? <img src={category.image} className="w-full h-full object-contain" alt="" /> : <Layers size={16} />}
+                                        </div>
+                                        <div>
+                                            <h2 className="font-medium text-gray-900 text-sm">{category.name}</h2>
+                                            <p className="text-xs text-gray-500">{subs.length} Levels</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewItem({ ...newItem, parentId: category.id });
+                                            setShowAddModal(true);
+                                        }}
+                                        className="bg-white text-primary border border-gray-200 hover:bg-gray-50 hover:text-primaryDeep px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+                                    >
+                                        <Plus size={14} /> Add Sub
+                                    </button>
                                 </div>
-                                <div>
-                                    <h2 className="font-black text-footerBg uppercase tracking-tight text-sm">{category.name}</h2>
-                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{subs.length} Levels</p>
-                                </div>
+                                {expandedParents[category._id || category.id] && (
+                                    <div className="p-0 animate-in slide-in-from-top-2 duration-200 bg-gray-50/50">
+                                        <AdminTable>
+                                            <AdminTableHeader>
+                                                <AdminTableHead className="py-3 text-gray-600">Sub-category</AdminTableHead>
+                                                <AdminTableHead className="py-3 text-gray-600">Products</AdminTableHead>
+                                                <AdminTableHead className="py-3 text-gray-600">Status</AdminTableHead>
+                                                <AdminTableHead className="py-3 text-gray-600 text-right">Actions</AdminTableHead>
+                                            </AdminTableHeader>
+                                            <AdminTableBody>
+                                                {subs.map((sub) => (
+                                                    <AdminTableRow key={sub._id || sub.id} className="hover:bg-gray-100">
+                                                        <AdminTableCell className="py-3">
+                                                            <span className="font-medium text-gray-900 text-sm">{sub.name}</span>
+                                                        </AdminTableCell>
+                                                        <AdminTableCell className="py-3">
+                                                            <span className="text-xs font-medium text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                                                {sub.productCount || 0}
+                                                            </span>
+                                                        </AdminTableCell>
+                                                        <AdminTableCell className="py-3">
+                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${sub.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+                                                                {sub.status}
+                                                            </span>
+                                                        </AdminTableCell>
+                                                        <AdminTableCell className="py-3 text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <button onClick={() => {
+                                                                    setEditingSub(sub);
+                                                                }} className="p-1.5 text-gray-400 hover:text-primary hover:bg-white rounded-lg"><Edit2 size={14} /></button>
+                                                                <button onClick={() => handleDelete(sub._id || sub.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg"><Trash2 size={14} /></button>
+                                                            </div>
+                                                        </AdminTableCell>
+                                                    </AdminTableRow>
+                                                ))}
+                                                {subs.length === 0 && (
+                                                    <AdminTableRow>
+                                                        <AdminTableCell colSpan="4" className="px-6 py-8 text-center text-sm text-gray-400">
+                                                            No items yet
+                                                        </AdminTableCell>
+                                                    </AdminTableRow>
+                                                )}
+                                            </AdminTableBody>
+                                        </AdminTable>
+                                    </div>
+                                )}
                             </div>
-                            <button
-                                onClick={() => {
-                                    setNewItem({ ...newItem, parentId: category.id });
-                                    setPreview(null);
-                                    setShowAddModal(true);
-                                }}
-                                className="bg-white text-[#2c5336] border border-[#2c5336]/20 hover:bg-[#2c5336] hover:text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all"
-                            >
-                                <Plus size={12} strokeWidth={3} /> Add Sub
-                            </button>
-                        </div>
-                        <div className="p-0">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="bg-white">
-                                    <tr>
-                                        <th className="px-6 py-3 text-[9px] font-black text-gray-300 uppercase tracking-widest">Sub-category</th>
-                                        <th className="px-6 py-3 text-[9px] font-black text-gray-300 uppercase tracking-widest">Status</th>
-                                        <th className="px-6 py-3 text-[9px] font-black text-gray-300 uppercase tracking-widest text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {subs.map((sub) => (
-                                        <tr key={sub._id || sub.id} className="group hover:bg-gray-50/30 transition-all">
-                                            <td className="px-6 py-2.5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
-                                                        {sub.image ? <img src={sub.image} className="w-full h-full object-contain"/> : <Layers size={14} className="text-gray-300"/>}
-                                                    </div>
-                                                    <span className="font-bold text-footerBg uppercase tracking-tight text-xs">{sub.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2.5">
-                                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border flex w-fit items-center gap-1 ${sub.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
-                                                    {sub.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-2.5">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <button onClick={() => { 
-                                                        setEditingSub(sub); 
-                                                        setPreview(sub.image); 
-                                                        setFile(null); 
-                                                        }} className="p-1.5 text-gray-300 hover:text-[#2c5336] hover:bg-gray-50 rounded-lg"><Edit2 size={14}/></button>
-                                                    <button onClick={() => handleDelete(sub._id || sub.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {subs.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center text-xs text-gray-300 font-bold uppercase italic">No items yet</td></tr>}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    ) : null
-                ))}
-            </div>
+                        ) : null
+                    ))}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        totalItems={allGroups.length}
+                        itemsPerPage={itemsPerPage}
+                    />
+                </div>
             }
 
             {/* Modal */}
             {(showAddModal || editingSub) && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                     <div className="absolute inset-0 bg-footerBg/60 backdrop-blur-sm" onClick={() => {setShowAddModal(false); setEditingSub(null);}} />
-                     <div className="bg-white rounded-[1.5rem] w-full max-w-[320px] relative z-10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="absolute inset-0 bg-footerBg/60 backdrop-blur-sm" onClick={() => { setShowAddModal(false); setEditingSub(null); }} />
+                    <div className="bg-white rounded-[1.5rem] w-full max-w-[320px] relative z-10 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
                             <div>
                                 <h2 className="text-sm font-black text-footerBg uppercase tracking-tight">{editingSub ? 'Edit Level' : 'New Level'}</h2>
@@ -330,57 +383,51 @@ const SubCategoriesPage = () => {
                                     Parent: {globalParents.find(p => p.id === (editingSub ? (editingSub.parent.id || editingSub.parent) : newItem.parentId))?.name || 'Select Parent'}
                                 </p>
                             </div>
-                            <button onClick={()=>{setShowAddModal(false); setEditingSub(null);}} className="p-1">
-                                <Plus size={16} className="rotate-45 text-gray-400"/>
+                            <button onClick={() => { setShowAddModal(false); setEditingSub(null); }} className="p-1">
+                                <Plus size={16} className="rotate-45 text-gray-400" />
                             </button>
                         </div>
                         <form onSubmit={(e) => handleSubmit(e, !!editingSub)} className="p-4 space-y-3">
-                             <div className="space-y-1">
+                            <div className="space-y-1">
                                 <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Parent</label>
-                                <select 
-                                    required 
-                                    value={editingSub ? (editingSub.parent._id || editingSub.parent.id || editingSub.parent) : newItem.parentId} 
-                                    onChange={(e) => editingSub ? setEditingSub({...editingSub, parent: e.target.value}) : setNewItem({...newItem, parentId: e.target.value})}
+                                <select
+                                    required
+                                    value={editingSub ? (editingSub.parent._id || editingSub.parent.id || editingSub.parent) : newItem.parentId}
+                                    onChange={(e) => editingSub ? setEditingSub({ ...editingSub, parent: e.target.value }) : setNewItem({ ...newItem, parentId: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold text-footerBg outline-none"
                                 >
                                     <option value="">Select Parent Category</option>
                                     {globalParents.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
-                             </div>
+                            </div>
 
-                             <div className="space-y-1">
+                            <div className="space-y-1">
                                 <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Name</label>
-                                <input required type="text" 
+                                <input required type="text"
                                     value={editingSub ? editingSub.name : newItem.name}
-                                    onChange={(e) => editingSub ? setEditingSub({...editingSub, name: e.target.value}) : setNewItem({...newItem, name: e.target.value})}
+                                    onChange={(e) => editingSub ? setEditingSub({ ...editingSub, name: e.target.value }) : setNewItem({ ...newItem, name: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold text-footerBg outline-none focus:border-[#2c5336]"
                                 />
-                             </div>
+                            </div>
 
-                             <div className="space-y-1">
-                                <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Image</label>
-                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                                <div onClick={() => fileInputRef.current.click()} className="w-full h-20 rounded-lg border border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden">
-                                     {preview ? <img src={preview} className="w-full h-full object-cover"/> : <span className="text-[9px] text-gray-400 font-bold uppercase">Upload</span>}
-                                </div>
-                             </div>
 
-                             <label className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 cursor-pointer">
+
+                            <label className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     checked={editingSub ? editingSub.showInShopByCategory : newItem.showInShopByCategory}
-                                    onChange={(e) => editingSub ? setEditingSub({...editingSub, showInShopByCategory: e.target.checked}) : setNewItem({...newItem, showInShopByCategory: e.target.checked})}
+                                    onChange={(e) => editingSub ? setEditingSub({ ...editingSub, showInShopByCategory: e.target.checked }) : setNewItem({ ...newItem, showInShopByCategory: e.target.checked })}
                                     className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
                                 />
                                 <span className="text-[9px] font-black text-footerBg uppercase">Show in Shop Strip</span>
-                             </label>
+                            </label>
 
-                             <button type="submit" disabled={submitLoading} className="w-full bg-[#2c5336] text-white py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-[#1f3b26] disabled:opacity-70 flex justify-center items-center gap-2">
-                                {submitLoading && <Loader size={12} className="animate-spin"/>}
+                            <button type="submit" disabled={submitLoading} className="w-full bg-[#2c5336] text-white py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-[#1f3b26] disabled:opacity-70 flex justify-center items-center gap-2">
+                                {submitLoading && <Loader size={12} className="animate-spin" />}
                                 {editingSub ? 'Save' : 'Create'}
-                             </button>
+                            </button>
                         </form>
-                     </div>
+                    </div>
                 </div>
             )}
         </div>
