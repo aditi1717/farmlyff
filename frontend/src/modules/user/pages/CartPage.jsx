@@ -59,25 +59,25 @@ const CartPage = () => {
     // Zustand Stores
     const { getCart, removeFromCart, updateCartQty, addToCart, clearCart, applyCoupon, removeCoupon, getAppliedCoupon } = useCartStore();
     const { getSaveForLater, saveForLater, addToSaved: saveForLaterAction, removeFromSaved } = useUserStore();
-    
+
     // Data Hooks
     const { data: products = [] } = useProducts();
     const activeCoupons = useActiveCoupons();
-    
+
     // Helpers (moved from Context or re-implemented)
     // We need to implement getRecommendations locally or via new hook if complex
     // For now, simple random or dummy
     const getRecommendations = (userId, limit) => {
-         // Simple recommendation logic using products list
-         if(!products.length) return [];
-         return products.slice(0, limit);
+        // Simple recommendation logic using products list
+        if (!products.length) return [];
+        return products.slice(0, limit);
     };
 
     // Helper functions for CartPage logic
     const moveToSaveForLater = (userId, packId) => {
         // Find item qty from cart
         const cartItem = getCart(userId).find(i => i.packId === packId);
-        if(cartItem) {
+        if (cartItem) {
             saveForLaterAction(userId, packId, cartItem.qty);
             removeFromCart(userId, packId);
         }
@@ -86,18 +86,18 @@ const CartPage = () => {
     const moveToCartFromSaved = (userId, packId) => {
         // Find item qty from saved
         const savedItem = saveForLater(userId).find(i => i.packId === packId);
-        if(savedItem) {
+        if (savedItem) {
             addToCart(userId, packId, savedItem.qty);
             removeFromSaved(userId, packId);
         }
     };
-    
+
     // Legacy helpers to resolve product data
     const getVariantById = (variantId) => {
         // Loop products
-        for(let p of products) {
+        for (let p of products) {
             const v = p.variants?.find(v => v.id === variantId);
-            if(v) return { ...v, product: p };
+            if (v) return { ...v, product: p };
         }
         return null;
     };
@@ -124,9 +124,9 @@ const CartPage = () => {
 
     const [couponCode, setCouponCode] = React.useState('');
     const [couponError, setCouponError] = React.useState('');
-    const appliedCoupon = user ? getAppliedCoupon(user.id) : null;
+    const appliedCoupon = getAppliedCoupon(user?.id);
 
-    const cartItems = user ? getCart(user.id) : [];
+    const cartItems = getCart(user?.id);
 
     // Enrich cart items with product details
     const enrichedCart = cartItems.map(item => {
@@ -254,7 +254,7 @@ const CartPage = () => {
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
-                                                onClick={() => removeFromCart(user.id, item.id)}
+                                                onClick={() => removeFromCart(user?.id, item.id)}
                                                 className="text-gray-200 hover:text-red-500 transition-colors p-1"
                                             >
                                                 <Trash2 size={14} />
@@ -264,14 +264,14 @@ const CartPage = () => {
                                     <div className="flex justify-between items-center mt-1 md:mt-4">
                                         <div className="flex items-center border border-gray-100 rounded-md overflow-hidden bg-gray-50/50">
                                             <button
-                                                onClick={() => updateCartQty(user.id, item.id, item.qty - 1)}
+                                                onClick={() => updateCartQty(user?.id, item.id, item.qty - 1)}
                                                 className="p-1 md:p-2 hover:bg-white transition-colors"
                                             >
                                                 <Minus size={10} />
                                             </button>
                                             <span className="w-7 md:w-10 text-center font-bold text-[11px] md:text-base">{item.qty}</span>
                                             <button
-                                                onClick={() => updateCartQty(user.id, item.id, item.qty + 1)}
+                                                onClick={() => updateCartQty(user?.id, item.id, item.qty + 1)}
                                                 className="p-1 md:p-2 hover:bg-white transition-colors"
                                             >
                                                 <Plus size={10} />
@@ -311,55 +311,7 @@ const CartPage = () => {
                                 </div>
                             </div>
 
-                            {/* Promo Code Input */}
-                            <div className="pt-4 border-t border-gray-100">
-                                {!appliedCoupon ? (
-                                    <div className="space-y-2">
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Promo Code"
-                                                value={couponCode}
-                                                onChange={(e) => {
-                                                    setCouponCode(e.target.value.toUpperCase());
-                                                    setCouponError('');
-                                                }}
-                                                className="flex-1 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:border-primary transition-all uppercase"
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const coupon = activeCoupons.find(c => c.code === couponCode);
-                                                    if (!coupon) {
-                                                        setCouponError('Invalid code');
-                                                    } else if (subtotal < coupon.minOrderValue) {
-                                                        setCouponError(`Min order ₹${coupon.minOrderValue} required`);
-                                                    } else {
-                                                        applyCoupon(user.id, coupon);
-                                                        setCouponCode('');
-                                                    }
-                                                }}
-                                                className="bg-footerBg text-white px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all shadow-sm"
-                                            >
-                                                Apply
-                                            </button>
-                                        </div>
-                                        {couponError && <p className="text-[10px] text-red-500 font-bold ml-1">{couponError}</p>}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-2 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <Tag size={12} className="text-emerald-500" />
-                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{appliedCoupon.code}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => removeCoupon(user.id)}
-                                            className="text-[10px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+
 
                             <button
                                 onClick={() => navigate('/checkout')}

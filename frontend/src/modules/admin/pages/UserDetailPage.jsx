@@ -51,7 +51,7 @@ const UserDetailPage = () => {
         { id: 'u10', name: 'Zoya Khan', email: 'zoya.k@gmail.com', phone: '+91 90000 00001', isBlocked: false, totalOrders: 6, totalSpend: 18400, since: 'September 2024', addresses: [] }
     ];
 
-    const user = DUMMY_USERS.find(u => u.id === id);
+    const user = DUMMY_USERS.find(u => u.id === id) || DUMMY_USERS[0];
 
     // Simple Order History for u1
     const allDummyOrders = [

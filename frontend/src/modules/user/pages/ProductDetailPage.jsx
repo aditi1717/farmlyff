@@ -367,8 +367,7 @@ const ProductDetailPage = () => {
                                 <div className="flex flex-col sm:flex-row gap-3 max-w-sm">
                                     <button
                                         onClick={() => {
-                                            if (!user) return navigate('/login');
-                                            addToCart(user.id, product.id, 1);
+                                            addToCart(user?.id, product.id, 1);
                                         }}
                                         className="flex-1 bg-primaryDeep text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-primaryHover transition-all shadow-lg shadow-primaryDeep/20 flex items-center justify-center gap-2"
                                     >
@@ -376,8 +375,8 @@ const ProductDetailPage = () => {
                                     </button>
                                     <button
                                         onClick={() => {
-                                            if (!user) return navigate('/login');
-                                            addToCart(user.id, product.id, 1);
+                                            addToCart(user?.id, product.id, 1);
+                                            navigate('/checkout');
                                         }}
                                         className="flex-1 bg-primary text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-primaryHover transition-all shadow-lg shadow-primary/20"
                                     >
@@ -781,9 +780,8 @@ const ProductDetailPage = () => {
                         <div className="flex flex-col sm:flex-row gap-4 mb-8">
                             <button
                                 onClick={() => {
-                                    if (!user) return navigate('/login');
                                     const skuId = isGroupProduct ? selectedVariant.id : product.id;
-                                    addToCart(user.id, skuId, quantity);
+                                    addToCart(user?.id, skuId, quantity);
                                 }}
                                 className="flex-[1.2] bg-primary text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-primaryHover transition-colors shadow-sm flex items-center justify-center gap-2"
                             >
@@ -791,9 +789,8 @@ const ProductDetailPage = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    if (!user) return navigate('/login');
                                     const skuId = isGroupProduct ? selectedVariant.id : product.id;
-                                    addToCart(user.id, skuId, quantity);
+                                    addToCart(user?.id, skuId, quantity);
                                     navigate('/checkout');
                                 }}
                                 className="flex-1 bg-[#111827] text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-black transition-colors"

@@ -8,16 +8,13 @@ const useCartStore = create(
             cartItems: {}, // { userId: [{ packId, qty }] }
             appliedCoupons: {}, // { userId: couponData }
 
-            getCart: (userId) => get().cartItems[userId] || [],
+            getCart: (userId) => get().cartItems[userId || 'guest'] || [],
 
             addToCart: (userId, packId, qty = 1) => {
-                if (!userId) {
-                    toast.error("Please login to add to cart");
-                    return;
-                }
+                const effectiveId = userId || 'guest';
                 const cart = get().cartItems;
-                const userCart = cart[userId] || [];
-                
+                const userCart = cart[effectiveId] || [];
+
                 const existingItemIndex = userCart.findIndex(item => String(item.packId) === String(packId));
 
                 if (existingItemIndex > -1) {
@@ -26,58 +23,61 @@ const useCartStore = create(
                     userCart.push({ packId, qty });
                 }
 
-                set({ cartItems: { ...cart, [userId]: userCart } });
+                set({ cartItems: { ...cart, [effectiveId]: userCart } });
                 toast.success("Item added to cart");
-                
-                // Note: Integration with SaveForLater removal should happen in component or via cross-store logic if strict
             },
 
             removeFromCart: (userId, packId) => {
+                const effectiveId = userId || 'guest';
                 const cart = get().cartItems;
-                if (cart[userId]) {
-                    const updatedUserCart = cart[userId].filter(item => item.packId !== packId);
-                    set({ cartItems: { ...cart, [userId]: updatedUserCart } });
+                if (cart[effectiveId]) {
+                    const updatedUserCart = cart[effectiveId].filter(item => item.packId !== packId);
+                    set({ cartItems: { ...cart, [effectiveId]: updatedUserCart } });
                     toast.success("Item removed from cart");
                 }
             },
 
             updateCartQty: (userId, packId, qty) => {
+                const effectiveId = userId || 'guest';
                 const cart = get().cartItems;
-                if (cart[userId]) {
+                if (cart[effectiveId]) {
                     if (qty < 1) {
-                         const updatedUserCart = cart[userId].filter(item => item.packId !== packId);
-                         set({ cartItems: { ...cart, [userId]: updatedUserCart } });
-                         return;
+                        const updatedUserCart = cart[effectiveId].filter(item => item.packId !== packId);
+                        set({ cartItems: { ...cart, [effectiveId]: updatedUserCart } });
+                        return;
                     }
-                    const updatedUserCart = cart[userId].map(item => 
+                    const updatedUserCart = cart[effectiveId].map(item =>
                         item.packId === packId ? { ...item, qty } : item
                     );
-                    set({ cartItems: { ...cart, [userId]: updatedUserCart } });
+                    set({ cartItems: { ...cart, [effectiveId]: updatedUserCart } });
                 }
             },
 
             clearCart: (userId) => {
+                const effectiveId = userId || 'guest';
                 const cart = get().cartItems;
                 const coupons = get().appliedCoupons;
-                set({ 
-                    cartItems: { ...cart, [userId]: [] },
-                    appliedCoupons: { ...coupons, [userId]: null }
+                set({
+                    cartItems: { ...cart, [effectiveId]: [] },
+                    appliedCoupons: { ...coupons, [effectiveId]: null }
                 });
             },
 
             applyCoupon: (userId, coupon) => {
+                const effectiveId = userId || 'guest';
                 const coupons = get().appliedCoupons;
-                set({ appliedCoupons: { ...coupons, [userId]: coupon } });
+                set({ appliedCoupons: { ...coupons, [effectiveId]: coupon } });
                 toast.success(`Coupon ${coupon.code} applied!`);
             },
 
             removeCoupon: (userId) => {
+                const effectiveId = userId || 'guest';
                 const coupons = get().appliedCoupons;
-                set({ appliedCoupons: { ...coupons, [userId]: null } });
+                set({ appliedCoupons: { ...coupons, [effectiveId]: null } });
                 toast.success("Coupon removed");
             },
 
-            getAppliedCoupon: (userId) => get().appliedCoupons[userId] || null
+            getAppliedCoupon: (userId) => get().appliedCoupons[userId || 'guest'] || null
         }),
         {
             name: 'farmlyf_cart', // unique name

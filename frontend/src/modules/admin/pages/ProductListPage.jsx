@@ -18,23 +18,82 @@ import {
     Settings,
     AlertCircle
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/useProducts';
+// import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/useProducts'; // API Hooks disabled
 import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+// Dummy Products Data
+const DUMMY_PRODUCTS = [
+    {
+        id: 'PROD_001',
+        name: 'Premium California Almonds',
+        brand: 'FarmLyf Premium',
+        category: 'Nuts',
+        subcategory: 'Almonds',
+        image: 'https://placehold.co/100x100/png',
+        variants: [
+            { id: 'v1', weight: '250g', price: 350, mrp: 450, stock: 50 },
+            { id: 'v2', weight: '500g', price: 650, mrp: 850, stock: 30 }
+        ],
+        rating: 4.8,
+        createdAt: '2024-01-15T10:00:00Z'
+    },
+    {
+        id: 'PROD_002',
+        name: 'Organic Cashew Nuts (W320)',
+        brand: 'FarmLyf Organics',
+        category: 'Nuts',
+        subcategory: 'Cashews',
+        image: 'https://placehold.co/100x100/png',
+        variants: [
+            { id: 'v3', weight: '250g', price: 400, mrp: 500, stock: 20 }
+        ],
+        rating: 4.6,
+        createdAt: '2024-01-18T12:00:00Z'
+    },
+    {
+        id: 'PROD_003',
+        name: 'Afghan Black Raisins',
+        brand: 'FarmLyf Imports',
+        category: 'Dried Fruits',
+        subcategory: 'Raisins',
+        image: 'https://placehold.co/100x100/png',
+        variants: [
+            { id: 'v4', weight: '1kg', price: 1200, mrp: 1500, stock: 0 }
+        ],
+        rating: 4.2,
+        createdAt: '2024-01-20T09:30:00Z'
+    }
+];
+
 const ProductListPage = () => {
     const navigate = useNavigate();
-    const { data: products = [] } = useProducts();
+    const location = useLocation();
+    // const { data: products = [] } = useProducts(); // API disabled
+    const products = DUMMY_PRODUCTS; // using dummy data
     const queryClient = useQueryClient();
 
-    const deleteProductMutation = useDeleteProduct();
+    // Check if we are in Selection Mode (e.g. for Homepage Sections)
+    const selectionMode = location.state?.selectionMode;
+    const targetSectionId = location.state?.sectionId;
+    const targetSectionTitle = location.state?.sectionTitle;
+
+    // Mock Delete Mutation
+    const deleteProductMutation = {
+        mutate: (id) => {
+            toast.success('Product deleted (Mock)');
+            // In real app, this would update the list. For mock, we can't easily update the constant.
+        }
+    };
 
     const handleDelete = (id) => {
-        deleteProductMutation.mutate(id);
+        if (window.confirm('Delete this product?')) {
+            deleteProductMutation.mutate(id);
+        }
     };
 
     const handleBulkDelete = () => {
@@ -52,7 +111,7 @@ const ProductListPage = () => {
     const itemsPerPage = 8;
 
     const [expandedProductId, setExpandedProductId] = useState(null);
-    const [selectedProducts, setSelectedProducts] = useState([]);
+    const [selectedProducts, setSelectedProducts] = useState(location.state?.preSelected || []);
 
     // Toggle Row Expansion for Variants
     const toggleExpand = (id) => {
@@ -72,6 +131,28 @@ const ProductListPage = () => {
         setSelectedProducts(prev =>
             prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
         );
+    };
+
+    const handleConfirmSelection = () => {
+        // Find full product objects for selected IDs
+        const selectedObjects = products.filter(p => selectedProducts.includes(p.id))
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                sku: p.variants?.[0]?.sku || p.id,
+                price: p.variants?.[0]?.price,
+                image: p.image,
+                category: p.category
+            }));
+
+        // Save to Local Storage (Mock Backend)
+        const STORAGE_KEY = 'farmlyf_homepage_sections';
+        const allSections = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        allSections[targetSectionId] = selectedObjects;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(allSections));
+
+        toast.success(`Updated ${targetSectionTitle}`);
+        navigate(-1);
     };
 
     const getPriceRange = (variants) => {
@@ -146,11 +227,16 @@ const ProductListPage = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Product Inventory</h1>
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage your premium dry fruit catalog</p>
+                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">
+                        {selectionMode ? `Adding to: ${targetSectionTitle}` : 'Product Inventory'}
+                    </h1>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">
+                        {selectionMode ? 'Select products to display in this section' : 'Manage your premium dry fruit catalog'}
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {selectedProducts.length > 0 && (
+                    {/* Mode: Standard */}
+                    {!selectionMode && selectedProducts.length > 0 && (
                         <button
                             onClick={handleBulkDelete}
                             className="bg-red-50 text-red-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all border border-red-100 animate-in fade-in zoom-in duration-200"
@@ -158,12 +244,32 @@ const ProductListPage = () => {
                             <Trash2 size={18} strokeWidth={3} /> Delete ({selectedProducts.length})
                         </button>
                     )}
-                    <button
-                        onClick={() => navigate('/admin/products/add')}
-                        className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
-                    >
-                        <Plus size={18} strokeWidth={3} /> Add New Product
-                    </button>
+                    {!selectionMode && (
+                        <button
+                            onClick={() => navigate('/admin/products/add')}
+                            className="bg-primary text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
+                        >
+                            <Plus size={18} strokeWidth={3} /> Add New Product
+                        </button>
+                    )}
+
+                    {/* Mode: Selection */}
+                    {selectionMode && (
+                        <>
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="bg-white text-gray-500 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all border border-gray-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmSelection}
+                                className="bg-black text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all shadow-lg"
+                            >
+                                <CheckCircle2 size={18} strokeWidth={3} /> Save Selection ({selectedProducts.length})
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -246,7 +352,7 @@ const ProductListPage = () => {
                                 type="checkbox"
                                 onChange={toggleSelectAll}
                                 checked={paginatedProducts.length > 0 && selectedProducts.length === paginatedProducts.length}
-                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                className={`w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer ${!selectionMode ? 'hidden group-hover:block' : ''}`}
                             />
                         </AdminTableHead>
                         <AdminTableHead>Product Name</AdminTableHead>

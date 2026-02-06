@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -19,7 +19,26 @@ import {
     Monitor,
     Video,
     MessageSquare,
-    ShieldCheck
+    ShieldCheck,
+    ShoppingCart,
+    Clock,
+    FileText,
+    MapPin,
+    XCircle,
+    CheckCircle,
+    Truck,
+    CheckCircle2,
+    ArrowLeftRight,
+    AlertTriangle,
+    Upload,
+    Activity,
+    Star,
+    Info,
+    Layout,
+    HelpCircle,
+    User,
+    Bell,
+    Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -34,6 +53,23 @@ const AdminSidebar = () => {
     const [productsExpanded, setProductsExpanded] = useState(false);
     const [bannersExpanded, setBannersExpanded] = useState(false);
     const [reviewsExpanded, setReviewsExpanded] = useState(false);
+    const [ordersExpanded, setOrdersExpanded] = useState(true);
+    const [inventoryExpanded, setInventoryExpanded] = useState(false);
+    const [pagesExpanded, setPagesExpanded] = useState(false);
+    const [settingsExpanded, setSettingsExpanded] = useState(false);
+    const [notificationsExpanded, setNotificationsExpanded] = useState(false);
+    const [blogsExpanded, setBlogsExpanded] = useState(false);
+
+    // Auto-expand sections based on active route
+    useEffect(() => {
+        if (location.pathname.startsWith('/admin/orders')) setOrdersExpanded(true);
+        if (location.pathname.startsWith('/admin/products')) setProductsExpanded(true);
+        if (location.pathname.startsWith('/admin/combo')) setCombosExpanded(true);
+        if (location.pathname.startsWith('/admin/inventory')) setInventoryExpanded(true);
+        if (location.pathname.startsWith('/admin/banners') || location.pathname.startsWith('/admin/sections') || location.pathname.startsWith('/admin/manage')) setBannersExpanded(true);
+        if (location.pathname.startsWith('/admin/pages')) setPagesExpanded(true);
+        if (location.pathname.startsWith('/admin/blogs')) setBlogsExpanded(true);
+    }, [location.pathname]);
 
     const handleLogout = () => {
         logout();
@@ -46,8 +82,9 @@ const AdminSidebar = () => {
         { icon: Layers, label: 'Categories', path: '/admin/categories' },
         { icon: Layers, label: 'Sub-categories', path: '/admin/sub-categories' },
         // Products and Banners moved to manual handling
-        { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+        // Orders moved to manual handling
         { icon: RefreshCcw, label: 'Returns', path: '/admin/returns' },
+        { icon: ArrowLeftRight, label: 'Replacements', path: '/admin/replacements' },
         { icon: TicketPercent, label: 'Coupons', path: '/admin/coupons' },
         { icon: Share2, label: 'Referrals', path: '/admin/referrals' },
     ];
@@ -179,7 +216,7 @@ const AdminSidebar = () => {
                     )}
                 </div>
 
-                {/* Banners Section - Expandable */}
+                {/* Homepage Sections - NEW */}
                 <div className="mt-1">
                     <button
                         onClick={() => setBannersExpanded(!bannersExpanded)}
@@ -189,7 +226,7 @@ const AdminSidebar = () => {
                             }`}
                     >
                         <Monitor size={20} strokeWidth={isBannersActive ? 2.5 : 2} />
-                        <span className="font-bold text-sm flex-1 text-left">Banners</span>
+                        <span className="font-bold text-sm flex-1 text-left">Homepage Sections</span>
                         {bannersExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
@@ -203,11 +240,223 @@ const AdminSidebar = () => {
                                     }`}
                             >
                                 <List size={16} />
-                                <span className="font-semibold">Homepage Banners</span>
+                                <span className="font-semibold">Banners</span>
+                            </Link>
+                            <Link
+                                to="/admin/manage-header"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/manage-header'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Layout size={16} />
+                                <span className="font-semibold">Top Bar & Marquee</span>
+                            </Link>
+                            <Link
+                                to="/admin/sections/top-selling"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/top-selling'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Activity size={16} />
+                                <span className="font-semibold">Top Selling Products</span>
+                            </Link>
+                            <Link
+                                to="/admin/sections/why-choose-us"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/why-choose-us'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Star size={16} />
+                                <span className="font-semibold">Why Choose Us</span>
+                            </Link>
+                            <Link
+                                to="/admin/sections/about-us"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/about-us'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Info size={16} />
+                                <span className="font-semibold">About Us</span>
+                            </Link>
+                            <Link
+                                to="/admin/sections/health-benefits"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/health-benefits'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Activity size={16} />
+                                <span className="font-semibold">Health Benefits</span>
+                            </Link>
+                            <Link
+                                to="/admin/manage-faq"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/manage-faq'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <HelpCircle size={16} />
+                                <span className="font-semibold">FAQ</span>
                             </Link>
                         </div>
                     )}
                 </div>
+
+                {/* Website Pages - Expandable */}
+                <div className="mt-1">
+                    <button
+                        onClick={() => setPagesExpanded(!pagesExpanded)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/pages')
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`}
+                    >
+                        <FileText size={20} strokeWidth={location.pathname.startsWith('/admin/pages') ? 2.5 : 2} />
+                        <span className="font-bold text-sm flex-1 text-left">Website Pages</span>
+                        {pagesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+
+                    {pagesExpanded && (
+                        <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-4 py-2">
+
+                            {/* Legal Pages */}
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Legal & Policy</h4>
+                                <div className="space-y-1">
+                                    {[
+                                        { name: 'Privacy Policy', id: 'privacy-policy' },
+                                        { name: 'Terms & Conditions', id: 'terms-conditions' },
+                                        { name: 'Return Policy', id: 'refund-policy' },
+                                        { name: 'Shipping Policy', id: 'shipping-policy' },
+                                        { name: 'Cookie Policy', id: 'cookie-policy' }, // Note: Added to config below if missing
+                                        { name: 'Cancellation Policy', id: 'cancellation-policy' },
+                                        { name: 'Disclaimer', id: 'disclaimer' }
+                                    ].map(page => (
+                                        <Link
+                                            key={page.id}
+                                            to={`/admin/pages/${page.id}`}
+                                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${location.pathname === `/admin/pages/${page.id}`
+                                                ? 'bg-primary/20 text-white'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                        >
+                                            <ShieldCheck size={14} />
+                                            <span className="font-medium text-xs">{page.name}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Informational Pages */}
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Informational</h4>
+                                <div className="space-y-1">
+                                    {[
+                                        { name: 'About Us', id: 'about-us' },
+                                        { name: 'Contact Us', id: 'contact-us' },
+                                        { name: 'How to Order', id: 'how-to-order' },
+                                        { name: 'Size Guide', id: 'size-guide' },
+                                        { name: 'Payment Methods', id: 'payment-methods' }
+                                    ].map(page => (
+                                        <Link
+                                            key={page.id}
+                                            to={`/admin/pages/${page.id}`}
+                                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${location.pathname === `/admin/pages/${page.id}`
+                                                ? 'bg-primary/20 text-white'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                        >
+                                            <Info size={14} />
+                                            <span className="font-medium text-xs">{page.name}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Informational Pages */}
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Informational</h4>
+                                <div className="space-y-1">
+                                    {[
+                                        { name: 'About Us', id: 'about-us' },
+                                        { name: 'Contact Us', id: 'contact-us' },
+                                        { name: 'How to Order', id: 'how-to-order' },
+                                        { name: 'Size Guide', id: 'size-guide' },
+                                        { name: 'Payment Methods', id: 'payment-methods' }
+                                    ].map(page => (
+                                        <Link
+                                            key={page.id}
+                                            to={`/admin/pages/${page.id}`}
+                                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${location.pathname === `/admin/pages/${page.id}`
+                                                ? 'bg-primary/20 text-white'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                        >
+                                            <Info size={14} />
+                                            <span className="font-medium text-xs">{page.name}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Blogs Section - Expandable */}
+                <div className="mt-1">
+                    <button
+                        onClick={() => setBlogsExpanded(!blogsExpanded)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/blogs')
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`}
+                    >
+                        <FileText size={20} strokeWidth={location.pathname.startsWith('/admin/blogs') ? 2.5 : 2} />
+                        <span className="font-bold text-sm flex-1 text-left">Blogs</span>
+                        {blogsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+
+                    {blogsExpanded && (
+                        <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
+                            <Link
+                                to="/admin/blogs"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/blogs'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <List size={16} />
+                                <span className="font-semibold">Blog List</span>
+                            </Link>
+                            <Link
+                                to="/admin/blogs/add"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/blogs/add'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Plus size={16} />
+                                <span className="font-semibold">Add Blog</span>
+                            </Link>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Management */}
+                <Link
+                    to="/admin/manage-footer"
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${location.pathname === '/admin/manage-footer'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                >
+                    <Layout size={20} strokeWidth={location.pathname === '/admin/manage-footer' ? 2.5 : 2} />
+                    <span className="font-bold text-sm">Footer</span>
+                </Link>
 
                 {/* Reviews Section - Expandable */}
                 <div className="mt-1">
@@ -249,32 +498,230 @@ const AdminSidebar = () => {
                     )}
                 </div>
 
-                {/* Items After Reviews (Orders to Referrals) */}
-                {menuItems.slice(4).map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                {/* ORDER SECTION */}
+                <div className="mt-6 mb-2">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 px-2 tracking-widest">Order Section</p>
+                    <button
+                        onClick={() => setOrdersExpanded(!ordersExpanded)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/orders')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
-                        <span className="font-bold text-sm">{item.label}</span>
-                    </Link>
-                ))}
+                        <ShoppingCart size={20} strokeWidth={location.pathname.startsWith('/admin/orders') ? 2.5 : 2} />
+                        <span className="font-bold text-sm flex-1 text-left">Order List</span>
+                        {ordersExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+
+                    {ordersExpanded && (
+                        <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
+                            {[
+                                { label: 'All Order', count: 405, color: 'bg-pink-500', icon: ShoppingCart, path: '/admin/orders?status=All' },
+                                { label: 'Pending Order', count: 22, color: 'bg-orange-500', icon: Clock, path: '/admin/orders?status=Processing' },
+                                { label: 'Received Order', count: 195, color: 'bg-blue-500', icon: CheckCircle, path: '/admin/orders?status=Received' },
+                                { label: 'Processed Order', count: 13, color: 'bg-teal-500', icon: FileText, path: '/admin/orders?status=Processed' },
+                                { label: 'Shipped Order', count: 13, color: 'bg-gray-500', icon: Truck, path: '/admin/orders?status=Shipped' },
+                                { label: 'Out For Delivery', count: 18, color: 'bg-white text-footerBg', icon: MapPin, path: '/admin/orders?status=OutForDelivery' },
+                                { label: 'Delivered Order', count: 44, color: 'bg-orange-600', icon: CheckCircle2, path: '/admin/orders?status=Delivered' },
+                                { label: 'Cancelled Order', count: 40, color: 'bg-red-500', icon: XCircle, path: '/admin/orders?status=Cancelled' },
+                            ].map((item, idx) => (
+                                <Link
+                                    key={idx}
+                                    to={item.path}
+                                    className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all text-sm group ${location.search.includes(item.path.split('?')[1]) || (item.label === 'All Order' && location.pathname === '/admin/orders' && !location.search)
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <item.icon size={16} />
+                                        <span className="font-semibold text-xs">{item.label}</span>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.color} ${item.color.includes('text-') ? '' : 'text-white'}`}>
+                                        {item.count}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Items After Reviews (Returns and Replacements) */}
+                {
+                    menuItems.slice(4, 6).map((item) => (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+                            <span className="font-bold text-sm">{item.label}</span>
+                        </Link>
+                    ))
+                }
+
+                {/* Inventory Management Section - Expandable */}
+                <div className="mt-1">
+                    <button
+                        onClick={() => setInventoryExpanded(!inventoryExpanded)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/inventory')
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`}
+                    >
+                        <Package size={20} strokeWidth={location.pathname.startsWith('/admin/inventory') ? 2.5 : 2} />
+                        <span className="font-bold text-sm flex-1 text-left">Inventory Management</span>
+                        {inventoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+
+                    {inventoryExpanded && (
+                        <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
+                            <Link
+                                to="/admin/inventory/adjust"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/inventory/adjust'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Plus size={16} />
+                                <span className="font-semibold">Stock Adjustments</span>
+                            </Link>
+                            <Link
+                                to="/admin/inventory/history"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/inventory/history'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Clock size={16} />
+                                <span className="font-semibold">Stock History</span>
+                            </Link>
+                            <Link
+                                to="/admin/inventory/alerts"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/inventory/alerts'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <AlertTriangle size={16} />
+                                <span className="font-semibold">Low Stock Alerts</span>
+                            </Link>
+
+                            <Link
+                                to="/admin/inventory/reports"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/inventory/reports'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <FileText size={16} />
+                                <span className="font-semibold">Reports & Export</span>
+                            </Link>
+                        </div>
+                    )}
+                </div>
+
+                {/* Remaining Menu Items (Coupons, Referrals) */}
+                {
+                    menuItems.slice(6).map((item) => (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+                            <span className="font-bold text-sm">{item.label}</span>
+                        </Link>
+                    ))
+                }
                 {/* Footer Actions - Now part of scrollable nav as requested */}
                 <div className="pt-6 mt-6 border-t border-white/5 space-y-1">
-                    <Link
-                        to="/admin/settings"
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${location.pathname === '/admin/settings'
-                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                            }`}
-                    >
-                        <Settings size={20} strokeWidth={location.pathname === '/admin/settings' ? 2.5 : 2} />
-                        <span className="font-bold text-sm">Settings</span>
-                    </Link>
+                    {/* Push Notifications Section - Expandable */}
+                    <div className="mt-1">
+                        <button
+                            onClick={() => setNotificationsExpanded(!notificationsExpanded)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/notifications')
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <Bell size={20} strokeWidth={location.pathname.startsWith('/admin/notifications') ? 2.5 : 2} />
+                            <span className="font-bold text-sm flex-1 text-left">Push Notifications</span>
+                            {notificationsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </button>
+
+                        {notificationsExpanded && (
+                            <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
+                                <Link
+                                    to="/admin/notifications?tab=list"
+                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/notifications' && (!new URLSearchParams(location.search).get('tab') || new URLSearchParams(location.search).get('tab') === 'list')
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <List size={16} />
+                                    <span className="font-semibold">Notification List</span>
+                                </Link>
+                                <Link
+                                    to="/admin/notifications?tab=add"
+                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/notifications' && new URLSearchParams(location.search).get('tab') === 'add'
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <Plus size={16} />
+                                    <span className="font-semibold">Add Notification</span>
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Settings Section - Expandable */}
+                    <div className="mt-1">
+                        <button
+                            onClick={() => setSettingsExpanded(!settingsExpanded)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/settings')
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <Settings size={20} strokeWidth={location.pathname.startsWith('/admin/settings') ? 2.5 : 2} />
+                            <span className="font-bold text-sm flex-1 text-left">Settings</span>
+                            {settingsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </button>
+
+                        {settingsExpanded && (
+                            <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
+                                <Link
+                                    to="/admin/settings?tab=profile"
+                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/settings' && (!new URLSearchParams(location.search).get('tab') || new URLSearchParams(location.search).get('tab') === 'profile')
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <User size={16} />
+                                    <span className="font-semibold">My Profile</span>
+                                </Link>
+                                <Link
+                                    to="/admin/settings?tab=general"
+                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/settings' && new URLSearchParams(location.search).get('tab') === 'general'
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <Globe size={16} />
+                                    <span className="font-semibold">Store General</span>
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all text-left group"
@@ -284,8 +731,8 @@ const AdminSidebar = () => {
                     </button>
                     <div className="h-8" /> {/* Extra bottom padding for comfortable scrolling */}
                 </div>
-            </nav>
-        </div>
+            </nav >
+        </div >
     );
 };
 

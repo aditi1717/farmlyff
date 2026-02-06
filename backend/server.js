@@ -33,12 +33,15 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+
+    // Check if origin is local or a vercel deployment
+    const isVercel = origin.endsWith('.vercel.app');
+    const isLocal = origin.startsWith('http://localhost');
+
+    if (isLocal || isVercel || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
-      console.log('Origin not allowed:', origin);
-      // For now, allow all on production if origin isn't found but host matches to prevent hard blocks
-      callback(null, true);
+      callback(null, true); // Fallback to allow all in prod if check fails
     }
   },
   credentials: true,

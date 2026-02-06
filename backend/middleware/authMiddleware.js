@@ -4,26 +4,33 @@ import User from '../models/User.js';
 export const protect = async (req, res, next) => {
   let token;
 
+  // Try to get token from cookie first (local development)
   token = req.cookies.jwt;
+
+  // If no cookie, check for Bearer token in Authorization header (production/cross-domain)
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
-      
+
       if (decoded.id === 'admin_01') {
-          req.user = {
-              _id: 'admin_01',
-              id: 'admin_01',
-              name: 'Super Admin',
-              email: 'admin@farmlyf.com',
-              role: 'admin'
-          };
+        req.user = {
+          _id: 'admin_01',
+          id: 'admin_01',
+          name: 'Super Admin',
+          email: 'admin@farmlyf.com',
+          role: 'admin'
+        };
       } else {
-          req.user = await User.findOne({ id: decoded.id }).select('-password');
+        req.user = await User.findOne({ id: decoded.id }).select('-password');
       }
-      
+
       next();
     } catch (error) {
+      console.error('Token verification failed:', error.message);
       res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } else {

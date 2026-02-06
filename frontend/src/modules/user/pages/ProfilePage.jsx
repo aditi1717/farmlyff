@@ -182,7 +182,6 @@ const ProfilePage = () => {
         const accountItems = [
             { id: 'settings', label: 'Settings', icon: User, desc: 'Update profile and security', action: () => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
             { id: 'addresses', label: 'Addresses', icon: MapPin, desc: 'Manage shipping locations', action: () => navigate('/profile/addresses') },
-            { id: 'support', label: 'Support', icon: Headphones, desc: 'Help with order related queries', action: () => navigate('/profile/support') },
         ];
 
         // Desktop View Items
@@ -190,7 +189,6 @@ const ProfilePage = () => {
             { id: 'orders', label: 'Orders', icon: Package, desc: 'Check your orders status and history here', action: () => navigate('/orders') },
             { id: 'returns', label: 'Returns', icon: RefreshCw, desc: 'Manage refunds and exchanges requests', action: () => navigate('/returns') },
             { id: 'coupons', label: 'Coupons', icon: Ticket, desc: 'Explore great coupon deals to get extra discounts', action: () => navigate('/profile/coupons') },
-            { id: 'support', label: 'Help and Support', icon: Headphones, desc: 'Get help for your account and orders', action: () => navigate('/profile/support') },
             { id: 'settings', label: 'Profile Settings', icon: User, desc: 'Update your password, profile details and more', action: () => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
             { id: 'addresses', label: 'Addresses', icon: Home, desc: 'Add, edit, or manage your address easily', action: () => navigate('/profile/addresses') },
             { id: 'wishlist', label: 'Wishlist', icon: Heart, desc: 'Shop your specially saved items from here', action: () => navigate('/wishlist') }
@@ -349,87 +347,6 @@ const ProfilePage = () => {
         );
     };
 
-    const renderSupport = () => (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white p-6 md:p-10 min-h-[600px]"
-        >
-            <div className="mb-10 flex items-center gap-5">
-                <button
-                    onClick={() => navigate('/profile')}
-                    className="p-2.5 bg-slate-50 text-footerBg rounded-xl hover:bg-footerBg hover:text-white transition-all group"
-                >
-                    <ChevronRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
-                </button>
-                <div>
-                    <h2 className="text-xl font-bold text-footerBg tracking-tight uppercase">Help & Support</h2>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Contact us for any order related queries</p>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-8 md:mb-12">
-                <div className="px-5 py-2 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <Headphones size={13} strokeWidth={3} /> Support Center
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-12">
-                <div>
-                    <h2 className="text-xl md:text-3xl font-black text-footerBg mb-1 tracking-tight">Need Help?</h2>
-                    <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider mb-6 md:mb-8">Available 10am - 7pm · Mon-Sat</p>
-
-                    <div className="space-y-3">
-                        <div className="p-3 md:p-6 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-4 md:gap-5 group hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all">
-                            <div className="w-9 h-9 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-slate-100 shrink-0">
-                                <Mail size={16} md:size={20} />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[8px] md:text-[9px] font-black text-slate-300 uppercase tracking-widest mb-0.5 md:mb-1">Email support</p>
-                                <div className="flex items-center gap-0.5 font-brand overflow-hidden">
-                                    <span className="text-xs md:text-base font-black text-footerBg">support@</span>
-                                    <img src={logo} alt="FarmLyf" className="h-3 md:h-5 w-auto object-contain mx-0.5" />
-                                    <span className="font-black text-xs md:text-base text-footerBg">.com</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-3 md:p-6 rounded-2xl bg-primary/[0.03] border border-primary/10 flex items-center gap-4 md:gap-5 group hover:bg-white hover:shadow-xl hover:shadow-primary/10 transition-all">
-                            <div className="w-9 h-9 md:w-12 md:h-12 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-primary/5 shrink-0">
-                                <Share2 size={16} md:size={20} />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[8px] md:text-[9px] font-black text-primary/40 uppercase tracking-widest mb-0.5 md:mb-1">WhatsApp Support</p>
-                                <p className="text-xs md:text-base font-black text-footerBg group-hover:text-primary transition-colors">+91 98765-43210</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.25em]">Quick Fixes</h4>
-                    <div className="space-y-3">
-                        {[
-                            { q: 'Track my order status', link: '/orders', icon: Package },
-                            { q: 'Return policy & Status', link: '/returns', icon: RefreshCw },
-                            { q: 'Payment & Refund help', link: '/returns', icon: CreditCard }
-                        ].map((item, i) => (
-                            <button
-                                key={i}
-                                onClick={() => navigate(item.link)}
-                                className="w-full flex items-center justify-between p-4 md:p-5 rounded-2xl border border-slate-100 bg-white font-black text-footerBg text-xs hover:border-primary hover:bg-primary/[0.02] transition-all text-left group"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <item.icon size={14} className="text-slate-200 group-hover:text-primary transition-colors" />
-                                    <span className="group-hover:translate-x-1 transition-transform">{item.q}</span>
-                                </div>
-                                <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-colors" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
 
 
 
@@ -948,7 +865,6 @@ const ProfilePage = () => {
                             )}
                             {activeTab === 'Coupons' && renderCoupons()}
 
-                            {activeTab === 'Support' && renderSupport()}
                             {activeTab === 'Addresses' && renderAddresses()}
                             {activeTab === 'Settings' && renderSettings()}
                         </AnimatePresence>

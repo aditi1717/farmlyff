@@ -12,7 +12,8 @@ import {
     MessageSquare,
     IndianRupee,
     Truck,
-    FileText
+    FileText,
+    ArrowLeftRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../components/Pagination';
@@ -20,89 +21,62 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
-const ReturnRequestsPage = () => {
+const ReplacementRequestsPage = () => {
     const navigate = useNavigate();
-    const DUMMY_RETURNS = [
+    const DUMMY_REPLACEMENTS = [
         {
-            id: '101',
-            orderId: '5001',
-            userName: 'Rohan Sharma',
-            type: 'Refund',
-            reason: 'Damaged Product',
-            requestDate: '2025-02-01T10:00:00Z',
-            amount: 1500,
-            status: 'Pending',
-        },
-        {
-            id: '102',
-            orderId: '5002',
+            id: '201',
+            orderId: '6001',
             userName: 'Priya Verma',
             type: 'Replacement',
             reason: 'Wrong Color',
             requestDate: '2025-02-02T14:30:00Z',
-            amount: 899,
             status: 'Approved',
         },
         {
-            id: '103',
-            orderId: '5003',
-            userName: 'Amit Singh',
-            type: 'Refund',
-            reason: 'Size Issue',
-            requestDate: '2025-02-03T09:15:00Z',
-            amount: 2100,
-            status: 'Refunded',
-        },
-        {
-            id: '104',
-            orderId: '5004',
+            id: '202',
+            orderId: '6002',
             userName: 'Neha Gupta',
             type: 'Replacement',
             reason: 'Defective',
             requestDate: '2025-02-04T12:00:00Z',
-            amount: 750,
-            status: 'Rejected',
+            status: 'Pending',
         },
         {
-            id: '105',
-            orderId: '5005',
-            userName: 'Vikram Das',
-            type: 'Refund',
-            reason: 'Changed Mind',
-            requestDate: '2025-02-05T16:45:00Z',
-            amount: 1200,
-            status: 'Completed',
+            id: '203',
+            orderId: '6003',
+            userName: 'Rahul Roy',
+            type: 'Replacement',
+            reason: 'Damaged',
+            requestDate: '2025-02-06T09:00:00Z',
+            status: 'Shipped',
         },
     ];
 
-    // Fetch Returns
-    const { data: returnsData = DUMMY_RETURNS } = useQuery({
-        queryKey: ['returns'],
+    // Fetch Replacements
+    const { data: replacementsData = DUMMY_REPLACEMENTS } = useQuery({
+        queryKey: ['replacements'],
         queryFn: async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/returns');
-                if (!res.ok) throw new Error('Failed to fetch returns');
+                const res = await fetch('http://localhost:5000/api/replacements');
+                if (!res.ok) throw new Error('Failed to fetch replacements');
                 const data = await res.json();
-                return data.length > 0 ? data : DUMMY_RETURNS;
+                return data.length > 0 ? data : DUMMY_REPLACEMENTS;
             } catch (error) {
                 console.error("Fetch failed, using dummy data", error);
-                return DUMMY_RETURNS;
+                return DUMMY_REPLACEMENTS;
             }
         }
     });
 
-    // Update Status Mutation
+    // Update Status Mutation (Mock)
     const updateReturnStatus = useMutation({
         mutationFn: async ({ id, status }) => {
-            // Simulate API call for dummy data
             await new Promise(resolve => setTimeout(resolve, 500));
-            // In a real scenario, this would put to the backend
-            // const res = await fetch(`http://localhost:5000/api/returns/${id}`, { ... });
             return { id, status };
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['returns']);
-            toast.success('Return status updated');
+            toast.success('Replacement status updated');
         },
         onError: () => toast.error('Failed to update status')
     });
@@ -110,18 +84,18 @@ const ReturnRequestsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    const allReturns = useMemo(() => {
-        if (Array.isArray(returnsData)) {
-            return [...returnsData].sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate));
+    const allReplacements = useMemo(() => {
+        if (Array.isArray(replacementsData)) {
+            return [...replacementsData].sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate));
         }
         return [];
-    }, [returnsData]);
+    }, [replacementsData]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const filteredReturns = useMemo(() => {
-        return allReturns.filter(ret => {
+    const filteredReplacements = useMemo(() => {
+        return allReplacements.filter(ret => {
             const matchesSearch =
                 ret.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 ret.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,19 +105,19 @@ const ReturnRequestsPage = () => {
 
             return matchesSearch && matchesStatus;
         });
-    }, [allReturns, searchTerm, statusFilter]);
+    }, [allReplacements, searchTerm, statusFilter]);
 
-    const paginatedReturns = useMemo(() => {
+    const paginatedReplacements = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredReturns.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredReturns, currentPage]);
+        return filteredReplacements.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredReplacements, currentPage]);
 
-    const totalPages = Math.ceil(filteredReturns.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredReplacements.length / itemsPerPage);
 
     const getStatusStyles = (status) => {
         switch (status) {
             case 'Completed':
-            case 'Refunded': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'Shipped': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
             case 'Approved': return 'bg-blue-50 text-blue-600 border-blue-100';
             case 'Pending': return 'bg-amber-50 text-amber-600 border-amber-100';
             case 'Rejected': return 'bg-red-50 text-red-600 border-red-100';
@@ -152,9 +126,9 @@ const ReturnRequestsPage = () => {
     };
 
     const stats = [
-        { label: 'Total Requests', value: allReturns.length, icon: RefreshCw, color: 'bg-indigo-50 text-indigo-500' },
-        { label: 'Pending', value: allReturns.filter(r => r.status === 'Pending').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
-        { label: 'Refunded', value: allReturns.filter(r => r.status === 'Refunded').length, icon: IndianRupee, color: 'bg-emerald-50 text-emerald-500' }
+        { label: 'Total Replacements', value: allReplacements.length, icon: ArrowLeftRight, color: 'bg-indigo-50 text-indigo-500' },
+        { label: 'Pending', value: allReplacements.filter(r => r.status === 'Pending').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
+        { label: 'Completed', value: allReplacements.filter(r => r.status === 'Completed').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-500' }
     ];
 
     return (
@@ -162,8 +136,8 @@ const ReturnRequestsPage = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
                 <div>
-                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Return Management</h1>
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage Returns, Replacements and Refunds</p>
+                    <h1 className="text-xl font-black text-footerBg uppercase tracking-tight">Replacement Management</h1>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage Product Replacements & Exchanges</p>
                 </div>
             </div>
 
@@ -192,7 +166,7 @@ const ReturnRequestsPage = () => {
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search by ID or Customer..."
+                        placeholder="Search by ID, Order or Customer..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
@@ -201,7 +175,7 @@ const ReturnRequestsPage = () => {
                 {statusFilter === 'All' && (
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-                            {['All', 'Pending', 'Approved', 'Refunded', 'Rejected'].map(s => (
+                            {['All', 'Pending', 'Approved', 'Completed', 'Rejected'].map(s => (
                                 <button
                                     key={s}
                                     onClick={() => setStatusFilter(s)}
@@ -216,25 +190,23 @@ const ReturnRequestsPage = () => {
                 )}
             </div>
 
-            {/* Returns Table */}
+            {/* Replacements Table */}
             <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
                 <AdminTable>
                     <AdminTableHeader>
-                        <AdminTableHead className="min-w-[120px] px-6 py-4">Return ID</AdminTableHead>
+                        <AdminTableHead className="min-w-[140px] px-6 py-4">Replacement ID</AdminTableHead>
                         <AdminTableHead className="min-w-[120px] px-6 py-4">Order ID</AdminTableHead>
                         <AdminTableHead className="min-w-[160px] px-6 py-4">Customer</AdminTableHead>
-
                         <AdminTableHead className="min-w-[160px] px-6 py-4">Reason</AdminTableHead>
                         <AdminTableHead className="min-w-[140px] px-6 py-4">Request Date</AdminTableHead>
-                        <AdminTableHead className="min-w-[120px] px-6 py-4">Amount</AdminTableHead>
                         <AdminTableHead className="min-w-[140px] px-6 py-4">Status</AdminTableHead>
                         <AdminTableHead className="text-right min-w-[100px] px-6 py-4">Action</AdminTableHead>
                     </AdminTableHeader>
                     <AdminTableBody>
-                        {paginatedReturns.map((ret) => (
+                        {paginatedReplacements.map((ret) => (
                             <AdminTableRow key={ret.id}>
                                 <AdminTableCell className="font-bold text-xs text-footerBg select-all px-6 py-4">
-                                    RTN-{ret.id?.toString().slice(-4).toUpperCase()}
+                                    RPL-{ret.id?.toString().slice(-4).toUpperCase()}
                                 </AdminTableCell>
                                 <AdminTableCell className="font-bold text-xs text-gray-500 select-all px-6 py-4">
                                     ORD-{ret.orderId?.toString().slice(-4).toUpperCase()}
@@ -242,15 +214,11 @@ const ReturnRequestsPage = () => {
                                 <AdminTableCell className="px-6 py-4">
                                     <span className="font-bold text-footerBg text-sm">{ret.userName}</span>
                                 </AdminTableCell>
-
                                 <AdminTableCell className="text-xs text-gray-600 font-medium truncate max-w-[150px] px-6 py-4">
                                     {ret.reason}
                                 </AdminTableCell>
                                 <AdminTableCell className="text-xs font-bold text-gray-500 px-6 py-4">
                                     {(new Date(ret.requestDate)).toLocaleDateString('en-GB')}
-                                </AdminTableCell>
-                                <AdminTableCell className="font-black text-footerBg text-sm px-6 py-4">
-                                    ₹{(ret.refundAmount || ret.amount || 0).toLocaleString()}
                                 </AdminTableCell>
                                 <AdminTableCell className="px-6 py-4">
                                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${getStatusStyles(ret.status)}`}>
@@ -260,7 +228,7 @@ const ReturnRequestsPage = () => {
                                 </AdminTableCell>
                                 <AdminTableCell className="text-right px-6 py-4">
                                     <button
-                                        onClick={() => navigate(`/admin/returns/${ret.id}`)}
+                                        onClick={() => navigate(`/admin/replacements/${ret.id}`)}
                                         className="px-3 py-1.5 bg-footerBg text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-md shadow-footerBg/10"
                                     >
                                         View
@@ -268,10 +236,10 @@ const ReturnRequestsPage = () => {
                                 </AdminTableCell>
                             </AdminTableRow>
                         ))}
-                        {paginatedReturns.length === 0 && (
+                        {paginatedReplacements.length === 0 && (
                             <AdminTableRow>
-                                <AdminTableCell colSpan="9" className="px-6 py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-xs opacity-50">
-                                    No return requests found
+                                <AdminTableCell colSpan="7" className="px-6 py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-xs opacity-50">
+                                    No replacement requests found
                                 </AdminTableCell>
                             </AdminTableRow>
                         )}
@@ -284,7 +252,7 @@ const ReturnRequestsPage = () => {
                         setCurrentPage(page);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    totalItems={filteredReturns.length}
+                    totalItems={filteredReplacements.length}
                     itemsPerPage={itemsPerPage}
                 />
             </div>
@@ -292,4 +260,4 @@ const ReturnRequestsPage = () => {
     );
 };
 
-export default ReturnRequestsPage;
+export default ReplacementRequestsPage;

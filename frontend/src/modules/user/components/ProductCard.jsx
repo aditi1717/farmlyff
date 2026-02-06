@@ -11,6 +11,7 @@ const ProductCard = ({ product }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
     // const { addToCart, toggleWishlist, isInWishlist } = useShop(); // Removed
+    const addToCart = useCartStore(state => state.addToCart);
     const toggleWishlist = useUserStore(state => state.toggleWishlist);
     const wishlistMap = useUserStore(state => state.wishlist);
     const userWishlist = user ? (wishlistMap[user.id] || []) : [];
@@ -121,10 +122,8 @@ const ProductCard = ({ product }) => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (!user) return navigate('/login');
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
-                                const itemToAdd = hasVariants ? product.variants[0] : product;
-                                addItemToCart(user.id, { ...itemToAdd, id: itemId });
+                                addToCart(user?.id, itemId, 1);
                             }}
                             className="w-full bg-footerBg hover:bg-primary text-white py-2 md:py-2.5 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md"
                         >

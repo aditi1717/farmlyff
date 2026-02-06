@@ -13,11 +13,67 @@ import {
     ShieldCheck,
     Truck,
     RotateCcw,
-    Award
+    Award,
+    Star,
+    Leaf,
+    Zap,
+    Heart,
+    ThumbsUp
 } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 
 const Footer = () => {
+    const [config, setConfig] = React.useState({
+        brand: {
+            description: "Fine, hand-picked dry fruits from around the globe. Quality that nourishes."
+        },
+        socials: {
+            facebook: '#',
+            instagram: '#',
+            twitter: '#'
+        },
+        columns: [
+            {
+                id: 'col1',
+                title: 'Quick Shop',
+                links: [
+                    { label: 'Daily Health', url: '/shop' },
+                    { label: 'Family Packs', url: '/shop?category=packs' },
+                    { label: 'Energy & Fitness', url: '/shop?tag=energy' },
+                    { label: 'Festival', url: '/shop?tag=festival' },
+                    { label: 'Gifting', url: '/shop?tag=gifting' }
+                ]
+            },
+            {
+                id: 'col2',
+                title: 'Information',
+                links: [
+                    { label: 'About Us', url: '/about-us' },
+                    { label: 'Track Order', url: '/orders' },
+                    { label: 'Returns', url: '/returns' },
+                    { label: 'Privacy Policy', url: '/privacy-policy' },
+                    { label: 'Terms & Conditions', url: '/terms-conditions' }
+                ]
+            }
+        ],
+        contact: {
+            address: "Office No 501, Princess center, 5th Floor, New Palasia, Indore, 452001",
+            phone: "+91 98765 43210",
+            email: "support@farmlyf.com"
+        }
+    });
+
+    React.useEffect(() => {
+        const savedConfig = localStorage.getItem('farmlyf_footer_config');
+        if (savedConfig) {
+            try {
+                setConfig(JSON.parse(savedConfig));
+            } catch (e) {
+                console.error("Failed to parse footer config", e);
+            }
+        }
+    }, []);
+
     return (
         <footer className="bg-footerBg text-white pt-10 md:pt-20 pb-10 px-4 md:px-12 relative overflow-hidden">
             {/* Newsletter Section */}
@@ -43,58 +99,49 @@ const Footer = () => {
             </div>
 
             <div className="container mx-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-8 mb-16 md:mb-20">
-                {/* Brand Column - Full width on very small screens or just part of grid */}
+                {/* Brand Column */}
                 <div className="col-span-2 lg:col-span-1 space-y-4 md:space-y-8 mb-4 md:mb-0">
                     <Link to="/" className="inline-block">
                         <img src={logo} alt="FarmLyf" className="h-8 md:h-10 w-auto object-contain" />
                     </Link>
                     <p className="text-gray-400 text-xs md:text-base leading-relaxed">
-                        Fine, hand-picked dry fruits from around the globe. Quality that nourishes.
+                        {config.brand.description}
                     </p>
                     <div className="flex gap-3 md:gap-4">
-                        {[Facebook, Instagram, Twitter].map((Icon, i) => (
-                            <Link key={i} to="#" className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:text-white transition-all">
-                                <Icon size={16} md:size={18} />
-                            </Link>
-                        ))}
+                        {config.socials.facebook && (
+                            <a href={config.socials.facebook} target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:text-white transition-all">
+                                <Facebook size={16} md:size={18} />
+                            </a>
+                        )}
+                        {config.socials.instagram && (
+                            <a href={config.socials.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:text-white transition-all">
+                                <Instagram size={16} md:size={18} />
+                            </a>
+                        )}
+                        {config.socials.twitter && (
+                            <a href={config.socials.twitter} target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:text-white transition-all">
+                                <Twitter size={16} md:size={18} />
+                            </a>
+                        )}
                     </div>
                 </div>
 
-                {/* Quick Links */}
-                <div className="col-span-1">
-                    <h4 className="text-sm md:text-lg font-bold mb-4 md:mb-8 font-['Poppins']">Quick Shop</h4>
-                    <ul className="space-y-2 md:space-y-4 text-gray-400">
-                        {['Daily Health', 'Family Packs', 'Energy & Fitness', 'Festival', 'Gifting'].map((item, i) => (
-                            <li key={i}>
-                                <Link to="#" className="hover:text-primary transition-colors flex items-center gap-2 group text-[11px] md:text-sm">
-                                    <ArrowRight size={12} md:size={14} className="group-hover:translate-x-1 transition-transform" />
-                                    {item}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                {/* Support Links */}
-                <div className="col-span-1">
-                    <h4 className="text-sm md:text-lg font-bold mb-4 md:mb-8 font-['Poppins']">Information</h4>
-                    <ul className="space-y-2 md:space-y-4 text-gray-400 text-[11px] md:text-sm">
-                        {[
-                            { name: 'About Us', path: '/about-us' },
-                            { name: 'Track Order', path: '/orders' },
-                            { name: 'Returns', path: '/returns' },
-                            { name: 'Privacy', path: '/privacy-policy' },
-                            { name: 'Terms', path: '#' }
-                        ].map((item, i) => (
-                            <li key={i}>
-                                <Link to={item.path} className="hover:text-primary transition-colors flex items-center gap-2 group">
-                                    <ArrowRight size={12} md:size={14} className="group-hover:translate-x-1 transition-transform" />
-                                    {item.name}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                {/* Dynamic Columns */}
+                {config.columns.map((col, index) => (
+                    <div key={col.id || index} className="col-span-1">
+                        <h4 className="text-sm md:text-lg font-bold mb-4 md:mb-8 font-['Poppins']">{col.title}</h4>
+                        <ul className="space-y-2 md:space-y-4 text-gray-400">
+                            {col.links.map((link, i) => (
+                                <li key={i}>
+                                    <Link to={link.url} className="hover:text-primary transition-colors flex items-center gap-2 group text-[11px] md:text-sm">
+                                        <ArrowRight size={12} md:size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        {link.label}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
 
                 {/* Contact Info */}
                 <div className="col-span-2 lg:col-span-1 mt-4 md:mt-0">
@@ -102,11 +149,15 @@ const Footer = () => {
                     <ul className="space-y-3 md:space-y-6 text-gray-400 text-[11px] md:text-sm">
                         <li className="flex gap-3 md:gap-4">
                             <MapPin className="text-primary shrink-0" size={16} md:size={20} />
-                            <span>Office No 501, Princess center, 5th Floor, <br />New Palasia, Indore, 452001</span>
+                            <span>{config.contact.address}</span>
                         </li>
                         <li className="flex gap-3 md:gap-4">
                             <Phone className="text-primary shrink-0" size={16} md:size={20} />
-                            <span>+91 98765 43210</span>
+                            <span>{config.contact.phone}</span>
+                        </li>
+                        <li className="flex gap-3 md:gap-4">
+                            <Mail className="text-primary shrink-0" size={16} md:size={20} />
+                            <span>{config.contact.email}</span>
                         </li>
                     </ul>
                 </div>
@@ -114,22 +165,20 @@ const Footer = () => {
 
             {/* Trust Badges */}
             <div className="container mx-auto border-t border-white/5 pt-8 md:pt-10 pb-10 md:pb-20 flex flex-wrap justify-center md:justify-between items-center gap-4 md:gap-8">
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
-                    <Award className="text-primary" size={16} md:size={20} />
-                    <span>Certified Quality</span>
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
-                    <Truck className="text-primary" size={16} md:size={20} />
-                    <span>Pan-India Delivery</span>
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
-                    <ShieldCheck className="text-primary" size={16} md:size={20} />
-                    <span>Secure Checkout</span>
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
-                    <RotateCcw className="text-primary" size={16} md:size={20} />
-                    <span>7-Day Return</span>
-                </div>
+                {(config.badges || [
+                    { icon: 'Award', text: 'Certified Quality' },
+                    { icon: 'Truck', text: 'Pan-India Delivery' },
+                    { icon: 'ShieldCheck', text: 'Secure Checkout' },
+                    { icon: 'RotateCcw', text: '7-Day Return' }
+                ]).map((badge, index) => {
+                    const IconComponent = { Award, Truck, ShieldCheck, RotateCcw, Star }[badge.icon] || Star;
+                    return (
+                        <div key={index} className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
+                            <IconComponent className="text-primary" size={16} md:size={20} />
+                            <span>{badge.text}</span>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Bottom Credit */}
@@ -137,7 +186,7 @@ const Footer = () => {
                 <p className="flex items-center gap-1">© 2026 <img src={logo} alt="FarmLyf" className="h-4 w-auto object-contain" />. Crafted with ❤️ for healthy living.</p>
                 <div className="flex gap-6">
                     <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
-                    <Link to="#" className="hover:text-white transition-colors">Terms</Link>
+                    <Link to="/terms-conditions" className="hover:text-white transition-colors">Terms</Link>
                     <Link to="#" className="hover:text-white transition-colors">Cookies</Link>
                 </div>
             </div>

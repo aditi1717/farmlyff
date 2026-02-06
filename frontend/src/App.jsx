@@ -35,6 +35,9 @@ import ComboProductsPage from './modules/admin/pages/ComboProductsPage';
 import OrderListPage from './modules/admin/pages/OrderListPage';
 import AdminOrderDetailPage from './modules/admin/pages/OrderDetailPage';
 import ReturnRequestsPage from './modules/admin/pages/ReturnRequestsPage';
+import ReplacementRequestsPage from './modules/admin/pages/ReplacementRequestsPage';
+import AdminReturnDetailPage from './modules/admin/pages/ReturnDetailPage';
+import ReplacementDetailPage from './modules/admin/pages/ReplacementDetailPage';
 import CouponListPage from './modules/admin/pages/CouponListPage';
 import CouponFormPage from './modules/admin/pages/CouponFormPage';
 import SettingsPage from './modules/admin/pages/SettingsPage';
@@ -43,6 +46,23 @@ import LoginPage from './modules/admin/pages/LoginPage';
 import BannerListPage from './modules/admin/pages/BannerListPage';
 import ReelsPage from './modules/admin/pages/ReelsPage';
 import AdminReviewsPage from './modules/admin/pages/AdminReviewsPage';
+import InfluencerDetailPage from './modules/admin/pages/InfluencerDetailPage';
+import StockAdjustmentPage from './modules/admin/pages/StockAdjustmentPage';
+import StockHistoryPage from './modules/admin/pages/StockHistoryPage';
+import LowStockAlertsPage from './modules/admin/pages/LowStockAlertsPage';
+
+import InventoryReportsPage from './modules/admin/pages/InventoryReportsPage';
+import HomepageSectionPage from './modules/admin/pages/HomepageSectionPage';
+import WhyChooseUsPage from './modules/admin/pages/WhyChooseUsPage'; // New Page
+import AboutSectionPage from './modules/admin/pages/AboutSectionPage'; // New Page
+import HealthBenefitsSectionPage from './modules/admin/pages/HealthBenefitsSectionPage'; // New Page
+import FAQSectionPage from './modules/admin/pages/FAQSectionPage'; // New Page
+import FooterManagerPage from './modules/admin/pages/FooterManagerPage'; // New Page
+import HeaderAnnouncementPage from './modules/admin/pages/HeaderAnnouncementPage'; // New Page
+import StaticPageEditor from './modules/admin/pages/StaticPageEditor'; // New Page
+import PushNotificationPage from './modules/admin/pages/PushNotificationPage'; // New Page
+import BlogListPage from './modules/admin/pages/BlogListPage'; // New Page 
+import BlogFormPage from './modules/admin/pages/BlogFormPage'; // New Page
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { Provider } from 'react-redux'; // Removed
@@ -108,13 +128,34 @@ function App() {
                 <Route path="orders" element={<OrderListPage />} />
                 <Route path="orders/:id" element={<AdminOrderDetailPage />} />
                 <Route path="returns" element={<ReturnRequestsPage />} />
+                <Route path="returns/:id" element={<AdminReturnDetailPage />} />
+                <Route path="replacements" element={<ReplacementRequestsPage />} />
+                <Route path="replacements/:id" element={<ReplacementDetailPage />} />
                 <Route path="coupons" element={<CouponListPage />} />
                 <Route path="coupons/add" element={<CouponFormPage />} />
                 <Route path="coupons/edit/:id" element={<CouponFormPage />} />
                 <Route path="referrals" element={<InfluencerReferralPage />} />
+                <Route path="referrals/:id" element={<InfluencerDetailPage />} />
+                <Route path="inventory/adjust" element={<StockAdjustmentPage />} />
+                <Route path="inventory/history" element={<StockHistoryPage />} />
+                <Route path="inventory/alerts" element={<LowStockAlertsPage />} />
+                <Route path="inventory/reports" element={<InventoryReportsPage />} />
+                <Route path="sections/top-selling" element={<HomepageSectionPage />} />
+                <Route path="sections/why-choose-us" element={<WhyChooseUsPage />} />
+                <Route path="sections/about-us" element={<AboutSectionPage />} />
+                <Route path="sections/health-benefits" element={<HealthBenefitsSectionPage />} />
+                <Route path="manage-faq" element={<FAQSectionPage />} />
+                <Route path="manage-header" element={<HeaderAnnouncementPage />} />
+                <Route path="manage-footer" element={<FooterManagerPage />} />
+                <Route path="pages/:pageId" element={<StaticPageEditor />} />
+                <Route path="sections/:sectionId" element={<HomepageSectionPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="notifications" element={<PushNotificationPage />} />
                 <Route path="reviews" element={<AdminReviewsPage />} />
                 <Route path="reels" element={<ReelsPage />} />
+                <Route path="blogs" element={<BlogListPage />} />
+                <Route path="blogs/add" element={<BlogFormPage />} />
+                <Route path="blogs/edit/:id" element={<BlogFormPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
