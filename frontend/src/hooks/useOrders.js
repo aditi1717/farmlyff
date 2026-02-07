@@ -71,15 +71,47 @@ export const usePlaceOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ userId, orderData }) => {
-            // Simulation logic ported from ShopContext
-            // In real app: POST /api/orders
-            // We'll mimic the "Place Order" logic or use a real endpoint if available
-            // Creating a mock delay
-             return new Promise((resolve) => setTimeout(resolve, 1000));
+            const endpoint = orderData.paymentMethod === 'cod' ? '/payments/cod' : '/payments/order';
+            const res = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, orderData, amount: orderData.amount }),
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to place order');
+            }
+            return res.json();
         },
-        onSuccess: (_, variables) => {
+        onSuccess: (data, variables) => {
+            if (variables.orderData.paymentMethod === 'cod') {
+                queryClient.invalidateQueries({ queryKey: ['orders', variables.userId] });
+                toast.success('Order placed successfully!');
+            }
+        }
+    });
+};
+
+export const useVerifyPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (paymentData) => {
+            const res = await fetch(`${API_URL}/payments/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paymentData),
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Payment verification failed');
+            }
+            return res.json();
+        },
+        onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['orders', variables.userId] });
-            toast.success('Order placed successfully!');
+            toast.success('Payment verified and order placed!');
         }
     });
 };

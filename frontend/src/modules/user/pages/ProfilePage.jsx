@@ -12,6 +12,8 @@ import { useActiveCoupons } from '../../../hooks/useCoupons';
 import { useProducts } from '../../../hooks/useProducts';
 
 import logo from '../../../assets/logo.png';
+import toast from 'react-hot-toast';
+
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -35,6 +37,7 @@ const ProfilePage = () => {
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState(null);
     const [showMobileDetails, setShowMobileDetails] = useState(false);
+    const [detectingLocation, setDetectingLocation] = useState(false);
     const [addressForm, setAddressForm] = useState({
         type: 'Home',
         fullName: '',
@@ -45,6 +48,7 @@ const ProfilePage = () => {
         pincode: '',
         isDefault: false
     });
+
 
     useEffect(() => {
         if (!user) {
@@ -170,7 +174,66 @@ const ProfilePage = () => {
         setUserData({ ...userData, addresses: updatedAddresses });
     };
 
+    const handleDetectLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!API_KEY) {
+            toast.error('Google Maps API Key missing. Please add it to your environment.');
+            return;
+        }
+
+        setDetectingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${API_KEY}`
+                    );
+                    const data = await response.json();
+
+                    if (data.status === 'OK') {
+                        const result = data.results[0];
+                        const components = result.address_components;
+
+                        const getComponent = (type) =>
+                            components.find((c) => c.types.includes(type))?.long_name || '';
+
+                        const city = getComponent('locality') || getComponent('administrative_area_level_2');
+                        const state = getComponent('administrative_area_level_1');
+                        const pincode = getComponent('postal_code');
+                        const address = result.formatted_address;
+
+                        setAddressForm((prev) => ({
+                            ...prev,
+                            address: address || prev.address,
+                            city: city || prev.city,
+                            state: state || prev.state,
+                            pincode: pincode || prev.pincode,
+                        }));
+                        toast.success('Location detected and address filled!');
+                    } else {
+                        toast.error('Failed to get address details');
+                    }
+                } catch (error) {
+                    toast.error('Error fetching location details');
+                } finally {
+                    setDetectingLocation(false);
+                }
+            },
+            () => {
+                toast.error('Location permission denied');
+                setDetectingLocation(false);
+            }
+        );
+    };
+
     const renderDashboard = () => {
+
         // Mobile View Items
         const shoppingItems = [
             { id: 'orders', label: 'Order History', icon: Package, desc: 'Track shipments and reorder', action: () => navigate('/orders') },
@@ -399,7 +462,17 @@ const ProfilePage = () => {
                         >
                             <div className="mb-8 flex items-center justify-between">
                                 <h3 className="text-xl font-black text-footerBg">{addressToEdit ? 'Edit Address' : 'Add New Address'}</h3>
-                                <button onClick={() => setShowAddressForm(false)} className="text-gray-400 hover:text-footerBg font-bold text-sm">Cancel</button>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleDetectLocation}
+                                        disabled={detectingLocation}
+                                        className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {detectingLocation ? 'Detecting...' : 'Detect Location'}
+                                    </button>
+                                    <button onClick={() => setShowAddressForm(false)} className="text-gray-400 hover:text-footerBg font-bold text-sm">Cancel</button>
+                                </div>
                             </div>
 
                             <form onSubmit={handleSaveAddress} className="space-y-6">

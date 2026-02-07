@@ -6,11 +6,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Banknote, Truck, Tag, X, Percent } from 'lucide-react';
 import CouponsModal from '../components/CouponsModal';
 import logo from '../../../assets/logo.png';
+import toast from 'react-hot-toast';
 
 // Stores & Hooks
 import useCartStore from '../../../store/useCartStore';
 import { useProducts } from '../../../hooks/useProducts';
-import { usePlaceOrder } from '../../../hooks/useOrders';
+import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 
 const CheckoutPage = () => {
@@ -26,6 +27,17 @@ const CheckoutPage = () => {
     const { data: products = [] } = useProducts();
     const activeCoupons = useActiveCoupons();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
+    const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();
+
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
 
     // Helpers
     const getProductById = (pid) => products.find(p => p.id === pid);
@@ -113,6 +125,65 @@ const CheckoutPage = () => {
 
     const [paymentMethod, setPaymentMethod] = useState('cod');
     const [loading, setLoading] = useState(false);
+    const [detectingLocation, setDetectingLocation] = useState(false);
+
+    const handleDetectLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!API_KEY) {
+            toast.error('Google Maps API Key missing. Please add it to your environment.');
+            return;
+        }
+
+        setDetectingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${API_KEY}`
+                    );
+                    const data = await response.json();
+
+                    if (data.status === 'OK') {
+                        const result = data.results[0];
+                        const components = result.address_components;
+
+                        const getComponent = (type) =>
+                            components.find((c) => c.types.includes(type))?.long_name || '';
+
+                        const city = getComponent('locality') || getComponent('administrative_area_level_2');
+                        const state = getComponent('administrative_area_level_1');
+                        const pincode = getComponent('postal_code');
+                        const address = result.formatted_address;
+
+                        setFormData((prev) => ({
+                            ...prev,
+                            address: address || prev.address,
+                            city: city || prev.city,
+                            state: state || prev.state,
+                            pincode: pincode || prev.pincode,
+                        }));
+                        toast.success('Location detected and address filled!');
+                    } else {
+                        toast.error('Failed to get address details');
+                    }
+                } catch (error) {
+                    toast.error('Error fetching location details');
+                } finally {
+                    setDetectingLocation(false);
+                }
+            },
+            () => {
+                toast.error('Location permission denied');
+                setDetectingLocation(false);
+            }
+        );
+    };
 
     // Coupon management state
     // Coupon management state
@@ -224,28 +295,86 @@ const CheckoutPage = () => {
         e.preventDefault();
         setLoading(true);
 
-        // Simulate network delay
-        setTimeout(() => {
-            const orderData = {
-                items: enrichedCart,
-                shippingAddress: formData,
-                paymentMethod: paymentMethod,
-                amount: total,
-                currency: 'INR',
-                appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
-                discount: couponDiscount
-            };
+        const orderData = {
+            userId: user?.id,
+            items: enrichedCart,
+            shippingAddress: formData,
+            paymentMethod: paymentMethod,
+            amount: total,
+            currency: 'INR',
+            appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
+            discount: couponDiscount
+        };
 
-            // Record coupon usage
-            if (appliedCoupon) {
-                recordCouponUsage(user?.id, appliedCoupon.id);
+        try {
+            if (paymentMethod === 'cod') {
+                const res = await placeOrderMutate({ userId: user?.id, orderData });
+                clearCart(user?.id);
+                navigate(`/order-success/${res.orderId}`);
+            } else {
+                // Online Payment
+                const scriptLoaded = await loadRazorpayScript();
+                if (!scriptLoaded) {
+                    toast.error('Razorpay SDK failed to load. Are you online?');
+                    setLoading(false);
+                    return;
+                }
+
+                // Create Razorpay Order on Backend
+                const orderResponse = await placeOrderMutate({ userId: user?.id, orderData });
+                
+                const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder', // User needs to provide this
+                    amount: orderResponse.amount,
+                    currency: orderResponse.currency,
+                    name: 'FarmLyf',
+                    description: 'Order Payment',
+                    image: logo,
+                    order_id: orderResponse.id,
+                    handler: async (response) => {
+                        try {
+                            setLoading(true);
+                            await verifyPaymentMutate({
+                                userId: user?.id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderData: {
+                                    ...orderData,
+                                    id: `ORD-${Date.now()}` // Backend will generate a better one but we send a temp if needed
+                                }
+                            });
+                            clearCart(user?.id);
+                            navigate('/order-success'); // Or specific order ID if returned from verify
+                        } catch (err) {
+                            toast.error(err.message || 'Payment verification failed');
+                        } finally {
+                            setLoading(false);
+                        }
+                    },
+                    prefill: {
+                        name: formData.fullName,
+                        contact: formData.phone,
+                    },
+                    theme: {
+                        color: '#4ADE80', // Match FarmLyf primary
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setLoading(false);
+                            toast.error('Payment cancelled');
+                        }
+                    }
+                };
+
+                const rzp = new window.Razorpay(options);
+                rzp.open();
             }
-
-            const orderId = placeOrderMutate(user?.id, orderData, !directBuyItem); // Updated to use placeOrderMutate
-            setLoading(false);
-            // navigate(`/order-success/${orderId}`); // Assuming placeOrderMutate returns orderId or we handle success there. 
-            // Since placeOrderMutate is async, we should await it properly but for now matching structure.
-        }, 1500);
+        } catch (error) {
+            toast.error(error.message || 'Something went wrong');
+        } finally {
+            if (paymentMethod === 'cod') setLoading(false);
+        }
     };
 
     if (enrichedCart.length === 0) {
@@ -277,10 +406,20 @@ const CheckoutPage = () => {
                     <div className="space-y-8">
                         {/* Shipping Address */}
                         <div className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
-                            <h3 className="text-lg md:text-xl font-bold text-footerBg mb-4 md:mb-6 flex items-center gap-2">
-                                <Truck size={18} className="text-primary" />
-                                Delivery Details
-                            </h3>
+                            <div className="flex items-center justify-between mb-4 md:mb-6">
+                                <h3 className="text-lg md:text-xl font-bold text-footerBg flex items-center gap-2">
+                                    <Truck size={18} className="text-primary" />
+                                    Delivery Details
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={handleDetectLocation}
+                                    disabled={detectingLocation}
+                                    className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {detectingLocation ? 'Detecting...' : 'Detect Location'}
+                                </button>
+                            </div>
                             <form id="checkout-form" onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
                                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                                     <div className="space-y-1 text-left">

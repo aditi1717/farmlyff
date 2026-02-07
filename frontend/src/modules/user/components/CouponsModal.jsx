@@ -85,7 +85,7 @@ const CouponsModal = ({ isOpen, onClose, coupons, onApply }) => {
                                             <div className="flex flex-wrap gap-3 text-xs text-gray-500 font-medium">
                                                 <span>Min order: ₹{coupon.minOrderValue}</span>
                                                 {coupon.maxDiscount && <span>Max discount: ₹{coupon.maxDiscount}</span>}
-                                                {coupon.applicableCategories.length > 0 && (
+                                                {coupon.applicableCategories?.length > 0 && (
                                                     <span className="text-primary font-bold">
                                                         Only on {coupon.applicableCategories.join(', ')}
                                                     </span>
