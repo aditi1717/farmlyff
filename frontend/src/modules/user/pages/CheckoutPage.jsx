@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 // Stores & Hooks
 import useCartStore from '../../../store/useCartStore';
 import { useProducts } from '../../../hooks/useProducts';
+import { useUserProfile } from '../../../hooks/useUser';
 import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 
@@ -26,6 +27,7 @@ const CheckoutPage = () => {
     // Data
     const { data: products = [] } = useProducts();
     const activeCoupons = useActiveCoupons();
+    const { data: userData } = useUserProfile();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
     const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();
 
@@ -208,32 +210,28 @@ const CheckoutPage = () => {
     }, [appliedCoupon, subtotal, enrichedCart, user]);
 
     useEffect(() => {
-        if (user) {
-            const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-            const currentUser = storedUsers.find(u => u.id === user.id);
-            if (currentUser) {
-                // Pre-fill address from saved addresses
-                if (currentUser.addresses && currentUser.addresses.length > 0) {
-                    const defaultAddr = currentUser.addresses.find(a => a.isDefault) || currentUser.addresses[0];
-                    setFormData({
-                        fullName: defaultAddr.fullName || currentUser.name || '',
-                        phone: defaultAddr.phone || currentUser.phone || '',
-                        address: defaultAddr.address || '',
-                        city: defaultAddr.city || '',
-                        state: defaultAddr.state || '',
-                        pincode: defaultAddr.pincode || '',
-                    });
-                } else {
-                    // Fallback to basic user info
-                    setFormData(prev => ({
-                        ...prev,
-                        fullName: currentUser.name || '',
-                        phone: currentUser.phone || '',
-                    }));
-                }
+        if (userData) {
+            // Pre-fill address from saved addresses
+            if (userData.addresses && userData.addresses.length > 0) {
+                const defaultAddr = userData.addresses.find(a => a.isDefault) || userData.addresses[0];
+                setFormData({
+                    fullName: defaultAddr.fullName || userData.name || '',
+                    phone: defaultAddr.phone || userData.phone || '',
+                    address: defaultAddr.address || '',
+                    city: defaultAddr.city || '',
+                    state: defaultAddr.state || '',
+                    pincode: defaultAddr.pincode || '',
+                });
+            } else {
+                // Fallback to basic user info
+                setFormData(prev => ({
+                    ...prev,
+                    fullName: userData.name || '',
+                    phone: userData.phone || '',
+                }));
             }
         }
-    }, [user]);
+    }, [userData]);
 
     const total = subtotal - couponDiscount;
 

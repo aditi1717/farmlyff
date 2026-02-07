@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
+import asyncHandler from 'express-async-handler';
 
 // @desc    Register new user
 // @route   POST /api/users
@@ -125,18 +126,65 @@ export const logoutUser = (req, res) => {
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
-export const getUserProfile = async (req, res) => {
-  if (req.user) {
+export const getUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ id: req.user.id });
+  if (user) {
     res.json({
-      _id: req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role || (req.user.email === 'admin@farmlyf.com' ? 'admin' : 'user')
+        id: user.id,
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        gender: user.gender,
+        birthDate: user.birthDate,
+        addresses: user.addresses,
+        role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
     });
   } else {
     res.status(404).json({ message: 'User not found' });
   }
-};
+});
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+export const updateUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findOne({ id: req.user.id });
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        user.phone = req.body.phone || user.phone;
+        user.gender = req.body.gender || user.gender;
+        user.birthDate = req.body.birthDate || user.birthDate;
+        
+        if (req.body.addresses) {
+            user.addresses = req.body.addresses;
+        }
+
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(req.body.password, salt);
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            id: updatedUser.id,
+            _id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            gender: updatedUser.gender,
+            birthDate: updatedUser.birthDate,
+            addresses: updatedUser.addresses,
+            role: updatedUser.email === 'admin@farmlyf.com' ? 'admin' : 'user'
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
 
 // @desc    Get all users
 // @route   GET /api/users

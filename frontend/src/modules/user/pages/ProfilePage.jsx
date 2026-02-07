@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Stores & Hooks
 import useUserStore from '../../../store/useUserStore';
+import { useUserProfile, useUpdateProfile } from '../../../hooks/useUser';
 import { useOrders, useReturns } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 import { useProducts } from '../../../hooks/useProducts';
@@ -18,13 +19,15 @@ import toast from 'react-hot-toast';
 const ProfilePage = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { data: userData, isLoading: profileLoading } = useUserProfile();
+    const updateProfileMutation = useUpdateProfile();
     const { data: orders = [] } = useOrders(user?.id);
     const { data: activeCoupons = [] } = useActiveCoupons();
     const { tab } = useParams();
     const activeTab = tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Overview';
     const [copied, setCopied] = useState(false);
     const [copiedCode, setCopiedCode] = useState('');
-    const [userData, setUserData] = useState(null);
+    
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         name: '',
@@ -51,21 +54,6 @@ const ProfilePage = () => {
 
 
     useEffect(() => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
-        // Load fresh user data from localStorage to get latest credits
-        const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-        const freshUser = storedUsers.find(u => u.id === user.id);
-        if (freshUser) {
-            setUserData(freshUser);
-        } else {
-            setUserData(user);
-        }
-    }, [user, navigate]);
-
-    useEffect(() => {
         if (userData) {
             setEditForm({
                 name: userData.name || '',
@@ -82,30 +70,29 @@ const ProfilePage = () => {
         navigate('/');
     };
 
-    const handleUpdateProfile = (e) => {
+    const handleCopyCode = (code) => {
+        navigator.clipboard.writeText(code);
+        setCopiedCode(code);
+        toast.success('Coupon code copied!');
+        setTimeout(() => setCopiedCode(''), 3000);
+    };
+
+    const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-        const updatedUsers = storedUsers.map(u =>
-            u.id === user.id ? {
-                ...u,
+        try {
+            await updateProfileMutation.mutateAsync({
                 name: editForm.name,
                 email: editForm.email,
                 phone: editForm.phone,
                 gender: editForm.gender,
                 birthDate: editForm.birthDate
-            } : u
-        );
-        localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-        setUserData({
-            ...userData,
-            name: editForm.name,
-            email: editForm.email,
-            phone: editForm.phone,
-            gender: editForm.gender,
-            birthDate: editForm.birthDate
-        });
-        setUpdateSuccess(true);
-        setTimeout(() => setUpdateSuccess(false), 3000);
+            });
+            setUpdateSuccess(true);
+            setTimeout(() => setUpdateSuccess(false), 3000);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Update profile error:', error);
+        }
     };
 
     const handleAddAddress = () => {
@@ -129,12 +116,10 @@ const ProfilePage = () => {
         setShowAddressForm(true);
     };
 
-    const handleSaveAddress = (e) => {
-        e.preventDefault();
-        const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-        const currentUser = storedUsers.find(u => u.id === user.id);
-
-        let updatedAddresses = [...(currentUser.addresses || [])];
+    const handleSaveAddress = async (e) => {
+        if (e) e.preventDefault();
+        
+        let updatedAddresses = [...(userData?.addresses || [])];
 
         if (addressForm.isDefault) {
             updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefault: false }));
@@ -147,31 +132,27 @@ const ProfilePage = () => {
             updatedAddresses.push(newAddress);
         }
 
-        const updatedUsers = storedUsers.map(u =>
-            u.id === user.id ? { ...u, addresses: updatedAddresses } : u
-        );
-
-        localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-        setUserData({ ...userData, addresses: updatedAddresses });
-        setShowAddressForm(false);
+        try {
+            await updateProfileMutation.mutateAsync({ addresses: updatedAddresses });
+            setShowAddressForm(false);
+        } catch (error) {
+            console.error('Save address error:', error);
+        }
     };
 
-    const handleDeleteAddress = (id) => {
+    const handleDeleteAddress = async (id) => {
         if (!window.confirm('Are you sure you want to delete this address?')) return;
-        const storedUsers = JSON.parse(localStorage.getItem('farmlyf_users')) || [];
-        const currentUser = storedUsers.find(u => u.id === user.id);
-        const updatedAddresses = (currentUser.addresses || []).filter(a => a.id !== id);
+        const updatedAddresses = (userData?.addresses || []).filter(a => a.id !== id);
 
         if (updatedAddresses.length > 0 && !updatedAddresses.find(a => a.isDefault)) {
             updatedAddresses[0].isDefault = true;
         }
 
-        const updatedUsers = storedUsers.map(u =>
-            u.id === user.id ? { ...u, addresses: updatedAddresses } : u
-        );
-
-        localStorage.setItem('farmlyf_users', JSON.stringify(updatedUsers));
-        setUserData({ ...userData, addresses: updatedAddresses });
+        try {
+            await updateProfileMutation.mutateAsync({ addresses: updatedAddresses });
+        } catch (error) {
+            console.error('Delete address error:', error);
+        }
     };
 
     const handleDetectLocation = () => {
@@ -471,6 +452,13 @@ const ProfilePage = () => {
                                     >
                                         {detectingLocation ? 'Detecting...' : 'Detect Location'}
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAddress}
+                                        className="px-3 py-1.5 bg-green-500/10 text-green-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-green-500/20 transition-all flex items-center gap-2"
+                                    >
+                                        <Check size={14} /> Quick Save
+                                    </button>
                                     <button onClick={() => setShowAddressForm(false)} className="text-gray-400 hover:text-footerBg font-bold text-sm">Cancel</button>
                                 </div>
                             </div>
@@ -732,7 +720,7 @@ const ProfilePage = () => {
     );
 
 
-    if (!userData) return (
+    if (profileLoading || !userData) return (
         <div className="min-h-screen flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
