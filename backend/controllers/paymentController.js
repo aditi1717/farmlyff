@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import Order from '../models/Order.js';
 import asyncHandler from 'express-async-handler';
+import shiprocketService from '../utils/shiprocketService.js';
 
 // Initialize Razorpay
 // Note: These will be undefined until the user adds them to .env
@@ -58,9 +59,16 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   if (razorpay_signature === expectedSign) {
     // Payment verified
     try {
+        // Generate unique order ID
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        const orderId = `ORD-${timestamp}-${randomSuffix}`;
+
         // Create order in our database
         const newOrder = new Order({
             ...orderData,
+            id: orderId,
+            date: new Date(),
             paymentStatus: 'paid',
             status: 'pending', // Order received
             razorpayOrderId: razorpay_order_id,
@@ -69,6 +77,40 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         });
 
         await newOrder.save();
+
+        // Create shipment in Shiprocket for prepaid orders (only if configured)
+        if (shiprocketService.isConfigured()) {
+            try {
+                const shiprocketResponse = await shiprocketService.createOrder(newOrder);
+                
+                if (shiprocketResponse && shiprocketResponse.order_id) {
+                    newOrder.shiprocketOrderId = shiprocketResponse.order_id;
+                    newOrder.shiprocketShipmentId = shiprocketResponse.shipment_id;
+                    
+                    // Assign AWB automatically
+                    try {
+                        const awbResponse = await shiprocketService.assignAWB(shiprocketResponse.shipment_id);
+                        if (awbResponse && awbResponse.response) {
+                            newOrder.awbCode = awbResponse.response.data.awb_code;
+                            newOrder.courierName = awbResponse.response.data.courier_name;
+                        }
+
+                        // Generate pickup
+                        await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
+                    } catch (awbError) {
+                        console.error('AWB assignment failed:', awbError.message);
+                    }
+                    
+                    await newOrder.save();
+                }
+            } catch (shiprocketError) {
+                console.error('Shiprocket integration failed:', shiprocketError.message);
+                // Don't fail the order if Shiprocket fails
+            }
+        } else {
+            console.log('Shiprocket not configured, skipping shipment creation');
+        }
+
         res.status(200).json({ message: "Payment verified successfully", orderId: newOrder.id });
     } catch (dbError) {
         console.error('DB Order Creation Error after payment verification:', dbError);
@@ -86,14 +128,55 @@ export const createCODOrder = asyncHandler(async (req, res) => {
     const { orderData } = req.body;
     
     try {
+        // Generate unique order ID
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        const orderId = `ORD-${timestamp}-${randomSuffix}`;
+
         const newOrder = new Order({
             ...orderData,
+            id: orderId,
+            date: new Date(),
             paymentMethod: 'cod',
             paymentStatus: 'pending',
             status: 'pending'
         });
 
         await newOrder.save();
+
+        // Create shipment in Shiprocket (only if configured)
+        if (shiprocketService.isConfigured()) {
+            try {
+                const shiprocketResponse = await shiprocketService.createOrder(newOrder);
+                
+                if (shiprocketResponse && shiprocketResponse.order_id) {
+                    newOrder.shiprocketOrderId = shiprocketResponse.order_id;
+                    newOrder.shiprocketShipmentId = shiprocketResponse.shipment_id;
+                    
+                    // Assign AWB automatically
+                    try {
+                        const awbResponse = await shiprocketService.assignAWB(shiprocketResponse.shipment_id);
+                        if (awbResponse && awbResponse.response) {
+                            newOrder.awbCode = awbResponse.response.data.awb_code;
+                            newOrder.courierName = awbResponse.response.data.courier_name;
+                        }
+
+                        // Generate pickup
+                        await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
+                    } catch (awbError) {
+                        console.error('AWB assignment failed:', awbError.message);
+                    }
+                    
+                    await newOrder.save();
+                }
+            } catch (shiprocketError) {
+                console.error('Shiprocket integration failed:', shiprocketError.message);
+                // Don't fail the order creation if Shiprocket fails
+            }
+        } else {
+            console.log('Shiprocket not configured, skipping shipment creation');
+        }
+
         res.status(201).json({ message: "Order placed successfully", orderId: newOrder.id });
     } catch (error) {
         res.status(500).json({ message: "Failed to place COD order", error: error.message });

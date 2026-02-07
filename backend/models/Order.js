@@ -27,6 +27,11 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: String,
   courierPartner: String,
   trackingId: String,
+  shiprocketOrderId: Number,
+  shiprocketShipmentId: Number,
+  awbCode: String,
+  courierName: String,
+  estimatedDelivery: Date,
   items: [orderItemSchema],
   shippingAddress: {
     fullName: String,
@@ -38,5 +43,6 @@ const orderSchema = new mongoose.Schema({
   },
   statusHistory: [statusHistorySchema]
 }, { timestamps: true });
+
 
 export default mongoose.model('Order', orderSchema);
