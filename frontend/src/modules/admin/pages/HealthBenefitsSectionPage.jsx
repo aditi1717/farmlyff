@@ -61,6 +61,7 @@ const HealthBenefitsSectionPage = () => {
     const navigate = useNavigate();
     const { data: healthData, isLoading: loading } = useHealthBenefits();
     const updateHealthMutation = useUpdateHealthBenefitSection();
+
     const [formData, setFormData] = useState(DEFAULT_DATA);
     const [editModal, setEditModal] = useState(null); // { bucketId, ...data }
     const [isSaving, setIsSaving] = useState(false);
@@ -85,7 +86,12 @@ const HealthBenefitsSectionPage = () => {
         console.log('Attempting to save Health Benefits with data:', formData);
         setIsSaving(true);
         try {
-            const result = await updateHealthMutation.mutateAsync({ data: formData });
+            const result = await updateMutation.mutateAsync({ 
+                data: {
+                    title: 'Health Benefits Section',
+                    content: formData
+                } 
+            });
             console.log('Save successful, result:', result);
             toast.success('Changes saved successfully to database!');
         } catch (error) {

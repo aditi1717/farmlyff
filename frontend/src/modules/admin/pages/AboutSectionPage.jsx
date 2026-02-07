@@ -58,7 +58,12 @@ const AboutSectionPage = () => {
 
     const handleSave = async () => {
         try {
-            await updateAboutMutation.mutateAsync({ data: formData });
+            await updateMutation.mutateAsync({ 
+                data: {
+                    title: 'About Us Section',
+                    content: formData
+                } 
+            });
         } catch (error) {}
     };
 

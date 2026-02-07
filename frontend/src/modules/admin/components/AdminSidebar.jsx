@@ -272,16 +272,7 @@ const AdminSidebar = () => {
                                 <Star size={16} />
                                 <span className="font-semibold">Why Choose Us</span>
                             </Link>
-                            <Link
-                                to="/admin/sections/about-us"
-                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/about-us'
-                                    ? 'bg-primary/20 text-white'
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                    }`}
-                            >
-                                <Info size={16} />
-                                <span className="font-semibold">About Us</span>
-                            </Link>
+
                             <Link
                                 to="/admin/sections/health-benefits"
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/health-benefits'
@@ -322,19 +313,22 @@ const AdminSidebar = () => {
 
                     {pagesExpanded && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-4 py-2">
-
-                            {/* Legal Pages */}
                             <div>
-                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Legal & Policy</h4>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Pages</h4>
                                 <div className="space-y-1">
                                     {[
-                                        { name: 'Privacy Policy', id: 'privacy-policy' },
-                                        { name: 'Terms & Conditions', id: 'terms-conditions' },
-                                        { name: 'Return Policy', id: 'refund-policy' },
-                                        { name: 'Shipping Policy', id: 'shipping-policy' },
-                                        { name: 'Cookie Policy', id: 'cookie-policy' }, // Note: Added to config below if missing
-                                        { name: 'Cancellation Policy', id: 'cancellation-policy' },
-                                        { name: 'Disclaimer', id: 'disclaimer' }
+                                        { name: 'About Us', id: 'about-us', icon: Info },
+                                        { name: 'Contact Us', id: 'contact-us', icon: Info },
+                                        { name: 'How to Order', id: 'how-to-order', icon: Info },
+                                        { name: 'Size Guide', id: 'size-guide', icon: Info },
+                                        { name: 'Payment Methods', id: 'payment-methods', icon: Info },
+                                        { name: 'Privacy Policy', id: 'privacy-policy', icon: ShieldCheck },
+                                        { name: 'Terms & Conditions', id: 'terms-conditions', icon: ShieldCheck },
+                                        { name: 'Return Policy', id: 'refund-policy', icon: ShieldCheck },
+                                        { name: 'Shipping Policy', id: 'shipping-policy', icon: ShieldCheck },
+                                        { name: 'Cookie Policy', id: 'cookie-policy', icon: ShieldCheck },
+                                        { name: 'Cancellation Policy', id: 'cancellation-policy', icon: ShieldCheck },
+                                        { name: 'Disclaimer', id: 'disclaimer', icon: ShieldCheck }
                                     ].map(page => (
                                         <Link
                                             key={page.id}
@@ -344,59 +338,7 @@ const AdminSidebar = () => {
                                                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                                 }`}
                                         >
-                                            <ShieldCheck size={14} />
-                                            <span className="font-medium text-xs">{page.name}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Informational Pages */}
-                            <div>
-                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Informational</h4>
-                                <div className="space-y-1">
-                                    {[
-                                        { name: 'About Us', id: 'about-us' },
-                                        { name: 'Contact Us', id: 'contact-us' },
-                                        { name: 'How to Order', id: 'how-to-order' },
-                                        { name: 'Size Guide', id: 'size-guide' },
-                                        { name: 'Payment Methods', id: 'payment-methods' }
-                                    ].map(page => (
-                                        <Link
-                                            key={page.id}
-                                            to={`/admin/pages/${page.id}`}
-                                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${location.pathname === `/admin/pages/${page.id}`
-                                                ? 'bg-primary/20 text-white'
-                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                                }`}
-                                        >
-                                            <Info size={14} />
-                                            <span className="font-medium text-xs">{page.name}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Informational Pages */}
-                            <div>
-                                <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Informational</h4>
-                                <div className="space-y-1">
-                                    {[
-                                        { name: 'About Us', id: 'about-us' },
-                                        { name: 'Contact Us', id: 'contact-us' },
-                                        { name: 'How to Order', id: 'how-to-order' },
-                                        { name: 'Size Guide', id: 'size-guide' },
-                                        { name: 'Payment Methods', id: 'payment-methods' }
-                                    ].map(page => (
-                                        <Link
-                                            key={page.id}
-                                            to={`/admin/pages/${page.id}`}
-                                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all text-sm ${location.pathname === `/admin/pages/${page.id}`
-                                                ? 'bg-primary/20 text-white'
-                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                                }`}
-                                        >
-                                            <Info size={14} />
+                                            <page.icon size={14} />
                                             <span className="font-medium text-xs">{page.name}</span>
                                         </Link>
                                     ))}

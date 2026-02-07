@@ -217,8 +217,19 @@ export const useAddTrustSignal = trustSignals.useAdd;
 export const useUpdateTrustSignal = trustSignals.useUpdate;
 export const useDeleteTrustSignal = trustSignals.useDelete;
 
-const aboutSection = createCRUDHooks('about-section', 'about-section');
-export const useAboutSection = aboutSection.useData;
+// Migrated About Section to WebsiteContent system
+export const useAboutSection = () => {
+    return useQuery({
+        queryKey: ['about-section'], // Keep queryKey for cache stability if needed, or unify to ['page-content', 'about-us']
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/page-content/about-us`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Failed to fetch about-us content`);
+            const data = await res.json();
+            // Return the nested content object to maintain compatibility with existing components
+            return data.content || {};
+        }
+    });
+};
 export const useUpdateAboutSectionInfo = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -268,3 +279,36 @@ export const useFAQs = faqs.useData;
 export const useAddFAQ = faqs.useAdd;
 export const useUpdateFAQ = faqs.useUpdate;
 export const useDeleteFAQ = faqs.useDelete;
+
+export const useWebsiteContent = (slug) => {
+    return useQuery({
+        queryKey: ['page-content', slug],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/page-content/${slug}`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Failed to fetch content for ${slug}`);
+            return res.json();
+        },
+        enabled: !!slug
+    });
+};
+
+export const useUpdateWebsiteContent = (slug) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data) => {
+            const res = await fetch(`${API_URL}/page-content/${slug}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error(`Failed to update content for ${slug}`);
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['page-content', slug] });
+            toast.success('Page content updated successfully!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
