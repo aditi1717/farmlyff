@@ -1,0 +1,166 @@
+import React, { useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Calendar, User, ArrowLeft, Share2 } from 'lucide-react';
+import { useBlogBySlug } from '../../../hooks/useContent';
+
+const BlogDetailPage = () => {
+    const { slug } = useParams();
+    const { data: blog, isLoading, error } = useBlogBySlug(slug);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (error || !blog) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center px-4">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Blog Post Not Found</h2>
+                <p className="text-gray-600 mb-8 text-center">Sorry, the blog post you are looking for doesn't exist or has been moved.</p>
+                <Link to="/" className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all">
+                    Back to Homepage
+                </Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white min-h-screen">
+            {/* Header Content */}
+            <div className="relative h-[40vh] md:h-[60vh] w-full">
+                <img
+                    src={blog.image}
+                    alt={blog.title}
+                    className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40" />
+                
+                <div className="absolute inset-0 flex items-end">
+                    <div className="container mx-auto px-4 md:px-12 pb-12 md:pb-20">
+                        <Link 
+                            to="/" 
+                            className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors group"
+                        >
+                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="font-bold text-sm uppercase tracking-widest">Back to Blogs</span>
+                        </Link>
+                        
+                        <div className="max-w-4xl">
+                            <div className="flex flex-wrap items-center gap-4 text-white/90 text-xs md:text-sm font-bold uppercase tracking-widest mb-4">
+                                <span className="bg-primary px-3 py-1 rounded">
+                                    {blog.category}
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <Calendar size={16} />
+                                    {new Date(blog.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <User size={16} />
+                                    {blog.author}
+                                </span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+                                {blog.title}
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="container mx-auto px-4 md:px-12 py-12 md:py-20">
+                <div className="max-w-4xl mx-auto">
+                    <div className="flex flex-col md:flex-row gap-12">
+                        {/* Article Content */}
+                        <div className="flex-1 overflow-hidden">
+                            <div 
+                                className="prose prose-lg max-w-none prose-img:rounded-3xl prose-headings:font-black prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: blog.content }}
+                            />
+                            
+                            {/* Share & Footer */}
+                            <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex items-center gap-4">
+                                    <span className="font-bold text-gray-900">Share this article:</span>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3].map((i) => (
+                                            <button key={i} className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-primary hover:text-white transition-all">
+                                                <Share2 size={18} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <Link to="/" className="text-primary font-bold hover:underline">
+                                    Read more exciting stories
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Sidebar (Optional) */}
+                        <div className="md:w-80 hidden lg:block">
+                            <div className="sticky top-24 space-y-8">
+                                <div className="bg-gray-50 p-8 rounded-[2.5rem]">
+                                    <h3 className="font-black text-gray-900 uppercase tracking-tight mb-4">About the Author</h3>
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden">
+                                            <img src="/logo.png" alt="FarmLyf" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900 leading-none">{blog.author}</p>
+                                            <p className="text-xs text-gray-500 mt-1">FarmLyf Official</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                        Sharing the best of nature's purity and health benefits from our farms directly to your doorstep.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Aesthetic CSS for Prose */}
+            <style>{`
+                .prose {
+                    color: #4b5563;
+                }
+                .prose h1, .prose h2, .prose h3, .prose h4 {
+                    color: #111827;
+                    font-weight: 800;
+                    margin-top: 2em;
+                    margin-bottom: 0.5em;
+                }
+                .prose p {
+                    margin-bottom: 1.5em;
+                    line-height: 1.8;
+                }
+                .prose blockquote {
+                    border-left: 4px solid #16a34a;
+                    padding-left: 1.5em;
+                    font-style: italic;
+                    color: #4b5563;
+                }
+                .prose ul {
+                    list-style-type: disc;
+                    padding-left: 1.5em;
+                    margin-bottom: 1.5em;
+                }
+                .prose li {
+                    margin-bottom: 0.5em;
+                }
+            `}</style>
+        </div>
+    );
+};
+
+export default BlogDetailPage;

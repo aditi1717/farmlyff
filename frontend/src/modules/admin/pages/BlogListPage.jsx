@@ -1,35 +1,26 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, FileText, Calendar, Eye } from 'lucide-react';
+import React from 'react';
+import { Plus, Search, Edit, Trash2, FileText, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useBlogs, useDeleteBlog } from '../../../hooks/useContent';
 
 const BlogListPage = () => {
-    // Mock Data
-    const [blogs, setBlogs] = useState([
-        {
-            id: 1,
-            title: "Top 10 Health Benefits of Almonds",
-            category: "Health & Wellness",
-            date: "Oct 24, 2024",
-            image: "https://images.unsplash.com/photo-1508061253366-f7da98b47a6d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            status: "Published"
-        },
-        {
-            id: 2,
-            title: "Why You Should Eat Walnuts Every Day",
-            category: "Nutrition",
-            date: "Nov 12, 2024",
-            image: "https://images.unsplash.com/photo-1576673442511-7e39b6545c87?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-            status: "Draft"
-        }
-    ]);
+    const { data: blogs = [], isLoading } = useBlogs();
+    const deleteBlogMutation = useDeleteBlog();
 
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this blog?")) {
-            setBlogs(blogs.filter(b => b.id !== id));
-            toast.success("Blog deleted successfully");
+            deleteBlogMutation.mutate(id);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -69,7 +60,7 @@ const BlogListPage = () => {
             {/* Blog List Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {blogs.map(blog => (
-                    <div key={blog.id} className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all group">
+                    <div key={blog._id} className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all group">
                         {/* Image */}
                         <div className="h-40 overflow-hidden relative">
                             <img
@@ -91,7 +82,7 @@ const BlogListPage = () => {
                                     {blog.category}
                                 </span>
                                 <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                                    <Calendar size={10} /> {blog.date}
+                                    <Calendar size={10} /> {new Date(blog.date).toLocaleDateString()}
                                 </span>
                             </div>
 
@@ -101,13 +92,13 @@ const BlogListPage = () => {
 
                             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-50">
                                 <Link
-                                    to={`/admin/blogs/edit/${blog.id}`}
+                                    to={`/admin/blogs/edit/${blog._id}`}
                                     className="flex-1 py-1.5 text-center rounded-xl bg-gray-50 hover:bg-black hover:text-white text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                                 >
                                     <Edit size={12} /> Edit
                                 </Link>
                                 <button
-                                    onClick={() => handleDelete(blog.id)}
+                                    onClick={() => handleDelete(blog._id)}
                                     className="p-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all"
                                 >
                                     <Trash2 size={14} />

@@ -35,6 +35,10 @@ const productSchema = new mongoose.Schema({
   faqs: [{ q: String, a: String, _id: false }],
   nutrition: [{ label: String, value: String, _id: false }],
   contents: [contentSchema], // For combo packs
+  stock: {
+    quantity: { type: Number, default: 0 }
+  },
+  lowStockThreshold: { type: Number, default: 10 },
   inStock: { type: Boolean, default: true }
 }, { timestamps: true });
 

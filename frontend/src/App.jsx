@@ -63,6 +63,7 @@ import StaticPageEditor from './modules/admin/pages/StaticPageEditor'; // New Pa
 import PushNotificationPage from './modules/admin/pages/PushNotificationPage'; // New Page
 import BlogListPage from './modules/admin/pages/BlogListPage'; // New Page 
 import BlogFormPage from './modules/admin/pages/BlogFormPage'; // New Page
+import BlogDetailPage from './modules/user/pages/BlogDetailPage'; // New Page
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { Provider } from 'react-redux'; // Removed
@@ -102,6 +103,7 @@ function App() {
                 <Route path="about-us" element={<InfoPage type="about" />} />
                 <Route path="privacy-policy" element={<InfoPage type="privacy" />} />
                 <Route path="contact-us" element={<InfoPage type="contact" />} />
+                <Route path="blog/:slug" element={<BlogDetailPage />} />
                 <Route path="login" element={<AuthPage />} />
                 <Route path="otp-verification" element={<OTPPage />} />
               </Route>

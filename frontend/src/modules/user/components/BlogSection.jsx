@@ -1,58 +1,15 @@
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Share2, FileText, Calendar, User } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Share2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useBlogs } from '../../../hooks/useContent';
 
-// Import blog images
-import blogWinter from '../../../assets/images/blog_winter.png';
-import blogDates from '../../../assets/images/blog_dates.png';
-import blogFarm from '../../../assets/images/blog_farm.png';
+// Import blog images (fallback/placeholder logic if needed, but data should have URLs)
 import logoImg from '../../../assets/logo.png';
-
-const blogPosts = [
-    {
-        id: 1,
-        title: "Dry Fruits Must Have in Winters for Health and Wellness",
-        excerpt: "When the air turns cool, the body naturally burns more energy to maintain warmth. According to nutrition research...",
-        image: blogWinter,
-        author: "FarmLyf",
-        date: "Jan 29, 2026",
-        category: "Dry Fruits",
-        link: "#"
-    },
-    {
-        id: 2,
-        title: "Inside the House of Dates: Exploring Nature's Sweetest Varieties",
-        excerpt: "From ancient food traditions to today's lifestyle, dates have gained a permanent place in our kitchens...",
-        image: blogDates,
-        author: "FarmLyf",
-        date: "Jan 29, 2026",
-        category: "Dates Uses",
-        link: "#"
-    },
-    {
-        id: 3,
-        title: "How FarmLyf Ensures high quality in every dry fruit Pack",
-        excerpt: "When buying dried fruit packs, quality matters just as much as taste. From freshness and appearance to safety...",
-        image: blogFarm,
-        author: "FarmLyf",
-        date: "Jan 14, 2026",
-        category: "Quality",
-        link: "#"
-    },
-    {
-        id: 4,
-        title: "5 Superfoods to Boost Your Immunity Naturally",
-        excerpt: "Discover the power of nature's finest superfoods that can help strengthen your immune system and keep you healthy...",
-        image: blogWinter, // Reusing for demo
-        author: "Admin",
-        date: "Jan 10, 2026",
-        category: "Health",
-        link: "#"
-    }
-];
 
 const BlogSection = () => {
     const scrollRef = useRef(null);
+    const { data: blogPosts = [], isLoading } = useBlogs();
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -61,6 +18,19 @@ const BlogSection = () => {
             scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="py-20 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-4 text-gray-500 font-medium">Loading our latest blogs...</p>
+            </div>
+        );
+    }
+
+    if (blogPosts.length === 0) {
+        return null; // Or show a placeholder
+    }
 
     return (
         <section className="bg-white pt-12 pb-2 md:pt-16 md:pb-4 overflow-hidden">
@@ -89,57 +59,59 @@ const BlogSection = () => {
                     >
                         {blogPosts.map((post) => (
                             <motion.div
-                                key={post.id}
+                                key={post._id || post.id}
                                 whileHover={{ y: -5 }}
                                 className="flex-shrink-0 w-[280px] md:w-[400px] relative mt-4 mb-4"
                             >
-                                {/* Image Container (Background Layer) */}
-                                <div className="h-[160px] md:h-[280px] w-full rounded-2xl overflow-hidden relative z-0 shadow-sm">
-                                    <img
-                                        src={post.image}
-                                        alt={post.title}
-                                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                                    />
-                                    {/* Gradient Overlay to ensure text legibility if we were printing on image, but here it adds depth behind the card */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-                                </div>
-
-                                {/* Floating Content Card (Top Layer) */}
-                                <div className="bg-white rounded-2xl shadow-xl p-2 md:p-3 mx-2 md:mx-4 relative z-10 -mt-16 md:-mt-28 border border-gray-100">
-                                    {/* Meta Header */}
-                                    <div className="flex justify-between items-center mb-2 text-xs text-gray-500 font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm">
-                                                <img src={logoImg} alt="FarmLyf" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-gray-900 font-bold">{post.author}</span>
-                                                <span className="text-[10px]">{post.date}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="bg-gray-50 px-2 py-1 rounded text-gray-600 border border-gray-100">
-                                                {post.category}
-                                            </span>
-                                            <Share2 size={14} className="text-gray-400 hover:text-primary cursor-pointer" />
-                                        </div>
+                                <Link to={`/blog/${post.slug}`}>
+                                    {/* Image Container (Background Layer) */}
+                                    <div className="h-[160px] md:h-[280px] w-full rounded-2xl overflow-hidden relative z-0 shadow-sm">
+                                        <img
+                                            src={post.image}
+                                            alt={post.title}
+                                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                                        />
+                                        {/* Gradient Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                                     </div>
 
-                                    {/* Title */}
-                                    <h3 className="text-xs md:text-base font-bold text-gray-900 mb-1 md:mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
-                                        {post.title}
-                                    </h3>
+                                    {/* Floating Content Card (Top Layer) */}
+                                    <div className="bg-white rounded-2xl shadow-xl p-2 md:p-3 mx-2 md:mx-4 relative z-10 -mt-16 md:-mt-28 border border-gray-100">
+                                        {/* Meta Header */}
+                                        <div className="flex justify-between items-center mb-2 text-xs text-gray-500 font-medium">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm">
+                                                    <img src={logoImg} alt="FarmLyf" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-gray-900 font-bold">{post.author}</span>
+                                                    <span className="text-[10px]">{post.date ? new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="bg-gray-50 px-2 py-1 rounded text-gray-600 border border-gray-100">
+                                                    {post.category}
+                                                </span>
+                                                <Share2 size={14} className="text-gray-400 hover:text-primary cursor-pointer" />
+                                            </div>
+                                        </div>
 
-                                    {/* Excerpt */}
-                                    <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-2 line-clamp-2 leading-relaxed">
-                                        {post.excerpt}
-                                    </p>
+                                        {/* Title */}
+                                        <h3 className="text-xs md:text-base font-bold text-gray-900 mb-1 md:mb-2 leading-tight line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+                                            {post.title}
+                                        </h3>
 
-                                    {/* Read More */}
-                                    <button className="text-[10px] md:text-sm font-bold text-gray-900 hover:text-primary flex items-center gap-1 group transition-colors">
-                                        Read More
-                                    </button>
-                                </div>
+                                        {/* Excerpt */}
+                                        <p className="text-[10px] md:text-xs text-gray-600 mb-1 md:mb-2 line-clamp-2 leading-relaxed">
+                                            {post.excerpt}
+                                        </p>
+
+                                        {/* Read More */}
+                                        <div className="text-[10px] md:text-sm font-bold text-gray-900 hover:text-primary flex items-center gap-1 group transition-colors">
+                                            Read More
+                                        </div>
+                                    </div>
+                                </Link>
                             </motion.div>
                         ))}
                     </div>

@@ -8,31 +8,71 @@ import {
 } from 'lucide-react';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+import { useProducts } from '../../../hooks/useProducts';
+import { useAllOrders } from '../../../hooks/useOrders';
+
 const InventoryReportsPage = () => {
     const navigate = useNavigate();
-    const [dateRange, setDateRange] = useState('This Month');
+    const [dateRange, setDateRange] = useState('All Time');
     const [activeTab, setActiveTab] = useState('category'); // 'category' or 'sku'
 
-    // Dummy Data for Valuation Report
-    const valuationData = [
-        { id: 1, category: 'Nuts', items: 24, totalStock: 1250, value: 450000 },
-        { id: 2, category: 'Dates', items: 12, totalStock: 500, value: 120000 },
-        { id: 3, category: 'Dried Fruits', items: 18, totalStock: 800, value: 240000 },
-        { id: 4, category: 'Seeds', items: 8, totalStock: 300, value: 45000 },
-        { id: 5, category: 'Spices', items: 15, totalStock: 600, value: 90000 },
-    ];
+    const { data: products = [], isLoading: loadingProducts } = useProducts();
+    const { data: orders = [], isLoading: loadingOrders } = useAllOrders();
 
-    // Dummy Data for Product Sales
-    const productSalesData = [
-        { id: 1, name: 'Premium California Almonds', category: 'Nuts', unitsSold: 450, revenue: 157500, avgPrice: 350, image: 'https://placehold.co/100x100/png' },
-        { id: 2, name: 'Organic Cashew Nuts (W320)', category: 'Nuts', unitsSold: 380, revenue: 152000, avgPrice: 400, image: 'https://placehold.co/100x100/png' },
-        { id: 3, name: 'Medjool Dates Premium', category: 'Dates', unitsSold: 320, revenue: 128000, avgPrice: 400, image: 'https://placehold.co/100x100/png' },
-        { id: 4, name: 'Afghan Black Raisins', category: 'Dried Fruits', unitsSold: 280, revenue: 112000, avgPrice: 400, image: 'https://placehold.co/100x100/png' },
-        { id: 5, name: 'Turkish Dried Apricots', category: 'Dried Fruits', unitsSold: 250, revenue: 87500, avgPrice: 350, image: 'https://placehold.co/100x100/png' },
-        { id: 6, name: 'Iranian Mamra Almonds', category: 'Nuts', unitsSold: 180, revenue: 90000, avgPrice: 500, image: 'https://placehold.co/100x100/png' },
-        { id: 7, name: 'Ajwa Dates', category: 'Dates', unitsSold: 150, revenue: 82500, avgPrice: 550, image: 'https://placehold.co/100x100/png' },
-        { id: 8, name: 'Chia Seeds Organic', category: 'Seeds', unitsSold: 140, revenue: 42000, avgPrice: 300, image: 'https://placehold.co/100x100/png' },
-    ];
+    const isLoading = loadingProducts || loadingOrders;
+
+    // Valuation Logic
+    const valuationData = useMemo(() => {
+        const categories = {};
+        products.forEach(p => {
+            const cat = p.category || 'Uncategorized';
+            if (!categories[cat]) {
+                categories[cat] = { id: cat, category: cat, items: 0, totalStock: 0, value: 0 };
+            }
+            const stock = p.stock?.quantity || 0;
+            // Best effort price estimation: first variant's price or fallback
+            const price = p.variants?.[0]?.price || p.price || 0;
+            
+            categories[cat].items += 1;
+            categories[cat].totalStock += stock;
+            categories[cat].value += (stock * price);
+        });
+        return Object.values(categories).sort((a, b) => b.value - a.value);
+    }, [products]);
+
+    // Sales Logic
+    const productSalesData = useMemo(() => {
+        const sales = {};
+        orders.forEach(order => {
+            order.items?.forEach(item => {
+                const prodId = item.id;
+                if (!sales[prodId]) {
+                    const product = products.find(p => p.id === prodId || p._id === prodId);
+                    sales[prodId] = {
+                        id: prodId,
+                        name: item.name,
+                        category: product?.category || 'Uncategorized',
+                        unitsSold: 0,
+                        revenue: 0,
+                        image: product?.image || 'https://placehold.co/100x100/png'
+                    };
+                }
+                sales[prodId].unitsSold += (item.qty || 0);
+                sales[prodId].revenue += ((item.qty || 0) * (item.price || 0));
+            });
+        });
+        
+        return Object.values(sales)
+            .map(s => ({
+                ...s,
+                avgPrice: s.unitsSold > 0 ? s.revenue / s.unitsSold : 0
+            }))
+            .sort((a, b) => b.revenue - a.revenue);
+    }, [orders, products]);
+
+    const totalInventoryValue = valuationData.reduce((sum, item) => sum + item.value, 0);
+    const totalItemsInStock = valuationData.reduce((sum, item) => sum + item.totalStock, 0);
+    const topCategory = valuationData[0]?.category || 'N/A';
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', {
@@ -41,6 +81,14 @@ const InventoryReportsPage = () => {
             maximumFractionDigits: 0
         }).format(amount);
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 font-['Inter'] pb-32">
@@ -100,15 +148,15 @@ const InventoryReportsPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
                                 <p className="text-xs font-bold text-green-600 uppercase mb-2">Total Inventory Value</p>
-                                <h3 className="text-3xl font-black text-green-900">{formatCurrency(945000)}</h3>
+                                <h3 className="text-3xl font-black text-green-900">{formatCurrency(totalInventoryValue)}</h3>
                             </div>
                             <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
                                 <p className="text-xs font-bold text-blue-600 uppercase mb-2">Total Items in Stock</p>
-                                <h3 className="text-3xl font-black text-blue-900">3,450</h3>
+                                <h3 className="text-3xl font-black text-blue-900">{totalItemsInStock.toLocaleString()}</h3>
                             </div>
                             <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100">
                                 <p className="text-xs font-bold text-purple-600 uppercase mb-2">Top Category</p>
-                                <h3 className="text-xl font-black text-purple-900">Nuts & Dry Fruits</h3>
+                                <h3 className="text-xl font-black text-purple-900">{topCategory}</h3>
                             </div>
                         </div>
 

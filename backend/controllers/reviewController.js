@@ -182,24 +182,61 @@ export const deleteReview = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// @desc    Get all admin reviews (Testimonials for homepage)
+// @route   GET /api/reviews/admin/testimonials
+// @access  Public
+export const getAdminReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find({ product: null }).sort({ createdAt: -1 });
+        res.json(reviews);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Create an admin review (Homepage Testimonial)
 // @route   POST /api/reviews/admin
 // @access  Private/Admin
 export const createAdminReview = async (req, res) => {
     try {
-        const { name, comment, image } = req.body;
+        const { name, comment, image, rating, status } = req.body;
 
         const review = new Review({
             user: req.user.id,
             name,
             comment,
             image,
-            status: 'Approved',
-            rating: 5 // Default for admin reviews
+            rating: rating || 5,
+            status: status || 'Approved'
         });
 
         await review.save();
         res.status(201).json(review);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// @desc    Update an admin review
+// @route   PUT /api/reviews/admin/:id
+// @access  Private/Admin
+export const updateAdminReview = async (req, res) => {
+    try {
+        const { name, comment, image, rating, status } = req.body;
+        const review = await Review.findById(req.params.id);
+
+        if (review) {
+            review.name = name || review.name;
+            review.comment = comment || review.comment;
+            review.image = image || review.image;
+            review.rating = rating || review.rating;
+            review.status = status || review.status;
+
+            const updatedReview = await review.save();
+            res.json(updatedReview);
+        } else {
+            res.status(404).json({ message: 'Review not found' });
+        }
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

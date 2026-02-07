@@ -20,75 +20,8 @@ import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTabl
 const StockAdjustmentPage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { data: dbProducts = [], isLoading } = useProducts();
+    const { data: products = [], isLoading } = useProducts();
     const updateProductMutation = useUpdateProduct();
-
-    // Local state to persist changes to dummy items during the session
-    const [dummyStockOverrides, setDummyStockOverrides] = useState({});
-
-    // Dummy Data for visual polish and testing
-    const products = useMemo(() => {
-        const dummyItems = [
-            {
-                id: 'd1',
-                name: 'Farmlyf Jumbo Roasted Royale Cashews',
-                sku: 'CSW-ROY-JMB',
-                category: 'Nuts',
-                image: 'https://images.unsplash.com/photo-1509911595723-a3b1f4f46bc8?w=200&q=80',
-                stock: { quantity: 120 }
-            },
-            {
-                id: 'd2',
-                name: 'California Shelled Walnuts Half',
-                sku: 'WLN-CAL-SHL',
-                category: 'Nuts',
-                image: 'https://images.unsplash.com/photo-1585250001047-97d8ba17c5b9?w=200&q=80',
-                stock: { quantity: 8 }
-            },
-            {
-                id: 'd3',
-                name: 'Iranian Mamra Almonds Premium',
-                sku: 'ALM-MAM-IRN',
-                category: 'Dry Fruits',
-                image: 'https://images.unsplash.com/photo-1511270278403-918991a0f9b3?w=200&q=80',
-                stock: { quantity: 45 }
-            },
-            {
-                id: 'd4',
-                name: 'Omani Black Seedless Dates',
-                sku: 'DAT-OMN-BLK',
-                category: 'Dates',
-                image: 'https://images.unsplash.com/photo-1596560548464-f01068e3c9b7?w=200&q=80',
-                stock: { quantity: 0 }
-            },
-            {
-                id: 'd5',
-                name: 'Turkish Dried Apricots Jumbo',
-                sku: 'APR-TRK-JMB',
-                category: 'Dried Fruits',
-                image: 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=200&q=80',
-                stock: { quantity: 62 }
-            }
-        ];
-
-        // Apply overrides to dummy items
-        const dummiesWithOverrides = dummyItems.map(item => ({
-            ...item,
-            stock: {
-                ...item.stock,
-                quantity: dummyStockOverrides[item.id] !== undefined ? dummyStockOverrides[item.id] : item.stock.quantity
-            }
-        }));
-
-        // Combine with DB data
-        const merged = [...dbProducts];
-        dummiesWithOverrides.forEach(item => {
-            if (!merged.find(p => p.sku === item.sku)) {
-                merged.push(item);
-            }
-        });
-        return merged;
-    }, [dbProducts, dummyStockOverrides]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [adjustments, setAdjustments] = useState({}); // { productId: addedQuantity }
@@ -134,29 +67,16 @@ const StockAdjustmentPage = () => {
                 const adjustment = adjustments[id] || 0;
                 const newTotal = Math.max(0, currentStock + adjustment);
 
-                if (id.startsWith('d')) {
-                    // Update local state for dummy items instantly
-                    setDummyStockOverrides(prev => ({
-                        ...prev,
-                        [id]: newTotal
-                    }));
-                } else {
-                    // Update real DB items
-                    const updatedData = {
-                        ...product,
-                        stock: { ...(product.stock || {}), quantity: newTotal }
-                    };
-                    await updateProductMutation.mutateAsync({ id, data: updatedData });
-                }
+                const updatedData = {
+                    ...product,
+                    stock: { quantity: newTotal }
+                };
+                await updateProductMutation.mutateAsync({ id, data: updatedData });
             }
 
             toast.success('Stock updated successfully!', { id: loadingToast });
             setAdjustments({});
-
-            // Only invalidate if we updated real items to avoid unnecessary fetches for duplicates
-            if (productIdsToUpdate.some(id => !id.startsWith('d'))) {
-                queryClient.invalidateQueries({ queryKey: ['products'] });
-            }
+            queryClient.invalidateQueries({ queryKey: ['products'] });
 
         } catch (error) {
             toast.error('Failed to update some items', { id: loadingToast });

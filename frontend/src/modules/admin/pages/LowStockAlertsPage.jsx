@@ -12,65 +12,48 @@ import {
 } from 'lucide-react';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+import { useProducts } from '../../../hooks/useProducts';
+
 const LowStockAlertsPage = () => {
     const navigate = useNavigate();
+    const { data: allProducts = [], isLoading } = useProducts();
 
-    // Dummy Data for Low Stock Products
-    // In a real app, this would come from a filtered API query (e.g., /products?stock_status=low)
-    const [products, setProducts] = useState([
-        {
-            id: 'ls1',
-            name: 'Omani Black Seedless Dates',
-            sku: 'DAT-OMN-BLK',
-            category: 'Dates',
-            image: 'https://images.unsplash.com/photo-1596560548464-f01068e3c9b7?w=200&q=80',
-            stock: 0,
-            threshold: 10,
-            status: 'out_of_stock'
-        },
-        {
-            id: 'ls2',
-            name: 'California Shelled Walnuts Half',
-            sku: 'WLN-CAL-SHL',
-            category: 'Nuts',
-            image: 'https://images.unsplash.com/photo-1585250001047-97d8ba17c5b9?w=200&q=80',
-            stock: 8,
-            threshold: 15,
-            status: 'low_stock'
-        },
-        {
-            id: 'ls3',
-            name: 'Afghan Black Raisins (Kishmish)',
-            sku: 'RSN-AFG-BLK',
-            category: 'Dried Fruits',
-            image: 'https://images.unsplash.com/photo-1595414603014-9b2e1bce9853?w=200&q=80',
-            stock: 5,
-            threshold: 20,
-            status: 'low_stock'
-        },
-        {
-            id: 'ls4',
-            name: 'Luxury Gift Hamper Box',
-            sku: 'GFT-LUX-BOX',
-            category: 'Gifting',
-            image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=200&q=80',
-            stock: 2,
-            threshold: 5,
-            status: 'low_stock'
-        }
-    ]);
+    const products = useMemo(() => {
+        return allProducts.filter(p => {
+            const stock = p.stock?.quantity || 0;
+            const threshold = p.lowStockThreshold || 10;
+            return stock <= threshold;
+        }).map(p => ({
+            id: p._id,
+            name: p.name,
+            sku: p.sku,
+            category: p.category,
+            image: p.image,
+            stock: p.stock?.quantity || 0,
+            threshold: p.lowStockThreshold || 10,
+            status: (p.stock?.quantity || 0) === 0 ? 'out_of_stock' : 'low_stock'
+        }));
+    }, [allProducts]);
 
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredProducts = useMemo(() => {
         return products.filter(p =>
-            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+            p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [products, searchTerm]);
 
     const outOfStockCount = products.filter(p => p.stock === 0).length;
     const lowStockCount = products.filter(p => p.stock > 0).length;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 font-['Inter'] pb-32">

@@ -3,8 +3,11 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 import reviewBg from '../../../assets/images/review_bg_bright.png';
 
+import { useFeaturedReviews } from '../../../hooks/useContent';
+
 const ReviewSection = () => {
     const scrollRef = useRef(null);
+    const { data: reviews = [], isLoading } = useFeaturedReviews();
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -16,32 +19,15 @@ const ReviewSection = () => {
         }
     };
 
-    const reviews = [
-        {
-            id: 1,
-            name: "Shravya Kapoor",
-            review: "What an amazing brand, never disappoints me. Simply love their range of dry fruits super affordable and premium.",
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-female-user-profile-vector-illustration-isolated-background-women-profile-sign-business-concept_157943-38866.jpg?semt=ais_hybrid"
-        },
-        {
-            id: 2,
-            name: "Rahul Sharma",
-            review: "The quality of walnuts and almonds is just superior. I've been a regular customer for 6 months now!",
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38825.jpg?semt=ais_hybrid"
-        },
-        {
-            id: 3,
-            name: "Priya Singh",
-            review: "Packaging is top-notch and delivery was super fast. Highly recommended for daily nutrition needs.",
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-female-user-profile-vector-illustration-isolated-background-women-profile-sign-business-concept_157943-38866.jpg?semt=ais_hybrid"
-        },
-        {
-            id: 4,
-            name: "Amit Patel",
-            review: "Best prices in the market for such premium quality. The cranberries are my absolute favorite.",
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38825.jpg?semt=ais_hybrid"
-        }
-    ];
+    if (isLoading) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
+
+    if (reviews.length === 0) return null;
 
     return (
         <section className="mt-10 md:mt-20">
@@ -82,7 +68,7 @@ const ReviewSection = () => {
                         >
                             {reviews.map((review) => (
                                 <motion.div
-                                    key={review.id}
+                                    key={review._id}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}
@@ -105,7 +91,7 @@ const ReviewSection = () => {
                                             <Quote className="text-white/80 w-4 h-4 md:w-10 md:h-10 mb-1.5 md:mb-6" />
 
                                             <p className="text-white text-[10px] md:text-lg leading-relaxed mb-2 md:mb-6 font-medium">
-                                                {review.review}
+                                                {review.comment}
                                             </p>
 
                                             <h4 className="text-white font-bold text-xs md:text-xl">

@@ -3,6 +3,7 @@ import { Plus, Star, Trash2, CheckCircle, XCircle, Loader, Search, Clock, User, 
 import toast, { Toaster } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview } from '../../../hooks/useContent';
 
 const AdminReviewsPage = () => {
     const location = useLocation();
@@ -17,6 +18,12 @@ const AdminReviewsPage = () => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
 
+    // API Hooks
+    const { data: adminReviews = [], isLoading: isLoadingAdmin } = useAdminReviews();
+    const addAdminReviewMutation = useAddAdminReview();
+    const updateAdminReviewMutation = useUpdateAdminReview();
+    const deleteAdminReviewMutation = useDeleteAdminReview();
+
     // Initial Dummy Data for User Reviews (Customer Feedback)
     const [userReviews, setUserReviews] = useState([
         {
@@ -28,46 +35,6 @@ const AdminReviewsPage = () => {
             rating: 5,
             status: 'Pending',
             createdAt: new Date().toISOString()
-        },
-        {
-            _id: 'd2',
-            product: { name: 'Organic Honey', image: 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png', _id: 'PRD002' },
-            user: { name: 'Priya Kapoor' },
-            title: 'Tastes Pure',
-            comment: 'Tastes pure and natural. The packaging was also good and leak-proof.',
-            rating: 4,
-            status: 'Approved',
-            createdAt: new Date().toISOString()
-        },
-        {
-            _id: 'd3',
-            product: { name: 'Cashew Nuts', image: 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png', _id: 'PRD003' },
-            user: { name: 'Vikram Mehra' },
-            title: 'Slightly Broken',
-            comment: 'Slightly broken pieces in the pack, but taste is good and buttery.',
-            rating: 3,
-            status: 'Rejected',
-            createdAt: new Date().toISOString()
-        }
-    ]);
-
-    // Initial Dummy Data for Admin Reviews (Homepage Testimonials)
-    const [adminReviews, setAdminReviews] = useState([
-        {
-            _id: 'da1',
-            name: 'Shravya Kapoor',
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-female-user-profile-vector-illustration-isolated-background-women-profile-sign-business-concept_157943-38866.jpg?semt=ais_hybrid",
-            comment: "What an amazing brand, never disappoints me. Simply love their range of dry fruits super affordable and premium.",
-            status: 'Active',
-            createdAt: new Date().toISOString()
-        },
-        {
-            _id: 'da2',
-            name: 'Amit Patel',
-            image: "https://img.freepik.com/premium-vector/avatar-profile-icon-flat-style-male-user-profile-vector-illustration-isolated-background-man-profile-sign-business-concept_157943-38825.jpg?semt=ais_hybrid",
-            comment: "Best prices in the market for such premium quality. The cranberries are my absolute favorite.",
-            status: 'Active',
-            createdAt: new Date().toISOString()
         }
     ]);
 
@@ -78,7 +45,7 @@ const AdminReviewsPage = () => {
         comment: '',
         image: '',
         rating: 5,
-        status: 'Active'
+        status: 'Approved'
     });
     const [preview, setPreview] = useState(null);
 
@@ -87,7 +54,7 @@ const AdminReviewsPage = () => {
         const list = activeTab === 'user' ? userReviews : adminReviews;
         return list.filter(r => {
             const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
-            const searchStr = (activeTab === 'user' ? `${r.user.name} ${r.product.name} ${r.title}` : `${r.name} ${r.comment}`).toLowerCase();
+            const searchStr = (activeTab === 'user' ? `${r.user?.name} ${r.product?.name} ${r.title}` : `${r.name} ${r.comment}`).toLowerCase();
             const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
             return matchesStatus && matchesSearch;
         });
@@ -104,47 +71,49 @@ const AdminReviewsPage = () => {
         }
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const localPreview = URL.createObjectURL(file);
-            setPreview(localPreview);
-            setFormData(prev => ({ ...prev, image: localPreview }));
+        if (!file) return;
+
+        const uploadData = new FormData();
+        uploadData.append('image', file);
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+                method: 'POST',
+                body: uploadData,
+            });
+            const data = await res.json();
+            setPreview(data.url);
+            setFormData(prev => ({ ...prev, image: data.url }));
+            toast.success('Image uploaded');
+        } catch (error) {
+            toast.error('Upload failed');
         }
     };
 
     const handleAddSubmit = (e) => {
         e.preventDefault();
-        const newReview = {
-            ...formData,
-            _id: Date.now().toString(),
-            createdAt: new Date().toISOString()
-        };
-
-        if (activeTab === 'admin') setAdminReviews([newReview, ...adminReviews]);
-        else setUserReviews([newReview, ...userReviews]);
-
-        setShowAddModal(false);
-        resetForm();
-        toast.success('Published successfully');
+        addAdminReviewMutation.mutate(formData, {
+            onSuccess: () => {
+                setShowAddModal(false);
+                resetForm();
+            }
+        });
     };
 
     const handleEditSubmit = (e) => {
         e.preventDefault();
-        const updatedList = (activeTab === 'user' ? userReviews : adminReviews).map(r =>
-            r._id === selectedReview._id ? { ...r, ...formData } : r
-        );
-
-        if (activeTab === 'user') setUserReviews(updatedList);
-        else setAdminReviews(updatedList);
-
-        setShowEditModal(false);
-        resetForm();
-        toast.success('Updated successfully');
+        updateAdminReviewMutation.mutate({ id: selectedReview._id, data: formData }, {
+            onSuccess: () => {
+                setShowEditModal(false);
+                resetForm();
+            }
+        });
     };
 
     const resetForm = () => {
-        setFormData({ name: '', title: '', comment: '', image: '', rating: 5, status: activeTab === 'user' ? 'Pending' : 'Active' });
+        setFormData({ name: '', title: '', comment: '', image: '', rating: 5, status: 'Approved' });
         setPreview(null);
     };
 
@@ -153,9 +122,8 @@ const AdminReviewsPage = () => {
             if (activeTab === 'user') {
                 setUserReviews(userReviews.filter(r => r._id !== id));
             } else {
-                setAdminReviews(adminReviews.filter(r => r._id !== id));
+                deleteAdminReviewMutation.mutate(id);
             }
-            toast.success('Review deleted');
         }
     };
 

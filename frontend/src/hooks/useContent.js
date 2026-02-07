@@ -280,6 +280,52 @@ export const useAddFAQ = faqs.useAdd;
 export const useUpdateFAQ = faqs.useUpdate;
 export const useDeleteFAQ = faqs.useDelete;
 
+// Admin Reviews (Testimonials)
+export const useAdminReviews = () => {
+    return useQuery({
+        queryKey: ['admin-reviews'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/reviews/admin/testimonials`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to fetch testimonials');
+            return res.json();
+        }
+    });
+};
+
+const adminReviews = createCRUDHooks('admin-reviews', 'reviews/admin');
+export const useAddAdminReview = adminReviews.useAdd;
+export const useUpdateAdminReview = adminReviews.useUpdate;
+export const useDeleteAdminReview = adminReviews.useDelete;
+
+export const useFeaturedReviews = () => {
+    return useQuery({
+        queryKey: ['reviews', 'featured'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/reviews/testimonials`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to fetch testimonials');
+            return res.json();
+        }
+    });
+};
+
+const blogs = createCRUDHooks('blogs', 'blogs');
+export const useBlogs = blogs.useData;
+export const useAddBlog = blogs.useAdd;
+export const useUpdateBlog = blogs.useUpdate;
+export const useDeleteBlog = blogs.useDelete;
+
+export const useBlogBySlug = (slug) => {
+    return useQuery({
+        queryKey: ['blogs', 'slug', slug],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/blogs/slug/${slug}`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Failed to fetch blog for ${slug}`);
+            return res.json();
+        },
+        enabled: !!slug
+    });
+};
+
 export const useWebsiteContent = (slug) => {
     return useQuery({
         queryKey: ['page-content', slug],

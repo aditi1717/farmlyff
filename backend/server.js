@@ -24,6 +24,7 @@ import aboutSectionRoutes from './routes/aboutSectionRoutes.js';
 import healthBenefitSectionRoutes from './routes/healthBenefitSectionRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
 import websiteContentRoutes from './routes/websiteContentRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -90,6 +91,7 @@ app.use('/api/about-section', aboutSectionRoutes);
 app.use('/api/health-benefits', healthBenefitSectionRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/page-content', websiteContentRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // 404 Handler
 app.use((req, res) => {
