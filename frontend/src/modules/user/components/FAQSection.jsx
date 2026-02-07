@@ -1,34 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus } from 'lucide-react';
-
-const faqs = [
-    {
-        id: 1,
-        question: "Are your dry fruits and nuts fresh?",
-        answer: "Absolutely! We source our dry fruits and nuts directly from the best farms worldwide. They are carefully processed and packed to retain maximum freshness, crunch, and nutritional value."
-    },
-    {
-        id: 2,
-        question: "Do you offer free shipping?",
-        answer: "Yes, we offer free shipping on all orders above ₹999. For orders below that amount, a standard shipping fee applies which will be calculated at checkout."
-    },
-    {
-        id: 3,
-        question: "What is the estimated delivery time?",
-        answer: "Most orders are delivered within 3-5 business days across major cities. For remote locations, it may take 5-7 business days. You can track your order status in real-time."
-    },
-    {
-        id: 4,
-        question: "Can I return or exchange a product?",
-        answer: "We have a hassle-free 7-day return policy for damaged or incorrect items. Please ensure the product is unused and in its original packaging. Check our Returns & Refunds page for more details."
-    },
-    {
-        id: 5,
-        question: "Do you offer bulk or corporate gifting options?",
-        answer: "Yes! We specialize in premium corporate gifting and bulk orders for weddings and events. Please contact our support team or check our 'Shop by Packs' section for special bundles."
-    }
-];
+import { Minus, Plus } from 'lucide-react';
+import { useFAQs } from '../../../hooks/useContent';
 
 const FAQItem = ({ item, isOpen, onClick }) => {
     return (
@@ -65,7 +38,11 @@ const FAQItem = ({ item, isOpen, onClick }) => {
 };
 
 const FAQSection = () => {
+    const { data: allFaqs = [] } = useFAQs();
+    const faqs = allFaqs.filter(f => f.isActive !== false);
     const [openIndex, setOpenIndex] = useState(0);
+
+    if (faqs.length === 0) return null;
 
     const toggleFAQ = (index) => {
         setOpenIndex(openIndex === index ? -1 : index);

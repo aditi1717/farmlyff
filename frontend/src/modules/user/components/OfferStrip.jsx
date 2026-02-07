@@ -1,20 +1,14 @@
 import React from 'react';
-import { useSetting } from '../../../hooks/useSettings';
+import { useAnnouncements } from '../../../hooks/useContent';
 
 const OfferStrip = () => {
-    const { data: marqueeSetting, isLoading } = useSetting('marquee_text');
+    const { data: allAnnouncements = [], isLoading } = useAnnouncements();
+    const marqueeAnnouncements = allAnnouncements.filter(a => a.position === 'marquee' && a.isActive);
     
-    // Default text if not set in DB
-    const defaultText = [
-        "✨ REPUBLIC DAY SALE: UP TO 60% OFF ✨",
-        "PREMIUM DRY FRUITS FOR YOUR FAMILY",
-        "🥜 EXTRA 10% OFF ON JUMBO NUTS 🥜",
-        "100% ORGANIC & FRESH"
-    ];
-
-    const marqueeItems = marqueeSetting?.value?.length > 0 ? marqueeSetting.value : defaultText;
+    const marqueeItems = marqueeAnnouncements.map(a => a.text);
 
     if (isLoading) return <div className="h-10 bg-amber-50/20" />;
+    if (marqueeItems.length === 0) return null;
 
     const renderItems = () => (
         <div className="flex gap-16 md:gap-28 items-center px-4">

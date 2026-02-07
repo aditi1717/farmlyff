@@ -2,126 +2,12 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
-
-// Import local images from assets
-import cashewImg from '../../../assets/cashew.png';
-import pistaImg from '../../../assets/pista.png';
-import walnutImg from '../../../assets/walnut.png';
-import datesImg from '../../../assets/dates.png';
-import almondImg from '../../../assets/baadaam.png';
-import anjeerImg from '../../../assets/anjeer.png';
-import raisinImg from '../../../assets/raisin.png';
-import mixImg from '../../../assets/cashew.png'; // Fallback for mix if not specific
+import { useFeaturedSectionByName } from '../../../hooks/useContent';
 
 const TopSellingProducts = () => {
     const scrollRef = useRef(null);
-    // Hardcoded Dummy Data
-    const topProducts = [
-        {
-            id: 'd1',
-            name: 'Farmlyf Premium California Almonds (Badam) 500g',
-            price: 549,
-            mrp: 800,
-            discount: '31% off',
-            rating: 4.8,
-            image: almondImg,
-            unitPrice: 1098,
-            tag: 'BESTSELLER',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd2',
-            name: 'Farmlyf Jumbo Roasted Royale Cashews (Kaju) 250g',
-            price: 399,
-            mrp: 550,
-            discount: '27% off',
-            rating: 4.9,
-            image: cashewImg,
-            unitPrice: 1596,
-            tag: 'TRENDING',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd3',
-            name: 'Farmlyf Premium Walnut Kernels (Akhrot Giri) 250g',
-            price: 499,
-            mrp: 750,
-            discount: '33% off',
-            rating: 4.7,
-            image: walnutImg,
-            unitPrice: 1996,
-            tag: 'BESTSELLER',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd4',
-            name: 'Farmlyf Select Raisins (Kishmish) 500g',
-            price: 249,
-            mrp: 400,
-            discount: '37% off',
-            rating: 4.5,
-            image: raisinImg,
-            unitPrice: 498,
-            tag: 'POPULAR',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd5',
-            name: 'Farmlyf Dried Figs (Anjeer) 250g',
-            price: 449,
-            mrp: 650,
-            discount: '30% off',
-            rating: 4.6,
-            image: anjeerImg,
-            unitPrice: 1796,
-            tag: 'PREMIUM',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd6',
-            name: 'Farmlyf Pistachios (Pista) Roasted & Salted 250g',
-            price: 429,
-            mrp: 600,
-            discount: '28% off',
-            rating: 4.8,
-            image: pistaImg,
-            unitPrice: 1716,
-            tag: 'BESTSELLER',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd7',
-            name: 'Farmlyf Mixed Dry Fruits & Nuts 500g',
-            price: 599,
-            mrp: 900,
-            discount: '33% off',
-            rating: 4.9,
-            image: mixImg,
-            unitPrice: 1198,
-            tag: 'MUST BUY',
-            brand: 'FarmLyf',
-            status: 'Active'
-        },
-        {
-            id: 'd8',
-            name: 'Farmlyf Medjool Dates (Khajoor) 500g',
-            price: 799,
-            mrp: 1100,
-            discount: '27% off',
-            rating: 4.8,
-            image: datesImg,
-            unitPrice: 1598,
-            tag: 'PREMIUM',
-            brand: 'FarmLyf',
-            status: 'Active'
-        }
-    ];
+    const { data: sectionData, isLoading } = useFeaturedSectionByName('top-selling');
+    const topProducts = sectionData?.products || [];
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -131,7 +17,7 @@ const TopSellingProducts = () => {
         }
     };
 
-
+    if (isLoading) return <div className="h-96 flex items-center justify-center">Loading Products...</div>;
     if (topProducts.length === 0) return null;
 
     return (

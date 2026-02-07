@@ -55,34 +55,51 @@ const DEFAULT_DATA = {
     ]
 };
 
+import { useHealthBenefits, useUpdateHealthBenefitSection } from '../../../hooks/useContent';
+
 const HealthBenefitsSectionPage = () => {
     const navigate = useNavigate();
+    const { data: healthData, isLoading: loading } = useHealthBenefits();
+    const updateHealthMutation = useUpdateHealthBenefitSection();
     const [formData, setFormData] = useState(DEFAULT_DATA);
-    const [loading, setLoading] = useState(true);
     const [editModal, setEditModal] = useState(null); // { bucketId, ...data }
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Load from local storage
+    // Sync formData with fetched data
     useEffect(() => {
-        const savedData = localStorage.getItem('farmlyf_health_benefits');
-        if (savedData) {
-            setFormData(JSON.parse(savedData));
+        if (healthData && Object.keys(healthData).length > 0) {
+            setFormData({
+                ...DEFAULT_DATA,
+                ...healthData,
+                benefits: healthData.benefits || DEFAULT_DATA.benefits
+            });
         }
-        setLoading(false);
-    }, []);
+    }, [healthData]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSave = () => {
-        localStorage.setItem('farmlyf_health_benefits', JSON.stringify(formData));
-        toast.success('Health Benefits section updated successfully!');
+    const handleSave = async () => {
+        alert('Save Changes clicked! Checking console logs...');
+        console.log('Attempting to save Health Benefits with data:', formData);
+        setIsSaving(true);
+        try {
+            const result = await updateHealthMutation.mutateAsync({ data: formData });
+            console.log('Save successful, result:', result);
+            toast.success('Changes saved successfully to database!');
+        } catch (error) {
+            console.error('Save failed with error:', error);
+            toast.error(error.message || 'Failed to save changes to database');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleReset = () => {
         if (confirm('Are you sure you want to reset to default content?')) {
             setFormData(DEFAULT_DATA);
-            toast.success('Content reset to default');
+            toast.success('Content reset to default (Save to persist)');
         }
     };
 
@@ -91,12 +108,24 @@ const HealthBenefitsSectionPage = () => {
     };
 
     const saveCard = () => {
-        const updatedBenefits = formData.benefits.map(b =>
-            b.id === editModal.id ? editModal : b
-        );
+        console.log('Updating card in saveCard:', editModal);
+        let matchFound = false;
+        const updatedBenefits = formData.benefits.map(b => {
+            const isMatch = (b._id && b._id === editModal._id) || (b.id && b.id === editModal.id);
+            if (isMatch) matchFound = true;
+            return isMatch ? editModal : b;
+        });
+
+        if (!matchFound) {
+            console.warn('Could not find matching benefit to update. b._id:', formData.benefits.map(b => b._id), 'editModal._id:', editModal._id);
+            toast.error('Error: Could not identify which card to update.');
+            return;
+        }
+
+        console.log('New benefits array preview:', updatedBenefits);
         setFormData(prev => ({ ...prev, benefits: updatedBenefits }));
         setEditModal(null);
-        toast.success('Card updated');
+        toast.success('Card updated locally (Save Changes to persist)');
     };
 
     if (loading) return <div>Loading...</div>;
@@ -128,10 +157,20 @@ const HealthBenefitsSectionPage = () => {
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
+                        disabled={isSaving}
+                        className={`px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-gray-200 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}
                     >
-                        <Save size={16} />
-                        Save Changes
+                        {isSaving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={16} />
+                                Save Changes
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
@@ -180,8 +219,10 @@ const HealthBenefitsSectionPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {formData.benefits.map((benefit, index) => {
                             const IconComponent = LucideIcons[benefit.icon] || HelpCircle;
+                            // Ensure key is truly unique even if data is corrupted
+                            const itemKey = benefit._id || benefit.id || `benefit-${index}`;
                             return (
-                                <div key={benefit.id} className="group relative bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all">
+                                <div key={itemKey} className="group relative bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all">
                                     <button
                                         onClick={() => handleEditCard(benefit)}
                                         className="absolute top-3 right-3 p-2 bg-gray-50 text-gray-400 hover:bg-primary hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100"
@@ -221,10 +262,11 @@ const HealthBenefitsSectionPage = () => {
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-6">
-                    {formData.benefits.map((benefit) => {
+                    {formData.benefits.map((benefit, index) => {
                         const IconComponent = LucideIcons[benefit.icon] || HelpCircle;
+                        const itemKey = `preview-${benefit._id || benefit.id || index}`;
                         return (
-                            <div key={benefit.id} className="w-[200px] h-[280px] relative pt-12">
+                            <div key={itemKey} className="w-[200px] h-[280px] relative pt-12">
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-white rounded-full w-24 h-24 flex items-center justify-center shadow-lg border-2" style={{ borderColor: benefit.baseColor }}>
                                     <div style={{ color: benefit.baseColor }}>
                                         <IconComponent size={40} />

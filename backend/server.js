@@ -17,6 +17,12 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import promoCardRoutes from './routes/promoCardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import announcementRoutes from './routes/announcementRoutes.js';
+import featuredSectionRoutes from './routes/featuredSectionRoutes.js';
+import trustSignalRoutes from './routes/trustSignalRoutes.js';
+import aboutSectionRoutes from './routes/aboutSectionRoutes.js';
+import healthBenefitSectionRoutes from './routes/healthBenefitSectionRoutes.js';
+import faqRoutes from './routes/faqRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -76,6 +82,12 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/promo-card', promoCardRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/featured-sections', featuredSectionRoutes);
+app.use('/api/trust-signals', trustSignalRoutes);
+app.use('/api/about-section', aboutSectionRoutes);
+app.use('/api/health-benefits', healthBenefitSectionRoutes);
+app.use('/api/faqs', faqRoutes);
 
 // 404 Handler
 app.use((req, res) => {

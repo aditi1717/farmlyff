@@ -34,36 +34,21 @@ const ICON_OPTIONS = {
     CheckCircle2
 };
 
+import { useTrustSignals, useAddTrustSignal, useUpdateTrustSignal, useDeleteTrustSignal } from '../../../hooks/useContent';
+
 const WhyChooseUsPage = () => {
     const navigate = useNavigate();
-    const [features, setFeatures] = useState([
-        { id: 1, icon: 'Truck', topText: 'FREE SHIPPING ON', bottomText: 'Orders Above ₹1499' },
-        { id: 2, icon: 'Wallet', topText: 'PAY', bottomText: 'On Delivery' },
-        { id: 3, icon: 'ShieldCheck', topText: '100% QUALITY', bottomText: 'Guaranteed' },
-        { id: 4, icon: 'Trophy', topText: 'REWARD POINTS', bottomText: 'On Every Purchase' }
-    ]);
+    const { data: features = [], isLoading: loading } = useTrustSignals();
+    const addSignalMutation = useAddTrustSignal();
+    const updateSignalMutation = useUpdateTrustSignal();
+    const deleteSignalMutation = useDeleteTrustSignal();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState(null); // { id, icon, topText, bottomText } or null for adding
 
-    // Load from local storage (mock persistence)
-    useEffect(() => {
-        const savedFeatures = localStorage.getItem('farmlyf_why_choose_us');
-        if (savedFeatures) {
-            setFeatures(JSON.parse(savedFeatures));
-        }
-    }, []);
-
-    const saveFeatures = (updatedFeatures) => {
-        setFeatures(updatedFeatures);
-        localStorage.setItem('farmlyf_why_choose_us', JSON.stringify(updatedFeatures));
-    };
-
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this feature?')) {
-            const updated = features.filter(f => f.id !== id);
-            saveFeatures(updated);
-            toast.success('Feature deleted');
+            deleteSignalMutation.mutate(id);
         }
     };
 
@@ -73,30 +58,33 @@ const WhyChooseUsPage = () => {
     };
 
     const handleAddNew = () => {
-        setEditForm({ id: Date.now(), icon: 'Star', topText: '', bottomText: '' });
+        setEditForm({ icon: 'Star', topText: '', bottomText: '' });
         setIsEditing(true);
     };
 
-    const handleSaveForm = () => {
+    const handleSaveForm = async () => {
         if (!editForm.topText || !editForm.bottomText) {
             toast.error('Please fill in all fields');
             return;
         }
 
-        let updatedFeatures;
-        if (features.find(f => f.id === editForm.id)) {
-            // Edit existing
-            updatedFeatures = features.map(f => f.id === editForm.id ? editForm : f);
-            toast.success('Feature updated');
-        } else {
-            // Add new
-            updatedFeatures = [...features, editForm];
-            toast.success('New feature added');
-        }
-
-        saveFeatures(updatedFeatures);
-        setIsEditing(false);
-        setEditForm(null);
+        try {
+            if (editForm._id || editForm.id) {
+                // Edit existing
+                await updateSignalMutation.mutateAsync({ 
+                    id: editForm._id || editForm.id, 
+                    data: editForm 
+                });
+            } else {
+                // Add new
+                await addSignalMutation.mutateAsync({
+                    ...editForm,
+                    order: features.length
+                });
+            }
+            setIsEditing(false);
+            setEditForm(null);
+        } catch (error) {}
     };
 
     const SelectedIcon = editForm ? ICON_OPTIONS[editForm.icon] : null;

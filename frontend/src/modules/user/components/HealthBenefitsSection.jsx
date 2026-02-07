@@ -1,78 +1,36 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Heart, Brain, Zap, Shield, Scale, Sparkles } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { Heart, HelpCircle } from 'lucide-react';
+import { useHealthBenefits } from '../../../hooks/useContent';
 
 const HealthBenefitsSection = ({ data }) => {
+    const { data: fetchedData, isLoading } = useHealthBenefits();
     const [hoveredIndex, setHoveredIndex] = useState(null);
     const scrollRef = useRef(null);
 
-    const scroll = (direction) => {
-        if (scrollRef.current) {
-            const scrollAmount = 300;
-            scrollRef.current.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
-            });
+    // Logging to help debug "not reflecting" issue
+    useEffect(() => {
+        if (fetchedData) {
+            console.log('Homepage Health Benefits Data:', fetchedData);
         }
-    };
+    }, [fetchedData]);
 
-    // Dummy data fallback
-    const defaultData = {
-        title: "Health Benefits",
-        subtitle: "Discover the amazing benefits of premium dry fruits for your health and wellness",
-        benefits: [
-            {
-                icon: <Heart size={64} strokeWidth={1.5} />,
-                title: "Heart Health",
-                description: "Rich in omega-3 fatty acids and antioxidants that support cardiovascular health.",
-                baseColor: "#006071",
-                borderColor: "border-[#006071]",
-                textColor: "text-[#006071]"
-            },
-            {
-                icon: <Brain size={64} strokeWidth={1.5} />,
-                title: "Brain Function",
-                description: "Enhance cognitive function, memory, and mental clarity with essential nutrients.",
-                baseColor: "#67705B",
-                borderColor: "border-[#67705B]",
-                textColor: "text-[#67705B]"
-            },
-            {
-                icon: <Zap size={64} strokeWidth={1.5} />,
-                title: "Energy Boost",
-                description: "Natural sustained energy from healthy fats and proteins.",
-                baseColor: "#902D45",
-                borderColor: "border-[#902D45]",
-                textColor: "text-[#902D45]"
-            },
-            {
-                icon: <Shield size={64} strokeWidth={1.5} />,
-                title: "Immunity",
-                description: "Strengthen your immune system with vitamin E and antioxidants.",
-                baseColor: "#7E3021",
-                borderColor: "border-[#7E3021]",
-                textColor: "text-[#7E3021]"
-            },
-            {
-                icon: <Scale size={64} strokeWidth={1.5} />,
-                title: "Weight Balance",
-                description: "High protein and fiber content helps maintain healthy weight goals.",
-                baseColor: "#C08552",
-                borderColor: "border-[#C08552]",
-                textColor: "text-[#C08552]"
-            },
-            {
-                icon: <Sparkles size={64} strokeWidth={1.5} />,
-                title: "Skin & Hair",
-                description: "Essential fatty acids promote glowing skin and lustrous hair.",
-                baseColor: "#7D5A5A",
-                borderColor: "border-[#7D5A5A]",
-                textColor: "text-[#7D5A5A]"
-            }
-        ]
-    };
+    if (isLoading) return <div className="h-96 flex items-center justify-center">Loading Health Benefits...</div>;
+    if (!fetchedData || !fetchedData.benefits) return null;
 
-    const sectionData = data || defaultData;
+    const sectionData = {
+        ...fetchedData,
+        benefits: fetchedData.benefits.map(b => {
+            const IconComponent = LucideIcons[b.icon] || Heart;
+            return {
+                ...b,
+                icon: React.createElement(IconComponent, { size: 64, strokeWidth: 1.5 }),
+                borderStyle: { borderColor: b.baseColor || '#006071' },
+                textStyle: { color: b.baseColor || '#006071' }
+            };
+        })
+    };
 
     return (
         <section className="bg-gray-50 py-4 md:py-6 relative overflow-hidden">
@@ -127,8 +85,11 @@ const HealthBenefitsSection = ({ data }) => {
                                             className="absolute -top-10 md:-top-16 left-1/2 -translate-x-1/2 z-20"
                                         >
                                             {/* Single clean ring matching bg color */}
-                                            <div className={`relative bg-white rounded-full w-20 h-20 md:w-32 md:h-32 flex items-center justify-center shadow-lg border-2 ${benefit.borderColor}`}>
-                                                <div className={`${benefit.textColor} scale-75 md:scale-100 transform`}>
+                                            <div 
+                                                style={benefit.borderStyle}
+                                                className={`relative bg-white rounded-full w-20 h-20 md:w-32 md:h-32 flex items-center justify-center shadow-lg border-2`}
+                                            >
+                                                <div style={benefit.textStyle} className={`scale-75 md:scale-100 transform`}>
                                                     {benefit.icon}
                                                 </div>
                                             </div>
@@ -162,7 +123,7 @@ const HealthBenefitsSection = ({ data }) => {
                                                 transition={{ duration: 0.3 }}
                                                 className="flex items-center justify-center h-full w-full text-center pt-6"
                                             >
-                                                <h3 className={`font-bold text-sm md:text-xl px-2 leading-tight ${benefit.textColor}`}>
+                                                <h3 style={benefit.textStyle} className={`font-bold text-sm md:text-xl px-2 leading-tight`}>
                                                     {benefit.title}
                                                 </h3>
                                             </motion.div>
@@ -175,7 +136,7 @@ const HealthBenefitsSection = ({ data }) => {
                                                 transition={{ duration: 0.4, delay: 0.2 }}
                                                 className="flex items-center justify-center h-full w-full"
                                             >
-                                                <p className={`text-[10px] md:text-sm leading-relaxed font-semibold px-2 md:px-4 text-center ${benefit.textColor}`}>
+                                                <p style={benefit.textStyle} className={`text-[10px] md:text-sm leading-relaxed font-semibold px-2 md:px-4 text-center`}>
                                                     {benefit.description}
                                                 </p>
                                             </motion.div>

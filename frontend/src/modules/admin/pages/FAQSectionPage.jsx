@@ -31,45 +31,34 @@ const DEFAULT_QUESTIONS = [
     }
 ];
 
+import { useFAQs, useAddFAQ, useUpdateFAQ, useDeleteFAQ } from '../../../hooks/useContent';
+
 const FAQSectionPage = () => {
     const navigate = useNavigate();
-    const [faqs, setFaqs] = useState(DEFAULT_QUESTIONS);
-    const [loading, setLoading] = useState(true);
+    const { data: faqs = [], isLoading: loading } = useFAQs();
+    const addFAQMutation = useAddFAQ();
+    const updateFAQMutation = useUpdateFAQ();
+    const deleteFAQMutation = useDeleteFAQ();
+
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({ question: '', answer: '' });
     const [isAdding, setIsAdding] = useState(false);
 
-    // Load from local storage
-    useEffect(() => {
-        const savedData = localStorage.getItem('farmlyf_faq_section');
-        if (savedData) {
-            setFaqs(JSON.parse(savedData));
-        }
-        setLoading(false);
-    }, []);
-
-    const saveToStorage = (newFaqs) => {
-        setFaqs(newFaqs);
-        localStorage.setItem('farmlyf_faq_section', JSON.stringify(newFaqs));
-    };
-
     const handleReset = () => {
         if (confirm('Are you sure you want to reset all FAQs to default?')) {
-            saveToStorage(DEFAULT_QUESTIONS);
-            toast.success('FAQs reset to default');
+            // This would require a special reset API or just manual cleanup
+            toast.error('Resetting to default is not supported for server-side data yet.');
         }
     };
 
     const handleDelete = (id) => {
         if (confirm('Delete this FAQ?')) {
-            const newFaqs = faqs.filter(faq => faq.id !== id);
-            saveToStorage(newFaqs);
-            toast.success('FAQ deleted');
+            deleteFAQMutation.mutate(id);
         }
     };
 
     const startEdit = (faq) => {
-        setEditingId(faq.id);
+        setEditingId(faq._id || faq.id);
         setEditForm({ question: faq.question, answer: faq.answer });
         setIsAdding(false);
     };
@@ -80,27 +69,26 @@ const FAQSectionPage = () => {
         setIsAdding(false);
     };
 
-    const saveEdit = () => {
+    const saveEdit = async () => {
         if (!editForm.question.trim() || !editForm.answer.trim()) {
             toast.error('Question and Answer are required');
             return;
         }
 
-        if (isAdding) {
-            const newFaq = {
-                id: Date.now(),
-                ...editForm
-            };
-            saveToStorage([...faqs, newFaq]);
-            toast.success('New FAQ added');
-        } else {
-            const newFaqs = faqs.map(faq =>
-                faq.id === editingId ? { ...faq, ...editForm } : faq
-            );
-            saveToStorage(newFaqs);
-            toast.success('FAQ updated');
-        }
-        cancelEdit();
+        try {
+            if (isAdding) {
+                await addFAQMutation.mutateAsync({
+                    ...editForm,
+                    order: faqs.length
+                });
+            } else {
+                await updateFAQMutation.mutateAsync({
+                    id: editingId,
+                    data: editForm
+                });
+            }
+            cancelEdit();
+        } catch (error) {}
     };
 
     const startAdd = () => {

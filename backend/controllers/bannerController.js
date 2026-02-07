@@ -12,19 +12,37 @@ export const getBanners = async (req, res) => {
   }
 };
 
+// @desc    Get banner by ID
+// @route   GET /api/banners/:id
+// @access  Public
+export const getBannerById = async (req, res) => {
+  try {
+    const banner = await Banner.findById(req.params.id);
+    if (banner) {
+      res.json(banner);
+    } else {
+      res.status(404).json({ message: 'Banner not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Create a new banner
 // @route   POST /api/banners
 // @access  Private (Admin)
 export const createBanner = async (req, res) => {
-  const { title, subtitle, badgeText, image, publicId, link, section, order } = req.body;
+  const { title, subtitle, badgeText, ctaText, image, publicId, slides, link, section, order } = req.body;
   
   try {
     const banner = new Banner({
       title,
       subtitle,
       badgeText,
+      ctaText,
       image,
       publicId,
+      slides: slides || [],
       link,
       section,
       order,

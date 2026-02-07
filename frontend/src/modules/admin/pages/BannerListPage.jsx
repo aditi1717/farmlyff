@@ -1,291 +1,261 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Type, Info, Layers, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Edit2, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
 
 const BannerListPage = () => {
-    // React Query Hooks
     const { data: banners = [], isLoading: loading } = useBanners();
     const addBannerMutation = useAddBanner();
     const updateBannerMutation = useUpdateBanner();
     const deleteBannerMutation = useDeleteBanner();
     const uploadImageMutation = useUploadImage();
 
-    // Form & UI state
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
     const [formData, setFormData] = useState({
-        title: 'Slide', // Default title to satisfy backend if required
-        subtitle: '',
-        badgeText: '',
-        link: '/',
-        section: 'hero',
-        image: '',
-        publicId: '',
-        isActive: true
+        title: 'Slide', subtitle: '', badgeText: '',
+        ctaText: 'Shop Now', link: '/', section: 'hero',
+        image: '', publicId: '', slides: [], isActive: true
     });
     const [preview, setPreview] = useState(null);
+    const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const localPreview = URL.createObjectURL(file);
-            setPreview(localPreview);
-
-            try {
-                const res = await uploadImageMutation.mutateAsync(file);
-                if (res?.url) {
-                    setFormData(prev => ({
-                        ...prev,
-                        image: res.url,
-                        publicId: res.publicId || prev.publicId
-                    }));
-                    setPreview(res.url);
-                }
-            } catch (error) {
-                toast.error('Upload failed');
-                setPreview(formData.image || null);
-            }
-        }
-    };
+    const activeSlide = (formData.slides && formData.slides[activeSlideIndex]) || null;
 
     const resetForm = () => {
         setFormData({
-            title: 'Slide',
-            subtitle: '',
-            badgeText: '',
-            link: '/',
-            section: 'hero',
-            image: '',
-            publicId: '',
-            isActive: true
+            title: 'Slide', subtitle: '', badgeText: '',
+            ctaText: 'Shop Now', link: '/', section: 'hero',
+            image: '', publicId: '', slides: [], isActive: true
         });
         setPreview(null);
         setIsEditing(false);
         setEditId(null);
+        setActiveSlideIndex(0);
+    };
+
+    const handleAddSlide = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const res = await uploadImageMutation.mutateAsync(file);
+            if (res?.url) {
+                const newSlide = { image: res.url, publicId: res.publicId, link: '/', ctaText: 'Shop Now' };
+                setFormData(prev => {
+                    const updatedSlides = [...(prev.slides || []), newSlide];
+                    return { ...prev, image: updatedSlides[0].image, publicId: updatedSlides[0].publicId, slides: updatedSlides };
+                });
+                if (!formData.image) setPreview(res.url);
+                setActiveSlideIndex((formData.slides || []).length);
+            }
+        } catch (error) { toast.error('Upload failed'); }
+        if (e.target) e.target.value = '';
+    };
+
+    const handleReplaceSlideImage = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const res = await uploadImageMutation.mutateAsync(file);
+            if (res?.url) {
+                setFormData(prev => {
+                    const updatedSlides = [...(prev.slides || [])];
+                    if (updatedSlides[activeSlideIndex]) {
+                        updatedSlides[activeSlideIndex] = { 
+                            ...updatedSlides[activeSlideIndex], 
+                            image: res.url, 
+                            publicId: res.publicId 
+                        };
+                    }
+                    const rootUpdates = activeSlideIndex === 0 ? { image: res.url, publicId: res.publicId } : {};
+                    return { ...prev, slides: updatedSlides, ...rootUpdates };
+                });
+                toast.success('Image replaced');
+            }
+        } catch (error) { toast.error('Replacement failed'); }
+        if (e.target) e.target.value = '';
+    };
+
+    const removeSlide = (index) => {
+        setFormData(prev => {
+            const updatedSlides = (prev.slides || []).filter((_, i) => i !== index);
+            return {
+                ...prev,
+                image: updatedSlides.length > 0 ? updatedSlides[0].image : '',
+                publicId: updatedSlides.length > 0 ? updatedSlides[0].publicId : '',
+                slides: updatedSlides
+            };
+        });
+        if ((formData.slides || []).length <= 1) setPreview(null);
+        if (activeSlideIndex >= index && activeSlideIndex > 0) setActiveSlideIndex(activeSlideIndex - 1);
     };
 
     const handleEdit = (banner) => {
+        const migratedSlides = (banner.slides && banner.slides.length > 0) 
+            ? banner.slides.map(s => ({ ...s, link: s.link || banner.link || '/', ctaText: s.ctaText || banner.ctaText || 'Shop Now' })) 
+            : (banner.image ? [{ image: banner.image, publicId: banner.publicId, link: banner.link || '/', ctaText: banner.ctaText || 'Shop Now' }] : []);
+
         setFormData({
-            title: banner.title || 'Slide',
-            subtitle: banner.subtitle || '',
-            badgeText: banner.badgeText || '',
-            link: banner.link || '/',
-            section: banner.section || 'hero',
-            image: banner.image || '',
-            publicId: banner.publicId || '',
-            isActive: banner.isActive !== false
+            title: banner.title || 'Slide', subtitle: banner.subtitle || '', badgeText: banner.badgeText || '',
+            ctaText: banner.ctaText || 'Shop Now', link: banner.link || '/', section: banner.section || 'hero',
+            image: banner.image || '', publicId: banner.publicId || '', slides: migratedSlides, isActive: banner.isActive !== false
         });
         setPreview(banner.image);
         setIsEditing(true);
         setEditId(banner._id || banner.id);
+        setActiveSlideIndex(0);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const updateActiveSlide = (key, value) => {
+        setFormData(prev => {
+            const updatedSlides = [...(prev.slides || [])];
+            if (updatedSlides[activeSlideIndex]) {
+                updatedSlides[activeSlideIndex] = { ...updatedSlides[activeSlideIndex], [key]: value };
+            }
+            const rootUpdates = activeSlideIndex === 0 ? { [key]: value } : {};
+            return { ...prev, slides: updatedSlides, ...rootUpdates };
+        });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.image) {
-            toast.error('Please upload an image for the slide');
-            return;
+        if (!formData.image && (!formData.slides || formData.slides.length === 0)) {
+            toast.error('Please upload at least one image'); return;
         }
-
         try {
-            if (isEditing) {
-                await updateBannerMutation.mutateAsync({
-                    id: editId,
-                    data: formData
-                });
-            } else {
-                await addBannerMutation.mutateAsync({
-                    ...formData,
-                    order: banners.length + 1
-                });
-            }
+            if (isEditing) { await updateBannerMutation.mutateAsync({ id: editId, data: formData }); }
+            else { await addBannerMutation.mutateAsync({ ...formData, order: banners.length + 1 }); }
             resetForm();
-        } catch (error) { }
+            toast.success(isEditing ? 'Banner updated' : 'Banner published');
+        } catch (error) { toast.error('Failed to save'); }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this slide?')) return;
+        if (!window.confirm('Delete this banner?')) return;
         deleteBannerMutation.mutate(id);
     };
 
     return (
         <div className="p-4 md:p-6 max-w-[1250px] mx-auto min-h-screen bg-transparent">
             <Toaster position="top-right" />
-
-            <div className="flex flex-col lg:flex-row gap-6">
-                {/* Left: Compact Form */}
-                <div className="w-full lg:w-[380px] shrink-0">
-                    <div className="bg-white p-6 md:p-7 rounded-2xl shadow-sm border border-gray-100 sticky top-6">
+            <div className="flex flex-col lg:flex-row gap-8">
+                <div className="w-full lg:w-[400px] shrink-0">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sticky top-6">
                         <div className="mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-                                {isEditing ? 'Edit Slide' : 'New Banner Slide'}
-                            </h2>
-                            <p className="text-sm text-gray-500 mt-1 font-medium">Add high-impact visuals to home</p>
+                            <h2 className="text-xl font-bold text-gray-900 leading-tight">{isEditing ? 'Edit Banner' : 'New Banner'}</h2>
+                            <p className="text-xs text-gray-400 mt-1 font-medium italic">Customize your billboard carousel</p>
                         </div>
 
+                        {activeSlide && (
+                            <div className="mb-6 aspect-[21/9] bg-gray-50 rounded-2xl overflow-hidden relative border border-gray-100 shadow-inner">
+                                <img src={activeSlide.image} className="w-full h-full object-cover" alt="" />
+                                <div className="absolute inset-0 bg-black/20" />
+                                <div className="absolute bottom-3 left-4 scale-75 origin-bottom-left">
+                                    <div className="inline-block px-2 py-0.5 bg-primary text-white text-[8px] font-bold rounded-full mb-1">{formData.badgeText || 'OFFER'}</div>
+                                    <h4 className="text-white font-black leading-tight text-xl">{formData.title}</h4>
+                                    <button className="mt-2 px-4 py-1 bg-white text-black text-[9px] font-bold rounded-full">{activeSlide.ctaText || 'Shop Now'}</button>
+                                </div>
+                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold text-white uppercase border border-white/10">Slide {activeSlideIndex + 1}/{formData.slides.length}</div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Image Upload Area */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-gray-800 ml-0.5">Banner Image</label>
-                                <div className="border-2 border-dashed border-gray-200 rounded-xl h-44 flex items-center justify-center relative group overflow-hidden hover:bg-gray-50 hover:border-primary/40 transition-all cursor-pointer">
-                                    <input
-                                        type="file"
-                                        onChange={handleFileChange}
-                                        accept="image/*"
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    />
-                                    {preview ? (
-                                        <div className="w-full h-full p-2">
-                                            <img src={preview} alt="Preview" className="w-full h-full object-cover rounded-lg shadow-sm" />
-                                            {uploadImageMutation.isPending && (
-                                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-20">
-                                                    <Loader size={24} className="animate-spin text-white" />
-                                                </div>
-                                            )}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-bold text-gray-800 uppercase tracking-tighter">Slides ({formData.slides.length})</label>
+                                    <div className="relative h-8 px-3 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors group">
+                                        <input type="file" onChange={handleAddSlide} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        {uploadImageMutation.isPending ? <Loader size={14} className="animate-spin text-primary" /> : <div className="flex items-center gap-1.5"><Plus size={14} className="text-primary group-hover:scale-125 transition-transform" /><span className="text-[10px] font-bold text-primary">ADD</span></div>}
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                    {(formData.slides || []).map((slide, idx) => (
+                                        <div key={idx} onClick={() => setActiveSlideIndex(idx)} className={`relative shrink-0 w-16 h-11 rounded-lg overflow-hidden cursor-pointer transition-all ${activeSlideIndex === idx ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-gray-100 opacity-60'}`}>
+                                            <img src={slide.image} className="w-full h-full object-cover" alt="" />
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); removeSlide(idx); }} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"><X size={8}/></button>
                                         </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-gray-400">
-                                            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:scale-105 transition-all">
-                                                <ImageIcon size={22} className="text-gray-400 group-hover:text-primary" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {activeSlide && (
+                                <div className="space-y-4 pt-4 border-t border-gray-50">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Slide</label>
+                                            <div className="relative h-7 px-2 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors group">
+                                                <input type="file" onChange={handleReplaceSlideImage} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                <div className="flex items-center gap-1"><ImageIcon size={10} className="text-gray-500" /><span className="text-[9px] font-bold text-gray-600">CHANGE IMAGE</span></div>
                                             </div>
-                                            <span className="text-xs font-semibold">Click to upload</span>
                                         </div>
-                                    )}
+                                        <input type="text" value={activeSlide.ctaText ?? ''} onChange={(e)=>updateActiveSlide('ctaText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Button Label" />
+                                        <div className="relative">
+                                            <ExternalLink size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                                            <input type="text" value={activeSlide.link ?? ''} onChange={(e)=>updateActiveSlide('link', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Redirect URL" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info</label>
+                                        <input type="text" value={formData.title} onChange={(e)=>setFormData(prev=>({...prev, title:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
+                                        <input type="text" value={formData.subtitle} onChange={(e)=>setFormData(prev=>({...prev, subtitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Subtitle" />
+                                        <input type="text" value={formData.badgeText} onChange={(e)=>setFormData(prev=>({...prev, badgeText:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
+                                        <label className="relative inline-flex items-center cursor-pointer scale-75">
+                                            <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={(e)=>setFormData(prev=>({...prev, isActive:e.target.checked}))} />
+                                            <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                        </label>
+                                    </div>
                                 </div>
-                                <p className="text-[10px] text-gray-400 text-center font-medium italic">Aspect Ratio: 21:9 Recommended</p>
-                            </div>
-
-                            {/* Redirect Link */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-gray-800 ml-0.5">Redirect Link</label>
-                                <div className="relative group">
-                                    <ExternalLink size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-primary transition-colors" />
-                                    <input
-                                        type="text"
-                                        value={formData.link}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-gray-900 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-gray-300"
-                                        placeholder="e.g. /category/electronics"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Visibility Toggle */}
-                            <div className="bg-gray-50 p-4 rounded-xl flex items-center justify-between border border-gray-100">
-                                <div className="space-y-0.5">
-                                    <p className="text-xs font-bold text-gray-900">Live Status</p>
-                                    <p className="text-[10px] text-gray-500 font-medium">Visible on Homepage</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={formData.isActive}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                                    />
-                                    <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary shadow-sm"></div>
-                                </label>
-                            </div>
+                            )}
 
                             <div className="flex gap-3 pt-2">
-                                {isEditing && (
-                                    <button
-                                        type="button"
-                                        onClick={resetForm}
-                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-3.5 rounded-xl transition-all"
-                                    >
-                                        Discard
-                                    </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    disabled={addBannerMutation.isPending || updateBannerMutation.isPending || uploadImageMutation.isPending}
-                                    className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                                >
-                                    {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Slide' : 'Publish Slide')}
+                                {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
+                                <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                                    {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                {/* Right: Compact List */}
                 <div className="flex-1">
                     <div className="mb-6 flex items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Main Carousel</h2>
-                            <p className="text-sm text-gray-500 font-medium mt-0.5">Manage your banner sequence</p>
+                            <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Sequence</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Manage your active billboard carousel</p>
                         </div>
-                        <div className="px-3 py-1 bg-gray-100/80 rounded-full text-[10px] font-bold text-gray-600 tracking-wider border border-gray-200/50">
-                            {banners.length} SLIDES
-                        </div>
+                        <div className="px-3 py-1 bg-white rounded-full text-[10px] font-black text-primary border border-primary/10 shadow-sm uppercase tracking-wider">{banners.length} Active</div>
                     </div>
 
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center p-20 bg-white rounded-2xl border border-gray-100">
-                            <Loader className="animate-spin mb-4 text-primary" />
-                            <p className="text-sm font-medium text-gray-400 font-['Inter']">Fetching slides...</p>
-                        </div>
+                        <div className="flex flex-col items-center justify-center p-20 bg-white rounded-3xl border border-gray-100"><Loader className="animate-spin mb-4 text-primary" /><p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic font-black">Syncing Billboard...</p></div>
                     ) : (
                         <div className="space-y-4">
-                            {banners.map((banner, index) => (
-                                <div key={banner._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-5 items-center group hover:shadow-md hover:border-gray-200 transition-all duration-200">
-                                    {/* Preview Container */}
-                                    <div className="w-full sm:w-44 h-28 shrink-0 rounded-lg overflow-hidden bg-gray-50 relative border border-gray-100">
-                                        <img src={banner.image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-2 py-0.5 rounded-md border border-white/20">
-                                            Slide #{index + 1}
-                                        </div>
+                            {banners.map((banner) => (
+                                <div key={banner._id} className={`bg-white p-4 rounded-2xl shadow-sm border transition-all flex items-center gap-5 group ${editId === banner._id ? 'border-primary ring-4 ring-primary/5' : 'border-gray-50 hover:border-gray-200 hover:shadow-md'}`}>
+                                    <div className="w-28 h-16 rounded-xl overflow-hidden bg-gray-50 shrink-0 relative border border-gray-100">
+                                        <img src={banner.image || (banner.slides?.[0]?.image)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                                        <div className="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase border border-white/10">{banner.slides?.length || 1} Slides</div>
                                     </div>
-
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${banner.isActive !== false ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-200'
-                                                } tracking-tight`}>
-                                                {banner.isActive !== false ? 'ACTIVE' : 'HIDDEN'}
-                                            </span>
-                                            <span className="text-[10px] font-medium text-gray-400">Hero Section</span>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded tracking-tighter border ${banner.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{banner.isActive !== false ? 'LIVE' : 'HIDDEN'}</span>
+                                            <h3 className="text-xs font-black text-gray-900 truncate uppercase tracking-tight italic">{banner.title}</h3>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Link</p>
-                                            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 w-fit border border-gray-100">
-                                                <ExternalLink size={12} className="text-primary" />
-                                                <span className="text-xs font-semibold text-gray-700 truncate">{banner.link || '/'}</span>
-                                            </div>
-                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold italic truncate"><ExternalLink size={10} className="text-primary" />{banner.link || '/'}</div>
                                     </div>
-
-                                    <div className="flex items-center gap-2 pr-1">
-                                        <button
-                                            onClick={() => handleEdit(banner)}
-                                            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all bg-gray-50 border border-gray-100"
-                                            title="Edit"
-                                        >
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(banner._id)}
-                                            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all bg-gray-50 border border-gray-100"
-                                            title="Delete"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                    <div className="flex items-center gap-2 pr-2">
+                                        <button onClick={()=>handleEdit(banner)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all border border-gray-50"><Edit2 size={16} /></button>
+                                        <button onClick={()=>handleDelete(banner._id)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-gray-50"><Trash2 size={16} /></button>
                                     </div>
                                 </div>
                             ))}
-
-                            {banners.length === 0 && (
-                                <div className="bg-white rounded-2xl p-16 text-center border-2 border-dashed border-gray-100">
-                                    <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-4 text-gray-200 border border-gray-50">
-                                        <ImageIcon size={28} />
-                                    </div>
-                                    <h3 className="text-gray-900 font-bold">Empty Carousel</h3>
-                                    <p className="text-gray-400 text-xs mt-1 font-medium">Publish a slide to start your home impact.</p>
-                                </div>
-                            )}
+                            {banners.length === 0 && <div className="bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-50"><ImageIcon size={32} className="mx-auto text-gray-200 mb-4" /><h3 className="text-gray-900 font-black uppercase tracking-widest italic">Empty Sequence</h3><p className="text-gray-400 text-[10px] mt-1 font-bold">Add slides to start.</p></div>}
                         </div>
                     )}
                 </div>

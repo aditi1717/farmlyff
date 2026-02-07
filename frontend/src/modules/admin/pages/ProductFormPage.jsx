@@ -20,7 +20,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-Quill.register('modules/imageResize', ImageResize);
+if (!Quill.imports['modules/imageResize']) {
+    Quill.register('modules/imageResize', ImageResize);
+}
 
 // Predefined Options for Dropdowns
 const NUTRITION_LABELS = ['Energy', 'Protein', 'Carbohydrates', 'Sugar', 'Fat', 'Saturated Fat', 'Fiber', 'Sodium', 'Cholesterol', 'Iron', 'Calcium', 'Vitamin C', 'Vitamin A', 'Potassium'];

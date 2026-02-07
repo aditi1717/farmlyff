@@ -4,24 +4,31 @@ import {
     ArrowLeft,
     Plus,
     Trash2,
-    Save,
     Search,
-    GripVertical
+    GripVertical,
+    X
 } from 'lucide-react';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import toast from 'react-hot-toast';
 
-// Mock storage key
-const STORAGE_KEY = 'farmlyf_homepage_sections';
+import { useFeaturedSectionByName, useUpdateFeaturedSection } from '../../../hooks/useContent';
+import { useProducts } from '../../../hooks/useProducts';
 
 const HomepageSectionPage = () => {
     const { sectionId } = useParams();
     const navigate = useNavigate();
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: sectionData, isLoading: loading } = useFeaturedSectionByName(sectionId);
+    const { data: allProducts = [] } = useProducts();
+    const updateSectionMutation = useUpdateFeaturedSection();
+
+    const [isAdding, setIsAdding] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const products = sectionData?.products || [];
 
     // Get section title based on ID
     const getSectionTitle = () => {
+        if (sectionData?.title) return sectionData.title;
         switch (sectionId) {
             case 'top-selling': return 'Top Selling Products';
             case 'new-arrivals': return 'New Arrivals';
@@ -29,39 +36,52 @@ const HomepageSectionPage = () => {
         }
     };
 
-    // Load products from local storage on mount
-    useEffect(() => {
-        const loadSectionProducts = () => {
-            const allSections = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            const sectionProducts = allSections[sectionId] || [];
-            setProducts(sectionProducts);
-            setLoading(false);
-        };
-        loadSectionProducts();
-    }, [sectionId]);
-
-    const handleRemoveProduct = (productId) => {
-        const updatedProducts = products.filter(p => p.id !== productId);
-        setProducts(updatedProducts);
-
-        // Update Local Storage
-        const allSections = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        allSections[sectionId] = updatedProducts;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allSections));
-
-        toast.success('Product removed from section');
+    const handleRemoveProduct = async (productId) => {
+        if (!sectionData) return;
+        const updatedProductIds = products
+            .filter(p => (p._id || p.id) !== productId)
+            .map(p => p._id || p.id);
+        
+        try {
+            await updateSectionMutation.mutateAsync({
+                id: sectionData._id,
+                data: { products: updatedProductIds }
+            });
+        } catch (error) {}
     };
 
-    const handleAddProducts = () => {
-        navigate('/admin/products', {
-            state: {
-                selectionMode: true,
-                sectionId: sectionId,
-                sectionTitle: getSectionTitle(),
-                preSelected: products.map(p => p.id)
-            }
-        });
+    const handleAddProduct = async (productId) => {
+        if (!sectionData) return;
+        
+        // Prevent duplicates
+        if (products.some(p => (p._id || p.id) === productId)) {
+            toast.error('Product already in section');
+            return;
+        }
+
+        const updatedProductIds = [
+            ...products.map(p => p._id || p.id),
+            productId
+        ];
+        
+        try {
+            await updateSectionMutation.mutateAsync({
+                id: sectionData._id,
+                data: { products: updatedProductIds }
+            });
+            setSearchTerm('');
+            toast.success('Product added');
+        } catch (error) {
+            toast.error('Failed to add product');
+        }
     };
+
+    const filteredSuggestions = allProducts.filter(p => {
+        const name = p.name || '';
+        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
+        const notInSection = !products.some(sp => (sp._id || sp.id) === (p._id || p.id));
+        return matchesSearch && notInSection;
+    }).slice(0, 10);
 
     return (
         <div className="space-y-6 font-['Inter'] pb-32">
@@ -82,14 +102,70 @@ const HomepageSectionPage = () => {
 
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={handleAddProducts}
-                        className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
+                        onClick={() => setIsAdding(!isAdding)}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-gray-200 ${
+                            isAdding ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'
+                        }`}
                     >
-                        <Plus size={16} />
-                        Add Products
+                        {isAdding ? <X size={16} /> : <Plus size={16} />}
+                        {isAdding ? 'Cancel' : 'Add Products'}
                     </button>
                 </div>
             </div>
+
+            {/* Inline Selection Dropdown */}
+            {isAdding && (
+                <div className="bg-white p-6 rounded-2xl border border-primary/20 shadow-xl shadow-primary/5 animate-in slide-in-from-top-2 duration-300 relative z-10">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="relative flex-1">
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Search products by name or SKU..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-gray-50 border border-transparent rounded-xl py-3 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
+                            />
+                        </div>
+                        <button 
+                            onClick={() => { setIsAdding(false); setSearchTerm(''); }}
+                            className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+                        >
+                            Done
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {filteredSuggestions.length > 0 ? (
+                            filteredSuggestions.map(product => (
+                                <button
+                                    key={product._id || product.id}
+                                    onClick={() => handleAddProduct(product._id || product.id)}
+                                    className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-primary/5 rounded-xl border border-transparent hover:border-primary/20 transition-all text-left group"
+                                >
+                                    <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 p-1 shrink-0 overflow-hidden">
+                                        <img src={product.image || product.images?.[0]?.url} className="w-full h-full object-contain" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-gray-900 text-xs truncate uppercase tracking-tight">{product.name}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-[9px] font-black text-primary/60 uppercase tracking-widest">₹{product.price}</span>
+                                            <span className="text-[9px] text-gray-400 font-mono">#{product.sku || (product._id || product.id).slice(-6)}</span>
+                                        </div>
+                                    </div>
+                                    <Plus size={14} className="text-gray-300 group-hover:text-primary transition-colors" />
+                                </button>
+                            ))
+                        ) : (
+                            <div className="col-span-full py-10 text-center text-gray-400">
+                                <Search size={24} className="mx-auto mb-2 opacity-20" />
+                                <p className="text-xs font-bold uppercase tracking-widest">No matching products found</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Content Table */}
             <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
@@ -104,7 +180,7 @@ const HomepageSectionPage = () => {
                         </AdminTableHeader>
                         <AdminTableBody>
                             {products.map((product, index) => (
-                                <AdminTableRow key={product.id} className="group">
+                                <AdminTableRow key={product._id || product.id} className="group">
                                     <AdminTableCell>
                                         <div className="text-gray-300 cursor-move group-hover:text-gray-500">
                                             <GripVertical size={16} />
@@ -117,12 +193,12 @@ const HomepageSectionPage = () => {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
-                                                <p className="text-xs text-gray-500 font-mono">{product.sku || product.id}</p>
+                                                <p className="text-xs text-gray-500 font-mono">{product.sku || product._id || product.id}</p>
                                             </div>
                                         </div>
                                     </AdminTableCell>
                                     <AdminTableCell>
-                                        <span className="text-sm text-gray-600">{product.category}</span>
+                                        <span className="text-sm text-gray-600">{product.category && typeof product.category === 'object' ? product.category.name : product.category}</span>
                                     </AdminTableCell>
                                     <AdminTableCell>
                                         <span className="text-sm font-bold text-gray-900">
@@ -131,7 +207,7 @@ const HomepageSectionPage = () => {
                                     </AdminTableCell>
                                     <AdminTableCell className="text-right">
                                         <button
-                                            onClick={() => handleRemoveProduct(product.id)}
+                                            onClick={() => handleRemoveProduct(product._id || product.id)}
                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                         >
                                             <Trash2 size={16} />

@@ -1,34 +1,31 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Truck, Wallet, ShieldCheck, Trophy } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { Truck, Wallet, ShieldCheck, Trophy, Star, Clock, Gift, Headset } from 'lucide-react';
+import { useTrustSignals } from '../../../hooks/useContent';
 
 const WhyChooseUs = () => {
-    const features = [
-        {
-            icon: Truck,
-            title: 'Free Shipping On',
-            subtitle: 'Orders Above ₹1499',
-            delay: 0.1
-        },
-        {
-            icon: Wallet,
-            title: 'Pay',
-            subtitle: 'On Delivery',
-            delay: 0.2
-        },
-        {
-            icon: ShieldCheck,
-            title: '100% Quality',
-            subtitle: 'Guaranteed',
-            delay: 0.3
-        },
-        {
-            icon: Trophy,
-            title: 'Reward Points',
-            subtitle: 'On Every Purchase',
-            delay: 0.4
+    const { data: allFeatures = [] } = useTrustSignals();
+
+    // Logging to help debug "not reflecting" issue
+    React.useEffect(() => {
+        if (allFeatures.length > 0) {
+            console.log('Homepage Trust Signals Data:', allFeatures);
         }
-    ];
+    }, [allFeatures]);
+
+    const features = allFeatures.filter(f => f.isActive !== false).map((f, index) => {
+        const IconComponent = LucideIcons[f.icon] || Star;
+        return {
+            ...f,
+            icon: IconComponent,
+            title: f.topText,
+            subtitle: f.bottomText,
+            delay: (index + 1) * 0.1
+        };
+    });
+
+    if (features.length === 0) return null;
 
     return (
         <section className="bg-white py-4 md:py-6 px-4 md:px-12 relative overflow-hidden">

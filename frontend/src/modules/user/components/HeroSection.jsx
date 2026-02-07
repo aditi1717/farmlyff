@@ -7,10 +7,26 @@ import logo from '../../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
-    // const { getBannersBySection } = useShop();
-    const banners = useBannersBySection('hero');
-    const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
+    const rawBanners = useBannersBySection('hero');
+    
+    // Flatten banners that have multiple slides
+    const banners = React.useMemo(() => {
+        return rawBanners.flatMap(b => {
+            if (b.slides && b.slides.length > 0) {
+                return b.slides.map(s => ({
+                    ...b,
+                    image: s.image,
+                    publicId: s.publicId,
+                    link: s.link || b.link,
+                    ctaText: s.ctaText || b.ctaText
+                }));
+            }
+            return [b];
+        });
+    }, [rawBanners]);
+
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     const [promoSettings, setPromoSettings] = useState({
         badgeText1: 'Upto',

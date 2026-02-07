@@ -114,3 +114,157 @@ export const useBannersBySection = (section) => {
     const { data: banners = [] } = useBanners();
     return banners.filter(b => (b.section || 'hero') === section && b.isActive !== false);
 };
+
+// Generic CRUD Factory for Homepage Sections
+const createCRUDHooks = (queryKey, path) => {
+    return {
+        useData: () => useQuery({
+            queryKey: [queryKey],
+            queryFn: async () => {
+                const res = await fetch(`${API_URL}/${path}`, { credentials: 'include' });
+                if (!res.ok) throw new Error(`Failed to fetch ${queryKey}`);
+                return res.json();
+            }
+        }),
+        useAdd: () => {
+            const queryClient = useQueryClient();
+            return useMutation({
+                mutationFn: async (data) => {
+                    const res = await fetch(`${API_URL}/${path}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'include'
+                    });
+                    if (!res.ok) throw new Error(`Failed to add ${queryKey}`);
+                    return res.json();
+                },
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: [queryKey] });
+                    toast.success(`${queryKey} added!`);
+                },
+                onError: (err) => toast.error(err.message)
+            });
+        },
+        useUpdate: () => {
+            const queryClient = useQueryClient();
+            return useMutation({
+                mutationFn: async ({ id, data }) => {
+                    const res = await fetch(`${API_URL}/${path}/${id || ''}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'include'
+                    });
+                    if (!res.ok) throw new Error(`Failed to update ${queryKey}`);
+                    return res.json();
+                },
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: [queryKey] });
+                    toast.success(`${queryKey} updated!`);
+                },
+                onError: (err) => toast.error(err.message)
+            });
+        },
+        useDelete: () => {
+            const queryClient = useQueryClient();
+            return useMutation({
+                mutationFn: async (id) => {
+                    const res = await fetch(`${API_URL}/${path}/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    if (!res.ok) throw new Error(`Failed to delete ${queryKey}`);
+                    return res.json();
+                },
+                onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: [queryKey] });
+                    toast.success(`${queryKey} deleted!`);
+                },
+                onError: (err) => toast.error(err.message)
+            });
+        }
+    };
+};
+
+const announcements = createCRUDHooks('announcements', 'announcements');
+export const useAnnouncements = announcements.useData;
+export const useAddAnnouncement = announcements.useAdd;
+export const useUpdateAnnouncement = announcements.useUpdate;
+export const useDeleteAnnouncement = announcements.useDelete;
+
+const featuredSections = createCRUDHooks('featured-sections', 'featured-sections');
+export const useFeaturedSections = featuredSections.useData;
+export const useAddFeaturedSection = featuredSections.useAdd;
+export const useUpdateFeaturedSection = featuredSections.useUpdate;
+export const useDeleteFeaturedSection = featuredSections.useDelete;
+
+export const useFeaturedSectionByName = (name) => {
+    return useQuery({
+        queryKey: ['featured-sections', name],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/featured-sections/${name}`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Failed to fetch featured section ${name}`);
+            return res.json();
+        },
+        enabled: !!name,
+    });
+};
+
+const trustSignals = createCRUDHooks('trust-signals', 'trust-signals');
+export const useTrustSignals = trustSignals.useData;
+export const useAddTrustSignal = trustSignals.useAdd;
+export const useUpdateTrustSignal = trustSignals.useUpdate;
+export const useDeleteTrustSignal = trustSignals.useDelete;
+
+const aboutSection = createCRUDHooks('about-section', 'about-section');
+export const useAboutSection = aboutSection.useData;
+export const useUpdateAboutSectionInfo = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ data }) => {
+            const res = await fetch(`${API_URL}/about-section`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error(`Failed to update about-section`);
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['about-section'] });
+            toast.success(`About section updated!`);
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+const healthBenefits = createCRUDHooks('health-benefits', 'health-benefits');
+export const useHealthBenefits = healthBenefits.useData;
+export const useUpdateHealthBenefitSection = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ data }) => {
+            const res = await fetch(`${API_URL}/health-benefits`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error(`Failed to update health-benefits`);
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['health-benefits'] });
+            toast.success(`Health benefits updated!`);
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
+
+const faqs = createCRUDHooks('faqs', 'faqs');
+export const useFAQs = faqs.useData;
+export const useAddFAQ = faqs.useAdd;
+export const useUpdateFAQ = faqs.useUpdate;
+export const useDeleteFAQ = faqs.useDelete;

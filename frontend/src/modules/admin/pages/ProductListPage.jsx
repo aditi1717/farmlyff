@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-// import { useProducts, useCategories, useDeleteProduct } from '../../../hooks/useProducts'; // API Hooks disabled
+import { useProducts, useDeleteProduct } from '../../../hooks/useProducts';
+import { useUpdateFeaturedSection } from '../../../hooks/useContent';
 import { useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
@@ -73,22 +74,16 @@ const DUMMY_PRODUCTS = [
 const ProductListPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    // const { data: products = [] } = useProducts(); // API disabled
-    const products = DUMMY_PRODUCTS; // using dummy data
+    const { data: products = [] } = useProducts();
     const queryClient = useQueryClient();
+    const updateSectionMutation = useUpdateFeaturedSection();
+    const deleteProductMutation = useDeleteProduct();
 
     // Check if we are in Selection Mode (e.g. for Homepage Sections)
     const selectionMode = location.state?.selectionMode;
     const targetSectionId = location.state?.sectionId;
     const targetSectionTitle = location.state?.sectionTitle;
-
-    // Mock Delete Mutation
-    const deleteProductMutation = {
-        mutate: (id) => {
-            toast.success('Product deleted (Mock)');
-            // In real app, this would update the list. For mock, we can't easily update the constant.
-        }
-    };
+    const dbSectionId = location.state?.dbSectionId;
 
     const handleDelete = (id) => {
         if (window.confirm('Delete this product?')) {
@@ -121,7 +116,7 @@ const ProductListPage = () => {
     // Checkbox Logic
     const toggleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedProducts(paginatedProducts.map(p => p.id));
+            setSelectedProducts(paginatedProducts.map(p => p._id));
         } else {
             setSelectedProducts([]);
         }
@@ -133,26 +128,21 @@ const ProductListPage = () => {
         );
     };
 
-    const handleConfirmSelection = () => {
-        // Find full product objects for selected IDs
-        const selectedObjects = products.filter(p => selectedProducts.includes(p.id))
-            .map(p => ({
-                id: p.id,
-                name: p.name,
-                sku: p.variants?.[0]?.sku || p.id,
-                price: p.variants?.[0]?.price,
-                image: p.image,
-                category: p.category
-            }));
+    const handleConfirmSelection = async () => {
+        if (!dbSectionId) {
+            toast.error('Missing target section ID');
+            return;
+        }
 
-        // Save to Local Storage (Mock Backend)
-        const STORAGE_KEY = 'farmlyf_homepage_sections';
-        const allSections = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        allSections[targetSectionId] = selectedObjects;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allSections));
-
-        toast.success(`Updated ${targetSectionTitle}`);
-        navigate(-1);
+        try {
+            await updateSectionMutation.mutateAsync({
+                id: dbSectionId,
+                data: { products: selectedProducts }
+            });
+            navigate(-1);
+        } catch (error) {
+            toast.error('Failed to update section');
+        }
     };
 
     const getPriceRange = (variants) => {
@@ -180,15 +170,16 @@ const ProductListPage = () => {
                 const matchesSearch =
                     product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    product.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    product.subcategory?.toLowerCase().includes(searchTerm.toLowerCase());
+                    String(product._id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (typeof product.category === 'string' ? product.category : product.category?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.subcategory?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-                const matchesCategory = filterCategory === 'All' || product.category === filterCategory;
+                const matchesCategory = filterCategory === 'All' || 
+                    (typeof product.category === 'string' ? product.category === filterCategory : product.category?.name === filterCategory);
 
                 return matchesSearch && matchesCategory;
             })
-            .sort((a, b) => (b.id?.localeCompare(a.id) || 0)); // Assuming higher ID is newer
+            .sort((a, b) => (String(b._id || '').localeCompare(String(a._id || '')) || 0)); // Assuming higher ID is newer
     }, [products, searchTerm, filterCategory]);
 
     const suggestions = useMemo(() => {
@@ -208,7 +199,7 @@ const ProductListPage = () => {
 
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-    const categories = ['All', ...new Set(products.map(p => p.category))];
+    const categories = ['All', ...new Set(products.map(p => typeof p.category === 'string' ? p.category : p.category?.name).filter(Boolean))];
 
     const getStockStatus = (variants) => {
         if (!variants || variants.length === 0) return { label: 'No Variants', color: 'text-gray-400 bg-gray-50' };
@@ -368,17 +359,17 @@ const ProductListPage = () => {
                     <AdminTableBody>
                         {paginatedProducts.map((product) => {
                             const status = getStockStatus(product.variants);
-                            const isExpanded = expandedProductId === product.id;
-                            const isSelected = selectedProducts.includes(product.id);
+                            const isExpanded = expandedProductId === product._id;
+                            const isSelected = selectedProducts.includes(product._id);
 
                             return (
-                                <React.Fragment key={product.id}>
+                                <React.Fragment key={product._id}>
                                     <AdminTableRow
                                         className={`${isExpanded ? 'bg-gray-50' : ''} ${isSelected ? 'bg-green-50/30' : ''}`}
-                                        onClick={() => toggleExpand(product.id)}
+                                        onClick={() => toggleExpand(product._id)}
                                     >
                                         <AdminTableCell onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => toggleExpand(product.id)} className="p-1.5 text-gray-400 hover:text-primary transition-colors">
+                                            <button onClick={() => toggleExpand(product._id)} className="p-1.5 text-gray-400 hover:text-primary transition-colors">
                                                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </button>
                                         </AdminTableCell>
@@ -386,18 +377,18 @@ const ProductListPage = () => {
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
-                                                onChange={() => toggleSelectProduct(product.id)}
+                                                onChange={() => toggleSelectProduct(product._id)}
                                                 className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                                             />
                                         </AdminTableCell>
                                         <AdminTableCell className="cursor-pointer">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
-                                                    <img src={product.image} alt="" className="w-full h-full object-contain" />
+                                                    <img src={product.image || product.images?.[0]?.url} alt="" className="w-full h-full object-contain" />
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-gray-900 text-sm line-clamp-1">
-                                                        {product.name?.replace(/Farmlyf( Premium)?/gi, '').trim()}
+                                                        {product.name}
                                                     </p>
                                                     {product.brand?.replace(/Farmlyf( Premium)?/gi, '').trim() && (
                                                         <p className="text-xs text-gray-500">{product.brand?.replace(/Farmlyf( Premium)?/gi, '').trim()}</p>
@@ -412,8 +403,8 @@ const ProductListPage = () => {
                                         </AdminTableCell>
                                         <AdminTableCell>
                                             <div className="flex flex-col">
-                                                <span className="text-sm text-gray-700">{product.category}</span>
-                                                <span className="text-xs text-gray-400">{product.subcategory || '-'}</span>
+                                                <span className="text-sm text-gray-700">{typeof product.category === 'string' ? product.category : product.category?.name}</span>
+                                                <span className="text-xs text-gray-400">{product.subcategory?.name || '-'}</span>
                                             </div>
                                         </AdminTableCell>
                                         <AdminTableCell>
@@ -441,14 +432,14 @@ const ProductListPage = () => {
                                         <AdminTableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                                                    onClick={() => navigate(`/admin/products/edit/${product._id}`)}
                                                     className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(product.id)}
+                                                    onClick={() => handleDelete(product._id)}
                                                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                     title="Delete"
                                                 >

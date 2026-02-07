@@ -140,15 +140,14 @@ function App() {
                 <Route path="inventory/history" element={<StockHistoryPage />} />
                 <Route path="inventory/alerts" element={<LowStockAlertsPage />} />
                 <Route path="inventory/reports" element={<InventoryReportsPage />} />
-                <Route path="sections/top-selling" element={<HomepageSectionPage />} />
                 <Route path="sections/why-choose-us" element={<WhyChooseUsPage />} />
                 <Route path="sections/about-us" element={<AboutSectionPage />} />
                 <Route path="sections/health-benefits" element={<HealthBenefitsSectionPage />} />
+                <Route path="sections/:sectionId" element={<HomepageSectionPage />} />
                 <Route path="manage-faq" element={<FAQSectionPage />} />
                 <Route path="manage-header" element={<HeaderAnnouncementPage />} />
                 <Route path="manage-footer" element={<FooterManagerPage />} />
                 <Route path="pages/:pageId" element={<StaticPageEditor />} />
-                <Route path="sections/:sectionId" element={<HomepageSectionPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="notifications" element={<PushNotificationPage />} />
                 <Route path="reviews" element={<AdminReviewsPage />} />

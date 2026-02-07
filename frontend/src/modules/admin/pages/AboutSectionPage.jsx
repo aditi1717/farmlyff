@@ -25,34 +25,41 @@ const DEFAULT_DATA = {
     ]
 };
 
+import { useAboutSection, useUpdateAboutSectionInfo } from '../../../hooks/useContent';
+
 const AboutSectionPage = () => {
     const navigate = useNavigate();
+    const { data: aboutData, isLoading: loading } = useAboutSection();
+    const updateAboutMutation = useUpdateAboutSectionInfo();
     const [formData, setFormData] = useState(DEFAULT_DATA);
-    const [loading, setLoading] = useState(true);
 
-    // Load from local storage
+    // Sync formData with fetched data
     useEffect(() => {
-        const savedData = localStorage.getItem('farmlyf_about_section');
-        if (savedData) {
-            setFormData(JSON.parse(savedData));
+        if (aboutData && Object.keys(aboutData).length > 0) {
+            setFormData({
+                ...DEFAULT_DATA,
+                ...aboutData,
+                stats: aboutData.stats || DEFAULT_DATA.stats
+            });
         }
-        setLoading(false);
-    }, []);
+    }, [aboutData]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleStatChange = (id, field, value) => {
-        const newStats = formData.stats.map(stat =>
-            stat.id === id ? { ...stat, [field]: value } : stat
-        );
+        const newStats = formData.stats.map(stat => {
+            const isMatch = (stat._id && stat._id === id) || (stat.id && stat.id === id);
+            return isMatch ? { ...stat, [field]: value } : stat;
+        });
         setFormData(prev => ({ ...prev, stats: newStats }));
     };
 
-    const handleSave = () => {
-        localStorage.setItem('farmlyf_about_section', JSON.stringify(formData));
-        toast.success('About section updated successfully!');
+    const handleSave = async () => {
+        try {
+            await updateAboutMutation.mutateAsync({ data: formData });
+        } catch (error) {}
     };
 
     const handleReset = () => {

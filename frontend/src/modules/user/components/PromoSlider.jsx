@@ -8,8 +8,24 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBannersBySection } from '../../../hooks/useContent';
 
 const PromoSlider = () => {
-    // const { getBannersBySection } = useShop();
-    const banners = useBannersBySection('promo');
+    const rawBanners = useBannersBySection('promo');
+
+    // Flatten banners that have multiple slides
+    const banners = React.useMemo(() => {
+        return rawBanners.flatMap(b => {
+            if (b.slides && b.slides.length > 0) {
+                return b.slides.map(s => ({
+                    ...b,
+                    image: s.image,
+                    publicId: s.publicId,
+                    link: s.link || b.link,
+                    ctaText: s.ctaText || b.ctaText
+                }));
+            }
+            return [b];
+        });
+    }, [rawBanners]);
+
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
@@ -82,9 +98,13 @@ const PromoSlider = () => {
                                 initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay: 0.6 }}
+                                onClick={() => {
+                                    const slide = banners[currentIndex];
+                                    if (slide.link) window.location.href = slide.link;
+                                }}
                                 className="pointer-events-auto bg-primary hover:bg-primaryHover text-white font-bold text-[9px] md:text-sm uppercase tracking-widest px-4 py-2 md:px-6 md:py-3 rounded-full transition-all shadow-xl active:scale-95 w-fit flex items-center gap-2 group/btn"
                             >
-                                Explore Collection
+                                {banners[currentIndex].ctaText || 'Explore Collection'}
                                 <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center group-hover/btn:translate-x-1 transition-transform">
                                     <ChevronRight size={12} />
                                 </div>
