@@ -5,10 +5,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import {
     ArrowLeft, Package, MapPin, Phone, CreditCard,
-    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle
+    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useOrders, useReturns, useUpdateOrderStatus } from '../../../hooks/useOrders'; // Added imports
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const OrderDetailPage = () => {
     const { orderId } = useParams();
@@ -22,6 +24,8 @@ const OrderDetailPage = () => {
     
     const [order, setOrder] = useState(null);
     const [availableItemsCount, setAvailableItemsCount] = useState(0);
+    const [liveTracking, setLiveTracking] = useState(null);
+    const [trackingLoading, setTrackingLoading] = useState(false);
 
     useEffect(() => {
         if (orders.length > 0 && orderId) {
@@ -41,6 +45,34 @@ const OrderDetailPage = () => {
             }
         }
     }, [orders, returns, orderId]);
+
+    // Fetch live tracking from Shiprocket
+    useEffect(() => {
+        const fetchLiveTracking = async () => {
+            if (!order?.awbCode) return; // Only fetch if AWB is assigned
+            
+            setTrackingLoading(true);
+            try {
+                const response = await fetch(`${API_URL}/orders/${order.id}/tracking`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setLiveTracking(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch live tracking:', error);
+            } finally {
+                setTrackingLoading(false);
+            }
+        };
+
+        fetchLiveTracking();
+    }, [order?.awbCode, order?.id]);
 
     const updateOrderStatus = (uid, oid, status) => {
         updateStatus({ userId: uid, orderId: oid, status });
@@ -107,15 +139,36 @@ const OrderDetailPage = () => {
                                         <Truck size={24} strokeWidth={2.5} />
                                     </div>
                                     <div>
-                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Tracking Info</p>
-                                        <p className="text-sm font-bold text-footerBg">{order.trackingId}</p>
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">
+                                            {order.awbCode ? 'AWB / Tracking ID' : 'Order Status'}
+                                        </p>
+                                        <p className="text-sm font-bold text-footerBg">
+                                            {order.awbCode || order.status || 'Processing'}
+                                        </p>
+                                        {order.courierName && (
+                                            <p className="text-[10px] text-gray-400">via {order.courierName}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="sm:text-right">
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Estimated Delivery</p>
-                                    <p className="text-xs font-bold text-footerBg">
-                                        {new Date(order.estimatedDelivery).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                    </p>
+                                    {order.awbCode && (
+                                        <a 
+                                            href={`https://www.shiprocket.co/tracking/${order.awbCode}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline mb-1"
+                                        >
+                                            Track on Courier <ExternalLink size={10} />
+                                        </a>
+                                    )}
+                                    {order.estimatedDelivery && (
+                                        <>
+                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Estimated Delivery</p>
+                                            <p className="text-xs font-bold text-footerBg">
+                                                {new Date(order.estimatedDelivery).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -166,6 +219,42 @@ const OrderDetailPage = () => {
                                     })}
                                 </div>
                             </div>
+
+                            {/* Live Tracking Activities from Shiprocket */}
+                            {(liveTracking?.tracking || trackingLoading) && (
+                                <div className="p-5 md:p-8 border-t border-gray-50">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Clock size={12} /> Live Tracking Activity
+                                        </h3>
+                                        {trackingLoading && (
+                                            <RefreshCw size={12} className="animate-spin text-gray-400" />
+                                        )}
+                                    </div>
+                                    {liveTracking?.tracking?.tracking_data?.shipment_track_activities && (
+                                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                                            {liveTracking.tracking.tracking_data.shipment_track_activities.map((activity, idx) => (
+                                                <div key={idx} className="flex gap-3 items-start">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs font-bold text-footerBg">{activity.activity}</p>
+                                                        <p className="text-[10px] text-gray-400">{activity.location}</p>
+                                                        <p className="text-[9px] text-gray-300 mt-0.5">
+                                                            {new Date(activity.date).toLocaleString('en-US', {
+                                                                month: 'short', day: 'numeric', 
+                                                                hour: '2-digit', minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {!liveTracking?.tracking?.tracking_data?.shipment_track_activities && !trackingLoading && (
+                                        <p className="text-xs text-gray-400">Tracking activities will appear once shipment is picked up.</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Product Items List (Compact) */}
