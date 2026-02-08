@@ -7,7 +7,7 @@ import { useActiveCoupons } from '../../../hooks/useCoupons';
 const OffersPage = () => {
     // const { getActiveCoupons } = useShop();
     const navigate = useNavigate();
-    const activeCoupons = useActiveCoupons(); // Hook usage
+    const { data: activeCoupons = [] } = useActiveCoupons(); // Hook usage
     const [copiedId, setCopiedId] = useState(null);
 
     const handleCopy = (code, id) => {

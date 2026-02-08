@@ -3,7 +3,7 @@ import { Plus, Star, Trash2, CheckCircle, XCircle, Loader, Search, Clock, User, 
 import toast, { Toaster } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
-import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview } from '../../../hooks/useContent';
+import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview, useAllUserReviews, useUpdateReviewStatus } from '../../../hooks/useContent';
 
 const AdminReviewsPage = () => {
     const location = useLocation();
@@ -20,23 +20,11 @@ const AdminReviewsPage = () => {
 
     // API Hooks
     const { data: adminReviews = [], isLoading: isLoadingAdmin } = useAdminReviews();
+    const { data: userReviews = [], isLoading: isLoadingUser } = useAllUserReviews();
     const addAdminReviewMutation = useAddAdminReview();
     const updateAdminReviewMutation = useUpdateAdminReview();
     const deleteAdminReviewMutation = useDeleteAdminReview();
-
-    // Initial Dummy Data for User Reviews (Customer Feedback)
-    const [userReviews, setUserReviews] = useState([
-        {
-            _id: 'd1',
-            product: { name: 'Premium Almonds', image: 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png', _id: 'PRD001' },
-            user: { name: 'Rahul Sharma' },
-            title: 'Very Fresh Product',
-            comment: 'Perfect crunch and very fresh. I use it daily for my breakfast protein bowl. Highly recommended!',
-            rating: 5,
-            status: 'Pending',
-            createdAt: new Date().toISOString()
-        }
-    ]);
+    const updateStatusMutation = useUpdateReviewStatus();
 
     // Form states
     const [formData, setFormData] = useState({
@@ -119,12 +107,12 @@ const AdminReviewsPage = () => {
 
     const handleDelete = (id) => {
         if (window.confirm('Delete this review permanently?')) {
-            if (activeTab === 'user') {
-                setUserReviews(userReviews.filter(r => r._id !== id));
-            } else {
-                deleteAdminReviewMutation.mutate(id);
-            }
+            deleteAdminReviewMutation.mutate(id);
         }
+    };
+
+    const handleStatusUpdate = (id, status) => {
+        updateStatusMutation.mutate({ id, status });
     };
 
     const handleView = (review) => {
@@ -135,7 +123,7 @@ const AdminReviewsPage = () => {
     const handleOpenEdit = (review) => {
         setSelectedReview(review);
         setFormData({
-            name: activeTab === 'user' ? review.user.name : review.name,
+            name: activeTab === 'user' ? review.user?.name : review.name,
             title: review.title || '',
             comment: review.comment,
             image: review.image || '',
@@ -265,7 +253,12 @@ const AdminReviewsPage = () => {
 
             {/* Table Area */}
             <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-                {filteredReviews.length === 0 ? (
+                {(isLoadingAdmin || isLoadingUser) ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-center">
+                        <Loader size={32} className="text-primary animate-spin mb-2" />
+                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-black">Fetching Reviews...</p>
+                    </div>
+                ) : filteredReviews.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center">
                         <MessageCircle size={32} className="text-gray-200 mb-2" />
                         <h3 className="text-gray-900 font-bold uppercase tracking-widest text-[10px]">No Matching Reviews Found</h3>
@@ -317,6 +310,24 @@ const AdminReviewsPage = () => {
                                     </AdminTableCell>
                                     <AdminTableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            {activeTab === 'user' && review.status === 'Pending' && (
+                                                <>
+                                                    <button 
+                                                        onClick={() => handleStatusUpdate(review._id, 'Approved')} 
+                                                        className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" 
+                                                        title="Approve"
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleStatusUpdate(review._id, 'Rejected')} 
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all" 
+                                                        title="Reject"
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </>
+                                            )}
                                             <button onClick={() => handleView(review)} className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all" title="View"><Eye size={16} /></button>
                                             <button onClick={() => handleOpenEdit(review)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Edit"><Edit3 size={16} /></button>
                                             <button onClick={() => handleDelete(review._id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete"><Trash2 size={16} /></button>
@@ -354,7 +365,25 @@ const AdminReviewsPage = () => {
                                 </div>
                             )}
                         </div>
-                        <button onClick={() => setShowViewModal(false)} className="w-full bg-[#2c5336] text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest">Close</button>
+                        <div className="flex gap-3">
+                            {activeTab === 'user' && selectedReview.status === 'Pending' && (
+                                <>
+                                    <button 
+                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Approved'); setShowViewModal(false); }} 
+                                        className="flex-1 bg-emerald-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
+                                    >
+                                        Approve
+                                    </button>
+                                    <button 
+                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Rejected'); setShowViewModal(false); }} 
+                                        className="flex-1 bg-red-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                                    >
+                                        Reject
+                                    </button>
+                                </>
+                            )}
+                            <button onClick={() => setShowViewModal(false)} className={`flex-1 ${activeTab === 'user' && selectedReview.status === 'Pending' ? 'bg-gray-100 text-gray-400' : 'bg-[#2c5336] text-white'} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest`}>Close</button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -14,7 +14,7 @@ import { useProducts } from '../../../hooks/useProducts';
 import { useUserProfile } from '../../../hooks/useUser';
 import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
-import { useReferrals } from '../../../hooks/useReferrals';
+import { useValidateReferral } from '../../../hooks/useReferrals';
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -27,9 +27,9 @@ const CheckoutPage = () => {
 
     // Data
     const { data: products = [] } = useProducts();
-    const activeCoupons = useActiveCoupons();
+    const { data: activeCoupons = [] } = useActiveCoupons();
     const { data: userData } = useUserProfile();
-    const { data: allReferrals = [] } = useReferrals();
+    const { mutateAsync: validateReferralMutate } = useValidateReferral();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
     const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();
 
@@ -71,29 +71,8 @@ const CheckoutPage = () => {
             return { valid: true, coupon, discount };
         }
 
-        // Then check referrals (as backup)
-        const referral = allReferrals.find(r => r.code === code && r.active);
-        if (referral) {
-            // Check expiry if exists
-            if (referral.validTo && new Date(referral.validTo) < new Date()) {
-                return { valid: false, error: 'Referral code has expired' };
-            }
-
-            let discount = 0;
-            if (referral.type === 'percentage') {
-                discount = Math.round((orderValue * referral.value) / 100);
-            } else {
-                discount = referral.value;
-            }
-            // Return in same format as coupon for UI compatibility
-            return { 
-                valid: true, 
-                coupon: { ...referral, type: referral.type === 'percentage' ? 'percent' : 'fixed' }, 
-                discount 
-            };
-        }
-
-        return { valid: false, error: 'Invalid Coupon or Referral Code' };
+        // If not a coupon, return null to trigger API check
+        return null;
     };
 
     const recordCouponUsage = (userId, couponId) => {
@@ -226,7 +205,13 @@ const CheckoutPage = () => {
     useEffect(() => {
         if (appliedCoupon) {
             const result = validateCoupon(user?.id, appliedCoupon.code, subtotal, enrichedCart);
-            if (result.valid) {
+            // Only validate if it's a standard coupon (not null)
+            // If null, it's a referral code validated via API, so skip
+            if (result === null) {
+                // This is a referral code, keep it as is
+                return;
+            }
+            if (result && result.valid) {
                 setCouponDiscount(result.discount);
             } else {
                 setAppliedCoupon(null);
@@ -293,18 +278,44 @@ const CheckoutPage = () => {
             return;
         }
 
+        // First try validating as a coupon
         const result = await validateCoupon(user?.id, couponCode, subtotal, enrichedCart);
 
-        if (result.valid) {
+        if (result && result.valid) {
+            // Valid coupon
             setAppliedCoupon(result.coupon);
             setCouponDiscount(result.discount);
             setCouponError('');
             applyCoupon(user?.id, result.coupon);
         } else {
-            setCouponError(result.error);
-            setAppliedCoupon(null);
-            setCouponDiscount(0);
-            removeCoupon(user?.id);
+            // Not a valid coupon, try as referral code via API
+            try {
+                const referralData = await validateReferralMutate(couponCode);
+                
+                // Calculate discount based on referral
+                let discount = 0;
+                if (referralData.type === 'percentage') {
+                    discount = Math.round((subtotal * referralData.value) / 100);
+                } else {
+                    discount = referralData.value;
+                }
+
+                // Convert to coupon format for UI
+                const referralAsCoupon = {
+                    ...referralData,
+                    type: referralData.type === 'percentage' ? 'percent' : 'fixed'
+                };
+
+                setAppliedCoupon(referralAsCoupon);
+                setCouponDiscount(discount);
+                setCouponError('');
+                applyCoupon(user?.id, referralAsCoupon);
+            } catch (error) {
+                // Neither coupon nor referral
+                setCouponError(result?.error || 'Invalid Coupon or Referral Code');
+                setAppliedCoupon(null);
+                setCouponDiscount(0);
+            }
         }
     };
 
@@ -565,7 +576,7 @@ const CheckoutPage = () => {
                         <div className="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
                             <h3 className="text-lg md:text-xl font-bold text-footerBg mb-4 md:mb-6 flex items-center gap-2">
                                 <Tag size={18} className="text-primary" />
-                                Apply Coupon
+                                Apply Coupon / Referral
                             </h3>
 
                             {!appliedCoupon ? (
@@ -573,7 +584,7 @@ const CheckoutPage = () => {
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
-                                            placeholder="Coupon Code"
+                                            placeholder="Coupon or Referral Code"
                                             value={couponCode}
                                             onChange={(e) => {
                                                 setCouponCode(e.target.value.toUpperCase());
@@ -597,6 +608,11 @@ const CheckoutPage = () => {
                                         <Tag size={12} />
                                         View All Coupons ({availableCoupons.length})
                                     </button>
+                                    {couponError && (
+                                        <p className="text-red-500 text-[10px] md:text-xs font-bold mt-1 animate-pulse">
+                                            {couponError}
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 md:p-4 flex items-center justify-between">
@@ -612,9 +628,9 @@ const CheckoutPage = () => {
                                     <button
                                         type="button"
                                         onClick={handleRemoveCoupon}
-                                        className="text-gray-300 hover:text-red-500 p-1 transition-colors"
+                                        className="text-[10px] md:text-xs font-bold text-red-500 hover:text-red-600 hover:underline uppercase tracking-wide px-2 py-1"
                                     >
-                                        <X size={16} />
+                                        Remove
                                     </button>
                                 </div>
                             )}

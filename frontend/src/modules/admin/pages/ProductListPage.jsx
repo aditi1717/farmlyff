@@ -27,49 +27,6 @@ import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
-// Dummy Products Data
-const DUMMY_PRODUCTS = [
-    {
-        id: 'PROD_001',
-        name: 'Premium California Almonds',
-        brand: 'FarmLyf Premium',
-        category: 'Nuts',
-        subcategory: 'Almonds',
-        image: 'https://placehold.co/100x100/png',
-        variants: [
-            { id: 'v1', weight: '250g', price: 350, mrp: 450, stock: 50 },
-            { id: 'v2', weight: '500g', price: 650, mrp: 850, stock: 30 }
-        ],
-        rating: 4.8,
-        createdAt: '2024-01-15T10:00:00Z'
-    },
-    {
-        id: 'PROD_002',
-        name: 'Organic Cashew Nuts (W320)',
-        brand: 'FarmLyf Organics',
-        category: 'Nuts',
-        subcategory: 'Cashews',
-        image: 'https://placehold.co/100x100/png',
-        variants: [
-            { id: 'v3', weight: '250g', price: 400, mrp: 500, stock: 20 }
-        ],
-        rating: 4.6,
-        createdAt: '2024-01-18T12:00:00Z'
-    },
-    {
-        id: 'PROD_003',
-        name: 'Afghan Black Raisins',
-        brand: 'FarmLyf Imports',
-        category: 'Dried Fruits',
-        subcategory: 'Raisins',
-        image: 'https://placehold.co/100x100/png',
-        variants: [
-            { id: 'v4', weight: '1kg', price: 1200, mrp: 1500, stock: 0 }
-        ],
-        rating: 4.2,
-        createdAt: '2024-01-20T09:30:00Z'
-    }
-];
 
 const ProductListPage = () => {
     const navigate = useNavigate();
@@ -384,7 +341,7 @@ const ProductListPage = () => {
                                         <AdminTableCell className="cursor-pointer">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
-                                                    <img src={product.image || product.images?.[0]?.url} alt="" className="w-full h-full object-contain" />
+                                                    <img src={product.image || (typeof product.images?.[0] === 'string' ? product.images[0] : product.images?.[0]?.url)} alt="" className="w-full h-full object-contain" />
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-gray-900 text-sm line-clamp-1">

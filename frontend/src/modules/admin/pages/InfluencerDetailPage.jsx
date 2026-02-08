@@ -5,46 +5,19 @@ import {
     TrendingUp, Award, Download, Filter, Search, Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useReferral, useAddPayout } from '../../../hooks/useReferrals';
+import { useReferral, useAddPayout, useReferralOrders } from '../../../hooks/useReferrals';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const InfluencerDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: influencer, isLoading, isError } = useReferral(id);
+    const { data: orders = [], isLoading: ordersLoading } = useReferralOrders(id);
     const addPayoutMutation = useAddPayout();
 
     const [isAddingPayout, setIsAddingPayout] = useState(false);
     const [payoutAmount, setPayoutAmount] = useState('');
-    const [usageHistory, setUsageHistory] = useState([]);
 
-    useEffect(() => {
-        if (influencer) {
-            // If the influencer has usage, we can generate some mock usage history 
-            // since we don't have a specific orders endpoint for this yet.
-            // But we'll base the length on the actual usageCount.
-            const realUsageCount = influencer.usageCount || 0;
-            const historyLength = Math.min(realUsageCount, 10); // Show up to 10 latest
-
-            const history = Array.from({ length: historyLength }).map((_, i) => {
-                const amount = Math.floor(Math.random() * 5000) + 500;
-                const discount = influencer.type === 'percentage' 
-                    ? amount * (influencer.value / 100) 
-                    : influencer.value;
-                const netAmount = Math.max(0, amount - discount);
-                
-                return {
-                    id: i + 1,
-                    user: `Customer ${Math.floor(Math.random() * 1000) + 1}`,
-                    date: new Date(Date.now() - (i * 86400000)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-                    orderId: `#ORD-${Math.floor(Math.random() * 90000) + 10000}`,
-                    amount: amount,
-                    commission: Math.floor(netAmount * (influencer.commissionRate / 100))
-                };
-            });
-            setUsageHistory(history);
-        }
-    }, [id, influencer]);
 
     if (isLoading) return <div className="p-10 text-center font-black animate-pulse uppercase tracking-widest text-gray-400">Loading Performance Data...</div>;
     if (!influencer) return <div className="p-10 text-center font-black uppercase tracking-widest text-gray-400">Influencer Not Found</div>;
@@ -76,6 +49,48 @@ const InfluencerDetailPage = () => {
         });
     };
 
+    const handleExportReport = () => {
+        if (!influencer || orders.length === 0) {
+            toast.error('No data to export');
+            return;
+        }
+
+        // Prepare CSV data
+        const headers = ['Customer Name', 'Order ID', 'Date', 'Amount (₹)', 'Commission (₹)'];
+        const rows = orders.map(order => [
+            order.userName || 'N/A',
+            order.orderId || 'N/A',
+            new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+            order.amount || 0,
+            order.commission || 0
+        ]);
+
+        // Add summary row
+        const totalAmount = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
+        const totalCommission = orders.reduce((sum, order) => sum + (order.commission || 0), 0);
+        rows.push([]);
+        rows.push(['TOTAL', '', '', totalAmount, totalCommission]);
+
+        // Convert to CSV
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        // Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${influencer.code}_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.success('Report exported successfully!');
+    };
+
     return (
         <div className="space-y-8 font-['Inter']">
             {/* Header Section */}
@@ -98,7 +113,11 @@ const InfluencerDetailPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#1a1a1a] hover:border-gray-300 transition-all flex items-center gap-2">
+                    <button 
+                        onClick={handleExportReport}
+                        disabled={orders.length === 0 || ordersLoading}
+                        className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#1a1a1a] hover:border-gray-300 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <Download size={14} strokeWidth={2.5} /> Export Report
                     </button>
                     <button
@@ -212,23 +231,20 @@ const InfluencerDetailPage = () => {
                             <AdminTableHead className="text-right">Commission</AdminTableHead>
                         </AdminTableHeader>
                         <AdminTableBody>
-                            {usageHistory.map((record) => (
-                                <AdminTableRow key={record.id}>
+                            {orders.map((record, idx) => (
+                                <AdminTableRow key={idx}>
                                     <AdminTableCell>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">
-                                                {record.user.charAt(0)}
-                                            </div>
-                                            <span className="font-black text-[#1a1a1a] text-xs uppercase tracking-tight">{record.user}</span>
-                                        </div>
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{record.userName}</span>
                                     </AdminTableCell>
                                     <AdminTableCell>
-                                        <span className="font-black text-[10px] text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 uppercase tracking-widest font-mono">
+                                        <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider cursor-pointer hover:underline">
                                             {record.orderId}
                                         </span>
                                     </AdminTableCell>
                                     <AdminTableCell>
-                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{record.date}</span>
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                                            {new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </span>
                                     </AdminTableCell>
                                     <AdminTableCell>
                                         <div className="flex items-center gap-1.5 font-black text-[#1a1a1a] text-xs">
@@ -246,11 +262,17 @@ const InfluencerDetailPage = () => {
                             ))}
                         </AdminTableBody>
                     </AdminTable>
-                    {usageHistory.length === 0 && (
+                    {orders.length === 0 && !ordersLoading && (
                         <div className="py-12 text-center">
                             <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No usage history recorded yet</p>
                         </div>
                     )}
+                    {ordersLoading && (
+                        <div className="py-12 text-center">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Loading orders...</p>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </div>

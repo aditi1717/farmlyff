@@ -154,17 +154,14 @@ const OrderDetailPage = () => {
 
     const itemsToDisplay = order.items && order.items.length > 0 ? order.items : dummyItems;
 
-    // Inject Dummy Data for Demo
-    if (order && !order.appliedCoupon && !order.coupon) {
-        order.appliedCoupon = 'WELCOME200';
-    }
+
 
     // Calculate derived totals from displayed items
     const derivedSubtotal = itemsToDisplay.reduce((acc, item) => {
         const q = item.quantity || item.qty || 1;
         return acc + (item.price * q);
     }, 0);
-    const derivedDiscount = order.discount || 200; // Force dummy discount for demo
+    const derivedDiscount = order.discount || 0;
     const derivedShipping = order.deliveryCharges || 0;
     const derivedTotal = derivedSubtotal - derivedDiscount + derivedShipping;
 
@@ -192,7 +189,7 @@ const OrderDetailPage = () => {
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm grid grid-cols-2 md:grid-cols-5 gap-6">
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Order ID</p>
-                    <p className="text-lg font-black text-footerBg select-all">#{order.id?.slice(-8)}</p>
+                    <p className="text-lg font-black text-footerBg select-all">#{order.id}</p>
                 </div>
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Date & Time</p>

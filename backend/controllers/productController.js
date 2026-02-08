@@ -17,8 +17,16 @@ export const getProducts = async (req, res) => {
 // @access  Public
 export const getProductById = async (req, res) => {
     try {
-        // Try finding by ID first, then by slug
-        let product = await Product.findOne({ id: req.params.id });
+        // Try finding by _id, then custom ID, then by slug
+        let product;
+        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+            product = await Product.findById(req.params.id);
+        }
+        
+        if (!product) {
+            product = await Product.findOne({ id: req.params.id });
+        }
+        
         if (!product) {
             product = await Product.findOne({ slug: req.params.id });
         }
@@ -38,7 +46,14 @@ export const getProductById = async (req, res) => {
 // @access  Private/Admin
 export const deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findOne({ id: req.params.id });
+        let product;
+        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+            product = await Product.findById(req.params.id);
+        }
+        if (!product) {
+            product = await Product.findOne({ id: req.params.id });
+        }
+
         if (product) {
             await product.deleteOne();
             res.json({ message: 'Product removed' });
@@ -72,7 +87,14 @@ export const createProduct = async (req, res) => {
 // @access  Private/Admin
 export const updateProduct = async (req, res) => {
     try {
-        const product = await Product.findOne({ id: req.params.id });
+        let product;
+        if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+            product = await Product.findById(req.params.id);
+        }
+        if (!product) {
+            product = await Product.findOne({ id: req.params.id });
+        }
+
         if (product) {
             // Strip fields that shouldn't be manually updated
             const { _id, __v, createdAt, ...updateData } = req.body;

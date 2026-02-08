@@ -8,7 +8,8 @@ import {
     Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useOrders, useReturns, useUpdateOrderStatus } from '../../../hooks/useOrders'; // Added imports
+import { useOrders, useReturns, useUpdateOrderStatus } from '../../../hooks/useOrders';
+import { useProducts } from '../../../hooks/useProducts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -20,7 +21,9 @@ const OrderDetailPage = () => {
     // Hooks
     const { data: orders = [] } = useOrders(user?.id);
     const { data: returns = [] } = useReturns(user?.id);
+
     const { mutate: updateStatus } = useUpdateOrderStatus();
+    const { data: products = [] } = useProducts();
     
     const [order, setOrder] = useState(null);
     const [availableItemsCount, setAvailableItemsCount] = useState(0);
@@ -45,6 +48,29 @@ const OrderDetailPage = () => {
             }
         }
     }, [orders, returns, orderId]);
+
+    const getProductImage = (item) => {
+        if (item.image) return item.image;
+        
+        // Fallback: Find in products
+        // Try by ID (variant ID)
+        let product = products.find(p => p.variants?.some(v => v.id === item.id));
+        if (product) return product.image;
+
+        // Try by productId if available
+        if (item.productId) {
+            product = products.find(p => p.id === item.productId);
+            if (product) return product.image;
+        }
+
+        // Try matching by name (fuzzy)
+        product = products.find(p => p.name === item.name);
+        if (product) return product.image;
+
+        return 'https://via.placeholder.com/150?text=No+Image';
+    };
+
+
 
     // Fetch live tracking from Shiprocket
     useEffect(() => {
@@ -269,8 +295,8 @@ const OrderDetailPage = () => {
                             <div className="divide-y divide-gray-50">
                                 {order.items.map((item, i) => (
                                     <div key={i} className="p-4 flex gap-4 items-center">
-                                        <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-50 rounded-xl border border-gray-100 flex items-center justify-center p-1 shrink-0">
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
+                                        <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-50 rounded-xl border border-gray-100 flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                                            <img src={getProductImage(item)} alt={item.name} className="w-full h-full object-cover mix-blend-multiply" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-[13px] md:text-sm font-black text-footerBg truncate mb-0.5">{item.name}</h4>

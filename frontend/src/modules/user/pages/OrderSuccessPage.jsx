@@ -31,7 +31,7 @@ const OrderSuccessPage = () => {
 
                 <div className="space-y-2 md:space-y-3">
                     <Link
-                        to={`/track-order/${orderId}`}
+                        to={`/order/${orderId}`}
                         className="w-full bg-footerBg text-white py-2.5 md:py-3 rounded-lg md:rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
                     >
                         <Package size={14} />

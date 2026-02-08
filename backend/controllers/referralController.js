@@ -115,11 +115,87 @@ const addPayout = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Validate a referral code
+// @route   POST /api/referrals/validate
+// @access  Private (User)
+const validateReferral = asyncHandler(async (req, res) => {
+    const { code } = req.body;
+
+    if (!code) {
+        res.status(400);
+        throw new Error('Referral code is required');
+    }
+
+    // Find referral by code (case-insensitive)
+    const referral = await Referral.findOne({ 
+        code: code.toUpperCase(),
+        active: true 
+    });
+
+    if (!referral) {
+        res.status(404);
+        throw new Error('Invalid referral code');
+    }
+
+    // Check expiry if validTo is set
+    if (referral.validTo && new Date(referral.validTo) < new Date()) {
+        res.status(400);
+        throw new Error('Referral code has expired');
+    }
+
+    // Return only necessary information for validation
+    res.json({
+        code: referral.code,
+        type: referral.type,
+        value: referral.value
+    });
+});
+
+// @desc    Get orders for a specific referral
+// @route   GET /api/referrals/:id/orders
+// @access  Private/Admin
+const getReferralOrders = asyncHandler(async (req, res) => {
+    const referral = await Referral.findById(req.params.id);
+
+    if (!referral) {
+        res.status(404);
+        throw new Error('Referral not found');
+    }
+
+    // Import Order model
+    const Order = (await import('../models/Order.js')).default;
+
+    // Find all orders that used this referral code
+    const orders = await Order.find({ 
+        appliedCoupon: referral.code 
+    }).sort({ createdAt: -1 });
+
+    // Calculate commission for each order
+    const ordersWithCommission = orders.map(order => {
+        const orderAmount = order.amount || 0;
+        const discount = order.discount || 0;
+        const netAmount = orderAmount; // Net is the total after discount
+        const commission = Math.floor(netAmount * (referral.commissionRate / 100));
+
+        return {
+            orderId: order.id,
+            userName: order.userName || 'N/A',
+            date: order.createdAt,
+            amount: orderAmount,
+            commission: commission
+        };
+    });
+
+    res.json(ordersWithCommission);
+});
+
 export {
     createReferral,
     getReferrals,
     getReferralById,
     updateReferral,
     deleteReferral,
-    addPayout
+    addPayout,
+    validateReferral,
+    getReferralOrders
 };

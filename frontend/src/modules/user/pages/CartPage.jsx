@@ -50,7 +50,7 @@ const DUMMY_PRODUCTS = [
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useProducts, usePack } from '../../../hooks/useProducts';
-import { useActiveCoupons } from '../../../hooks/useCoupons';
+
 
 const CartPage = () => {
     const navigate = useNavigate();
@@ -62,7 +62,7 @@ const CartPage = () => {
 
     // Data Hooks
     const { data: products = [] } = useProducts();
-    const activeCoupons = useActiveCoupons();
+
 
     // Helpers (moved from Context or re-implemented)
     // We need to implement getRecommendations locally or via new hook if complex
@@ -107,7 +107,7 @@ const CartPage = () => {
         return getVariantById(packId);
     };
 
-    const getActiveCoupons = () => activeCoupons;
+
 
     const handleAddToCart = (e, item) => {
         e.stopPropagation();
@@ -179,26 +179,7 @@ const CartPage = () => {
 
     const subtotal = enrichedCart.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0);
 
-    const calculateDiscount = (coupon, amount) => {
-        if (!coupon) return 0;
-        let discount = 0;
-        if (coupon.type === 'percent') {
-            discount = Math.round((amount * coupon.value) / 100);
-            if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
-        } else {
-            discount = coupon.value;
-        }
-        return discount;
-    };
-
-    const couponDiscount = appliedCoupon ? calculateDiscount(appliedCoupon, subtotal) : 0;
-    const total = subtotal - couponDiscount;
-
-    const cartCategories = [...new Set(enrichedCart.map(item => item.category))];
-    const availableCoupons = getActiveCoupons().filter(c => {
-        // Simple filter for coupons that are theoretically applicable (min order value check)
-        return subtotal >= c.minOrderValue;
-    });
+    const total = subtotal;
 
     if (enrichedCart.length === 0) {
         return (
@@ -299,12 +280,7 @@ const CartPage = () => {
                                     <span>Shipping</span>
                                     <span className="text-emerald-500 font-bold italic">FREE</span>
                                 </div>
-                                {couponDiscount > 0 && (
-                                    <div className="flex justify-between text-emerald-500 font-bold">
-                                        <span>Discount ({appliedCoupon.code})</span>
-                                        <span>-₹{couponDiscount}</span>
-                                    </div>
-                                )}
+
                                 <div className="pt-2 md:pt-4 border-t border-gray-100 flex justify-between text-base md:text-xl font-black text-footerBg">
                                     <span>Total Amount</span>
                                     <span>₹{total}</span>
@@ -321,33 +297,7 @@ const CartPage = () => {
                             </button>
                         </div>
 
-                        {/* Available Coupons Discovery */}
-                        {availableCoupons.length > 0 && (
-                            <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm mt-4 md:mt-6">
-                                <h3 className="text-[10px] font-black text-gray-400 mb-3 md:mb-4 uppercase tracking-widest flex items-center gap-2">
-                                    <Tag size={12} />
-                                    Best Coupons for you
-                                </h3>
-                                <div className="space-y-2 md:space-y-3">
-                                    {availableCoupons.slice(0, 2).map((coupon) => (
-                                        <div key={coupon.id} className="p-2.5 md:p-3 rounded-xl md:rounded-2xl border border-primary/10 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group"
-                                            onClick={() => navigate('/checkout')}
-                                        >
-                                            <div className="flex items-start gap-2 md:gap-3">
-                                                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white flex items-center justify-center border border-primary/20 shrink-0">
-                                                    <Percent size={12} className="text-primary" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[10px] md:text-xs font-black text-footerBg mb-0.5 truncate">{coupon.code}</p>
-                                                    <p className="text-[9px] md:text-[10px] text-gray-400 line-clamp-1">{coupon.description}</p>
-                                                </div>
-                                                <ChevronRight size={12} className="text-gray-300 group-hover:text-primary transition-colors mt-1.5" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+
                     </div>
                 </div>
 

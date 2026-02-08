@@ -4,7 +4,10 @@ const orderItemSchema = new mongoose.Schema({
   id: String,
   name: String,
   qty: Number,
-  price: Number
+  price: Number,
+  image: String,
+  weight: String,
+  productId: String
 });
 
 const statusHistorySchema = new mongoose.Schema({
@@ -42,6 +45,8 @@ const orderSchema = new mongoose.Schema({
     state: String,
     pincode: String
   },
+  appliedCoupon: String, // Coupon or Referral code
+  discount: { type: Number, default: 0 }, // Discount amount
   statusHistory: [statusHistorySchema]
 }, { timestamps: true });
 

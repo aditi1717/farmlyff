@@ -10,7 +10,8 @@ import {
     Package,
     Info,
     ChevronRight,
-    Search
+    Search,
+    Star
 } from 'lucide-react';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -91,29 +92,32 @@ const ProductFormPage = () => {
 
     useEffect(() => {
         if (isEdit && productToEdit) {
-            // Normalize nutrition data if it's an object (legacy format)
-            let normalizedNutrition = productToEdit.nutrition;
+            // Normalize nutrition data
+            let normalizedNutrition = productToEdit.nutrition || [];
             if (productToEdit.nutrition && !Array.isArray(productToEdit.nutrition)) {
                 normalizedNutrition = Object.entries(productToEdit.nutrition).map(([key, value]) => ({
                     label: key.charAt(0).toUpperCase() + key.slice(1),
-                    value
+                    value: String(value)
                 }));
             }
 
-            // Normalize benefits to objects if they are strings
+            // Normalize benefits
             let normalizedBenefits = productToEdit.benefits || [];
             if (normalizedBenefits.length > 0 && typeof normalizedBenefits[0] === 'string') {
                 normalizedBenefits = normalizedBenefits.map(b => ({ title: b, description: '' }));
             }
 
-            setFormData({
+            setFormData(prev => ({
+                ...prev, // Keep defaults if db fields are missing
                 ...productToEdit,
-                variants: productToEdit.variants || [],
-                nutrition: normalizedNutrition || [],
-                contents: productToEdit.contents || [], // Ensure contents is always an array
-                benefits: normalizedBenefits, // Ensure benefits is always an array of objects
-                images: productToEdit.images || []
-            });
+                variants: productToEdit.variants?.length ? productToEdit.variants : prev.variants,
+                nutrition: normalizedNutrition.length ? normalizedNutrition : prev.nutrition,
+                specifications: productToEdit.specifications?.length ? productToEdit.specifications : prev.specifications,
+                faqs: productToEdit.faqs?.length ? productToEdit.faqs : prev.faqs,
+                benefits: normalizedBenefits.length ? normalizedBenefits : prev.benefits,
+                images: productToEdit.images || [],
+                contents: productToEdit.contents || []
+            }));
         }
     }, [isEdit, productToEdit]);
 
@@ -264,20 +268,56 @@ const ProductFormPage = () => {
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-black uppercase tracking-widest ml-1 text-left">Best-Seller Tag</label>
-                                    <select
-                                        name="tag"
-                                        value={formData.tag}
-                                        onChange={handleChange}
-                                        className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-sm font-bold text-black outline-none focus:border-black transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="">None</option>
-                                        <option value="PREMIUM">Premium</option>
-                                        <option value="BESTSELLER">Bestseller</option>
-                                        <option value="NEW LAUNCH">New Launch</option>
-                                        <option value="FRESH">Fresh</option>
-                                    </select>
+                                    <label className="text-xs font-black text-black uppercase tracking-widest ml-1 text-left">Product Rating (0-5)</label>
+                                    <div className="flex items-center gap-4 bg-white border border-gray-300 rounded-2xl p-3">
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                                                    className="focus:outline-none transition-transform hover:scale-110"
+                                                >
+                                                    <Star
+                                                        size={20}
+                                                        className={star <= Math.round(formData.rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <input
+                                            type="number"
+                                            name="rating"
+                                            value={formData.rating}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 0 && val <= 5) {
+                                                    setFormData(prev => ({ ...prev, rating: val }));
+                                                }
+                                            }}
+                                            step="0.1"
+                                            min="0"
+                                            max="5"
+                                            className="w-16 bg-gray-50 border border-gray-100 rounded-lg p-2 text-sm font-black text-center outline-none focus:bg-white focus:border-black transition-all"
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 text-left">
+                                <label className="text-xs font-black text-black uppercase tracking-widest ml-1">Best-Seller Tag</label>
+                                <select
+                                    name="tag"
+                                    value={formData.tag}
+                                    onChange={handleChange}
+                                    className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-sm font-bold text-black outline-none focus:border-black transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="">None</option>
+                                    <option value="PREMIUM">Premium</option>
+                                    <option value="BESTSELLER">Bestseller</option>
+                                    <option value="NEW LAUNCH">New Launch</option>
+                                    <option value="FRESH">Fresh</option>
+                                </select>
                             </div>
 
                             <div className="flex flex-col gap-2 text-left">

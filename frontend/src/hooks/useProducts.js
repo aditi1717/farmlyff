@@ -29,7 +29,16 @@ export const useProduct = (id) => {
         queryFn: async () => {
             const res = await fetch(`${API_URL}/products/${id}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch product');
-            return res.json();
+            const p = await res.json();
+            
+            // Inject dummy data for consistent UI as requested
+            return {
+                ...p,
+                rating: p.rating || (4.0 + Math.random()).toFixed(1),
+                tag: p.tag || 'BESTSELLER',
+                unitPrice: p.unitPrice || Math.floor((p.price || 500) * 2),
+                reviews: p.reviews || Math.floor(Math.random() * 500) + 50
+            };
         },
         enabled: !!id,
     });

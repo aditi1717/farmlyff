@@ -127,3 +127,27 @@ export const useAddPayout = () => {
         },
     });
 };
+
+const validateReferralCode = async (code) => {
+    return fetchData(`${API_URL}/validate`, {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+    });
+};
+
+export const useValidateReferral = () => {
+    return useMutation({
+        mutationFn: validateReferralCode,
+        onError: (error) => {
+            // Error handled in component
+        },
+    });
+};
+
+export const useReferralOrders = (id) => {
+    return useQuery({
+        queryKey: ['referral', id, 'orders'],
+        queryFn: () => fetchData(`${API_URL}/${id}/orders`),
+        enabled: !!id,
+    });
+};

@@ -293,9 +293,31 @@ export const useAdminReviews = () => {
 };
 
 const adminReviews = createCRUDHooks('admin-reviews', 'reviews/admin');
+export const useAllUserReviews = adminReviews.useData;
 export const useAddAdminReview = adminReviews.useAdd;
 export const useUpdateAdminReview = adminReviews.useUpdate;
 export const useDeleteAdminReview = adminReviews.useDelete;
+
+export const useUpdateReviewStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, status }) => {
+            const res = await fetch(`${API_URL}/reviews/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Failed to update review status');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            toast.success('Review status updated!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};
 
 export const useFeaturedReviews = () => {
     return useQuery({

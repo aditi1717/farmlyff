@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
-import { useProducts } from '../../../hooks/useProducts';
+import { useProducts, useProduct } from '../../../hooks/useProducts';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 
 // import { PACKS } from '../../../mockData/data'; // Removed if unused
@@ -37,12 +37,7 @@ import {
     FileText
 } from 'lucide-react';
 
-const DUMMY_IMAGES = [
-    "https://images.unsplash.com/photo-1508061263366-c7bb3cc29475?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1533616688419-b7a585564566?q=80&w=1000&auto=format&fit=crop"
-];
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1508061263366-c7bb3cc29475?q=80&w=1000&auto=format&fit=crop";
 import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -55,12 +50,13 @@ const ProductDetailPage = () => {
     // Hooks
     const { addToCart } = useCartStore();
     const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist, getRecentlyViewed } = useUserStore();
-    const { data: products = [] } = useProducts();
-    const activeCoupons = useActiveCoupons();
+    const { data: product, isLoading: isProductLoading, isError: isProductError } = useProduct(slug);
+    const { data: allProducts = [] } = useProducts();
+    const { data: activeCoupons = [] } = useActiveCoupons();
 
     // Helpers
-    const getProductById = (id) => products.find(p => p.id === id);
-    const getProductBySlug = (s) => products.find(p => p.slug === s || p.id === s);
+    const getProductById = (id) => allProducts.find(p => p.id === id);
+    const getProductBySlug = (s) => allProducts.find(p => p.slug === s || p.id === s);
     const getActiveCoupons = () => {
         if (!product || !activeCoupons) return [];
         return activeCoupons.filter(coupon => {
@@ -78,9 +74,13 @@ const ProductDetailPage = () => {
         });
     };
     const isInWishlist = (userId, pid) => getWishlist(userId).includes(pid);
-    const getRecommendations = (userId, limit) => products.slice(0, limit); // Simple mock
+    const getRecommendations = (userId, limit) => {
+        if (!product) return [];
+        return allProducts
+            .filter(p => p.category === product.category && p.id !== product.id)
+            .slice(0, limit);
+    };
 
-    const [product, setProduct] = useState(null);
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [pincode, setPincode] = useState('');
@@ -154,19 +154,14 @@ const ProductDetailPage = () => {
     };
 
     useEffect(() => {
-        // Try to find in group products first
-        const foundProduct = getProductBySlug(slug);
-        if (foundProduct) {
-            setProduct(foundProduct);
-            setSelectedVariant(foundProduct.variants?.[0]);
-            setSelectedImage(foundProduct.image || foundProduct.images?.[0] || DUMMY_IMAGES[0]);
+        if (product) {
+            setSelectedVariant(product.variants?.[0] || null);
+            setSelectedImage(product.image || product.images?.[0] || FALLBACK_IMAGE);
 
-            // Track view
-            if (user) {
-                addToRecentlyViewed(user.id, foundProduct.id);
-            }
+            // Track view for both users and guests
+            addToRecentlyViewed(user?.id || 'guest', product.id);
         }
-    }, [slug, user, products]);
+    }, [product, user]);
 
     useEffect(() => {
         if (product) {
@@ -239,21 +234,39 @@ const ProductDetailPage = () => {
         toast.success('Delivery available! Expected by ' + new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString());
     };
 
-    if (!product) {
+    if (isProductLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#fcfcfc]">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-300">Loading Product...</h2>
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <h2 className="text-xl font-bold text-gray-400">Fetching Product Details...</h2>
                 </div>
             </div>
         );
     }
 
-    const isGroupProduct = !!product.variants;
-    const currentPrice = isGroupProduct ? selectedVariant.price : product.price;
-    const currentMrp = isGroupProduct ? selectedVariant.mrp : product.mrp;
-    const currentDiscount = isGroupProduct ? selectedVariant.discount : product.discount;
-    const currentUnitPrice = isGroupProduct ? selectedVariant.unitPrice : product.unitPrice;
+    if (isProductError || !product) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#fcfcfc]">
+                <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Product Not Found</h2>
+                    <p className="text-gray-500 mb-6">The product you're looking for might have been moved or deleted.</p>
+                    <button 
+                        onClick={() => navigate('/catalog')}
+                        className="bg-primary text-white px-8 py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-primaryHover transition-all"
+                    >
+                        Back to Shop
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const isGroupProduct = product.variants && product.variants.length > 0;
+    const currentPrice = (isGroupProduct && selectedVariant) ? selectedVariant.price : (product.price || 0);
+    const currentMrp = (isGroupProduct && selectedVariant) ? selectedVariant.mrp : (product.mrp || 0);
+    const currentDiscount = (isGroupProduct && selectedVariant) ? selectedVariant.discount : product.discount;
+    const currentUnitPrice = (isGroupProduct && selectedVariant) ? selectedVariant.unitPrice : product.unitPrice;
 
     const discountPercentage = Math.round(((currentMrp - currentPrice) / currentMrp) * 100);
     const saveAmount = currentMrp - currentPrice;
@@ -399,7 +412,7 @@ const ProductDetailPage = () => {
                         </h3>
                         <div className="space-y-3">
                             {product.contents?.map((item, idx) => {
-                                const itemProduct = products.find(p => p.id === item.productId);
+                                const itemProduct = allProducts.find(p => p.id === item.productId);
                                 const itemImage = itemProduct?.image || product.image;
 
                                 return (
@@ -473,13 +486,12 @@ const ProductDetailPage = () => {
                         </p>
                     </div>
 
-                    {/* SECTION H: Related Combos */}
                     <div className="pt-8">
                         <h3 className="text-xl font-black text-black uppercase tracking-tight mb-6 flex items-center gap-2">
                             <Package size={20} className="text-primary" /> You Might Also Like
                         </h3>
                         <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
-                            {products
+                            {allProducts
                                 .filter(p => (p.category === 'combos-packs' || p.category === 'Combos') && p.id !== product.id)
                                 .slice(0, 5)
                                 .map(item => (
@@ -553,11 +565,11 @@ const ProductDetailPage = () => {
                             </button>
                             <div className="relative h-[350px] md:h-[500px] flex items-center justify-center">
                                 <motion.img
-                                    key={selectedImage || DUMMY_IMAGES[0]}
+                                    key={selectedImage || FALLBACK_IMAGE}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.4 }}
-                                    src={selectedImage || DUMMY_IMAGES[0]}
+                                    src={selectedImage || FALLBACK_IMAGE}
                                     alt={product.name}
                                     className="w-full h-full object-contain max-h-full mx-auto mix-blend-multiply"
                                     style={isImageHovered ? {
@@ -590,12 +602,12 @@ const ProductDetailPage = () => {
                                 ref={scrollRef}
                                 className="flex gap-4 overflow-x-auto scrollbar-none items-center scroll-smooth py-1 px-1"
                             >
-                                {DUMMY_IMAGES.map((img, idx) => (
+                                {[product.image, ...(product.images || [])].filter(Boolean).map((img, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedImage(img)}
                                         className={`shrink-0 w-20 h-20 md:w-24 md:h-24 bg-white border rounded-xl overflow-hidden p-2 transition-all
-                                                    ${(selectedImage || DUMMY_IMAGES[0]) === img
+                                                    ${(selectedImage || product.image) === img
                                                 ? 'border-primary border-2 shadow-md scale-105'
                                                 : 'border-gray-200 hover:border-gray-300'
                                             }`}
@@ -758,7 +770,7 @@ const ProductDetailPage = () => {
                                         <div
                                             key={variant.id}
                                             onClick={() => setSelectedVariant(variant)}
-                                            className={`border rounded-lg px-4 py-2 cursor-pointer transition-all min-w-[100px] text-center relative ${selectedVariant.id === variant.id
+                                            className={`border rounded-lg px-4 py-2 cursor-pointer transition-all min-w-[100px] text-center relative ${selectedVariant?.id === variant.id
                                                 ? 'border-primary bg-primary/10 text-primary shadow-sm'
                                                 : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
                                                 }`}
@@ -780,7 +792,7 @@ const ProductDetailPage = () => {
                         <div className="flex flex-col sm:flex-row gap-4 mb-8">
                             <button
                                 onClick={() => {
-                                    const skuId = isGroupProduct ? selectedVariant.id : product.id;
+                                    const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
                                     addToCart(user?.id, skuId, quantity);
                                 }}
                                 className="flex-[1.2] bg-primary text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-primaryHover transition-colors shadow-sm flex items-center justify-center gap-2"
@@ -789,7 +801,7 @@ const ProductDetailPage = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    const skuId = isGroupProduct ? selectedVariant.id : product.id;
+                                    const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
                                     addToCart(user?.id, skuId, quantity);
                                     navigate('/checkout');
                                 }}
@@ -875,9 +887,10 @@ const ProductDetailPage = () => {
                             {activeTab === 'Description' && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-bold text-black font-semibold">Product Description</h3>
-                                    <p className="text-sm md:text-base text-gray-600 leading-relaxed text-justify px-2">
-                                        {product.description || `Nutraj brings a premium assortment of walnut kernels to your plate in the form of ${product.name}. As the name says, these Anmol walnut kernels are nothing short of precious treats as they come from 1% of the Rarest Crop, grown worldwide. Since the crop is handpicked from the best, these walnut kernels are jumbo-sized, extra crunchier in taste, and contain exceptional nutritional value.`}
-                                    </p>
+                                    <div 
+                                        className="text-sm md:text-base text-gray-600 leading-relaxed text-justify px-2 prose prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: product.description || `Nutraj brings a premium assortment of walnut kernels to your plate in the form of ${product.name}. As the name says, these Anmol walnut kernels are nothing short of precious treats as they come from 1% of the Rarest Crop, grown worldwide. Since the crop is handpicked from the best, these walnut kernels are jumbo-sized, extra crunchier in taste, and contain exceptional nutritional value.` }}
+                                    />
                                     <div className="flex justify-center">
                                         <img src={product.image} className="w-40 md:w-60 h-auto object-contain rounded-xl opacity-90 mix-blend-multiply" alt="" />
                                     </div>
@@ -888,17 +901,14 @@ const ProductDetailPage = () => {
                                 <div className="text-left space-y-4">
                                     <h3 className="text-xl font-bold text-black font-semibold">Health Benefits</h3>
                                     <ul className="list-disc pl-5 space-y-4 text-sm md:text-base text-gray-600 leading-relaxed">
-                                        {[
-                                            'Rich in Antioxidants: Almonds are a fantastic source of antioxidants, which help protect your cells from oxidative damage.',
-                                            'High in Vitamin E: They are among the world\'s best sources of vitamin E, which is linked to numerous health benefits.',
-                                            'Assists with Blood Sugar Control: Nuts are low in carbs but high in healthy fats, protein, and fiber, making them a perfect choice for people with diabetes.',
-                                            'Magnesium Benefits: Almonds are incredibly high in magnesium, a mineral that many people don\'t get enough of.',
-                                            'Can Lower Cholesterol Levels: High levels of LDL lipoproteins in your blood — also known as "bad" cholesterol — is a well-known risk factor for heart disease.',
-                                            'Prevents Harmful Oxidation of LDL Cholesterol: Almonds do more than just lower LDL levels in your blood. They also protect LDL from oxidation.'
-                                        ].map((b, i) => (
+                                        {(product.benefits?.length ? product.benefits : [
+                                            { title: 'Rich in Antioxidants', description: 'Almonds are a fantastic source of antioxidants.' },
+                                            { title: 'High in Vitamin E', description: 'Linked to numerous health benefits.' },
+                                            { title: 'Blood Sugar Control', description: 'Low in carbs but high in healthy fats.' }
+                                        ]).map((b, i) => (
                                             <li key={i} className="pl-2">
-                                                <span className="font-bold text-primary">{b.split(':')[0]}:</span>
-                                                {b.split(':')[1]}
+                                                <span className="font-bold text-primary">{b.title}:</span>
+                                                {' '}{b.description}
                                             </li>
                                         ))}
                                     </ul>
@@ -907,14 +917,11 @@ const ProductDetailPage = () => {
 
                             {activeTab === 'Specifications' && (
                                 <div className="text-left border border-gray-200 rounded-lg overflow-hidden">
-                                    {[
-                                        { label: 'Brand Name', value: 'Nutraj' },
+                                    {(product.specifications?.length ? product.specifications : [
+                                        { label: 'Brand Name', value: product.brand || 'Nutraj' },
                                         { label: 'Shelf Life', value: '6 Months' },
-                                        { label: 'Container Type', value: 'Pouch' },
-                                        { label: 'Net Weight', value: '500g' },
-                                        { label: 'Ingredients', value: 'Sonora Almonds' },
-                                        { label: 'Country of Origin', value: 'USA' }
-                                    ].map((spec, idx, arr) => (
+                                        { label: 'Container Type', value: 'Pouch' }
+                                    ]).map((spec, idx, arr) => (
                                         <div key={idx} className={`grid grid-cols-1 md:grid-cols-2 p-4 text-sm ${idx !== (arr.length - 1) ? 'border-b border-gray-200' : ''}`}>
                                             <div className="font-bold text-black font-semibold">{spec.label}</div>
                                             <div className="text-gray-600">{spec.value}</div>
@@ -1028,11 +1035,10 @@ const ProductDetailPage = () => {
 
                             {activeTab === 'FAQ' && (
                                 <div className="text-left space-y-4">
-                                    {[
-                                        { q: 'How should I store these almonds?', a: 'Store them in a cool, dry place. For longer freshness, preserve them in an airtight container or refrigerate them.' },
-                                        { q: 'What is the shelf life of the product?', a: 'The shelf life is approximately 6 months from the date of packaging.' },
-                                        { q: 'Are these almonds chemically treated?', a: 'No, these almonds are processed using the Bactopure process which makes them 99.9% bacteria-free without any harmful chemicals.' }
-                                    ].map((item, idx) => (
+                                    {(product.faqs?.length ? product.faqs : [
+                                        { q: 'How should I store this product?', a: 'Store them in a cool, dry place.' },
+                                        { q: 'What is the shelf life?', a: 'Approximately 6 months from packaging.' }
+                                    ]).map((item, idx) => (
                                         <div key={idx} className="pb-4 border-b border-gray-50 last:border-0">
                                             <h4 className="text-primary font-bold text-sm mb-2">Q: {item.q}</h4>
                                             <p className="text-sm text-gray-600 leading-relaxed">A: {item.a}</p>
@@ -1043,12 +1049,12 @@ const ProductDetailPage = () => {
 
                             {activeTab === 'Nutrition Info' && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-left p-6 bg-gray-50 rounded-xl">
-                                    {[
+                                    {(product.nutrition?.length ? product.nutrition : [
                                         { label: 'Energy', value: '579 kcal' },
                                         { label: 'Protein', value: '21.15 g' },
                                         { label: 'Total Fat', value: '49.93 g' },
                                         { label: 'Carbs', value: '21.55 g' }
-                                    ].map((stat, i) => (
+                                    ]).map((stat, i) => (
                                         <div key={i} className="p-4 bg-white rounded-lg shadow-sm">
                                             <div className="text-xs text-gray-500 uppercase">{stat.label}</div>
                                             <div className="text-lg font-bold text-primary">{stat.value}</div>
@@ -1061,15 +1067,14 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* Recently Viewed Section */}
-                {/* Recently Viewed Section */}
                 {
-                    user && getRecentlyViewed(user.id).length > 0 && (
+                    getRecentlyViewed(user?.id || 'guest').length > 0 && (
                         <div className="mt-12 pt-10 bg-[#FDFCF6] -mx-4 md:-mx-12 px-4 md:px-12 pb-6 rounded-t-[32px] border-x border-t border-orange-100/30">
                             <div className="mb-6 text-center">
                                 <h3 className="text-lg font-bold text-black font-semibold">Recently Viewed</h3>
                             </div>
                             <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-none">
-                                {getRecentlyViewed(user.id)
+                                {getRecentlyViewed(user?.id || 'guest')
                                     .map(pid => getProductById(pid))
                                     .filter(p => p && p.id !== product.id)
                                     .map((item) => (
@@ -1082,23 +1087,6 @@ const ProductDetailPage = () => {
                     )
                 }
 
-                {/* Recommendations Section */}
-                {
-                    user && (
-                        <div className="mt-0 pt-6 font-['Inter'] bg-[#F4F9F6] -mx-4 md:-mx-12 px-4 md:px-12 pb-12 rounded-b-[32px] border-x border-b border-green-100/30">
-                            <div className="mb-6 text-center">
-                                <h3 className="text-lg font-bold text-black font-semibold">Picked for You</h3>
-                            </div>
-                            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-none">
-                                {getRecommendations(user.id, 10).map((item) => (
-                                    <div key={item.id} className="min-w-[160px] md:min-w-[260px] w-[160px] md:w-[260px]">
-                                        <ProductCard product={item} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )
-                }
             </main >
 
             {/* Image Lightbox Modal */}
@@ -1151,7 +1139,7 @@ const ProductDetailPage = () => {
                             <button
                                 onClick={() => {
                                     if (!user) return navigate('/login');
-                                    const skuId = isGroupProduct ? selectedVariant.id : product.id;
+                                    const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
                                     addToCart(user.id, skuId, quantity);
                                 }}
                                 className="bg-[#6B242E] text-white px-6 py-2.5 rounded font-bold text-sm"

@@ -175,7 +175,7 @@ const OrderListPage = () => {
                                         {realIndex}
                                     </AdminTableCell>
                                     <AdminTableCell className="font-bold text-xs text-footerBg select-all">
-                                        #{order.id?.slice(-8)}
+                                        #{order.id}
                                     </AdminTableCell>
                                     <AdminTableCell className="text-sm text-gray-500">
                                         {(new Date(order.date)).toLocaleDateString('en-GB')}

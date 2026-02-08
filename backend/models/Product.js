@@ -30,7 +30,7 @@ const productSchema = new mongoose.Schema({
   reviews: { type: Number, default: 0 },
   tag: String,
   variants: [variantSchema],
-  benefits: [String],
+  benefits: [{ title: String, description: String, _id: false }],
   specifications: [{ label: String, value: String, _id: false }],
   faqs: [{ q: String, a: String, _id: false }],
   nutrition: [{ label: String, value: String, _id: false }],
