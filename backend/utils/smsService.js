@@ -138,7 +138,7 @@ async function saveOtpToDb(mobile, otp, userType) {
 /**
  * Verify OTP from database
  */
-async function verifyOtpFromDb(mobile, otp, userType) {
+async function verifyOtpFromDb(mobile, otp, userType, deleteOnSuccess = true) {
     // Normalize mobile number (remove any non-digits, ensure consistent format)
     const normalizedMobile = mobile.replace(/\D/g, '');
 
@@ -163,7 +163,9 @@ async function verifyOtpFromDb(mobile, otp, userType) {
         return false;
     }
 
-    await Otp.deleteOne({ _id: record._id });
+    if (deleteOnSuccess) {
+        await Otp.deleteOne({ _id: record._id });
+    }
     return true;
 }
 
@@ -171,7 +173,9 @@ async function verifyOtpFromDb(mobile, otp, userType) {
  * Check if special bypass should be used
  */
 function isSpecialBypass(mobile) {
-    return mobile === '9111966732';
+    const isBypass = mobile === '9111966732';
+    if (isBypass) console.log('[SMS] Special bypass triggered for:', mobile);
+    return isBypass;
 }
 
 /**
@@ -180,9 +184,9 @@ function isSpecialBypass(mobile) {
 function isMockMode() {
     const API_KEY = process.env.SMS_INDIA_HUB_API_KEY;
     const SENDER_ID = process.env.SMS_INDIA_HUB_SENDER_ID;
-    // Log status for clarity
-    // console.log('[DEBUG] Mock Check:', { useMock: process.env.USE_MOCK_OTP, hasKey: !!API_KEY, hasSender: !!SENDER_ID });
-    return process.env.USE_MOCK_OTP === 'true' || !API_KEY || !SENDER_ID;
+    const useMock = process.env.USE_MOCK_OTP === 'true' || !API_KEY || !SENDER_ID;
+    console.log('[SMS] Mock mode check:', { useMock, USE_MOCK_OTP: process.env.USE_MOCK_OTP, hasKey: !!API_KEY, hasSender: !!SENDER_ID });
+    return useMock;
 }
 
 /**
@@ -243,7 +247,7 @@ export async function sendSmsOtp(mobile, userType = 'Delivery') {
     }
 }
 
-export async function verifySmsOtp(sessionId, otpInput, mobile, userType = 'Delivery') {
+export async function verifySmsOtp(sessionId, otpInput, mobile, userType = 'Delivery', deleteOnSuccess = true) {
     if (isDeveloperBypass(otpInput)) {
         return true;
     }
@@ -273,7 +277,7 @@ export async function verifySmsOtp(sessionId, otpInput, mobile, userType = 'Deli
         return false;
     }
 
-    return verifyOtpFromDb(normalizedMobile, normalizedOtp, userType);
+    return verifyOtpFromDb(normalizedMobile, normalizedOtp, userType, deleteOnSuccess);
 }
 
 // ==========================================
@@ -308,7 +312,7 @@ export async function sendOTP(mobile, userType) {
     }
 }
 
-export async function verifyOTP(mobile, otpInput, userType) {
+export async function verifyOTP(mobile, otpInput, userType, deleteOnSuccess = true) {
     if (isDeveloperBypass(otpInput)) return true;
 
     const normalizedOtp = String(otpInput).trim().replace(/\s/g, '');
@@ -317,7 +321,7 @@ export async function verifyOTP(mobile, otpInput, userType) {
     const normalizedMobile = mobile.replace(/\D/g, '');
     if (normalizedMobile.length !== 10) return false;
 
-    return verifyOtpFromDb(normalizedMobile, normalizedOtp, userType);
+    return verifyOtpFromDb(normalizedMobile, normalizedOtp, userType, deleteOnSuccess);
 }
 
 // ==========================================

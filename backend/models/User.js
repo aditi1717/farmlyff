@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema({
   addresses: [addressSchema],
   wishlist: [String],
   usedCoupons: [String],
+  accountType: { type: String, enum: ['Individual', 'Business'], default: 'Individual' },
   isBanned: { type: Boolean, default: false },
   fcmToken: String // FCM device token for push notifications
 }, { timestamps: true });

@@ -5,53 +5,62 @@ import {
     TrendingUp, Award, Download, Filter, Search, Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useReferrals, useAddPayout } from '../../../hooks/useReferrals';
+import { useReferral, useAddPayout } from '../../../hooks/useReferrals';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
-
-// Move fallback data outside to prevent reference changes on every render
-const DUMMY_INFLUENCERS = [
-    { _id: '1', name: 'Rahul Sharma', platform: 'Instagram', code: 'RAHULFIT20', type: 'percentage', value: 20, commissionRate: 10, usageCount: 145, totalSales: 285000, totalPaid: 15000, active: true },
-    { _id: '2', name: 'Priya Verma', platform: 'Youtube', code: 'PRIYAFRY15', type: 'percentage', value: 15, commissionRate: 8, usageCount: 89, totalSales: 154000, totalPaid: 5000, active: true },
-    { _id: '3', name: 'Vikram Singh', platform: 'Instagram', code: 'VIKDRY10', type: 'percentage', value: 10, commissionRate: 5, usageCount: 34, totalSales: 42000, totalPaid: 0, active: false },
-];
 
 const InfluencerDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { data: referrals = [], isLoading } = useReferrals();
+    const { data: influencer, isLoading, isError } = useReferral(id);
     const addPayoutMutation = useAddPayout();
 
     const [isAddingPayout, setIsAddingPayout] = useState(false);
     const [payoutAmount, setPayoutAmount] = useState('');
     const [usageHistory, setUsageHistory] = useState([]);
 
-    const influencer = (referrals?.length > 0 ? referrals : DUMMY_INFLUENCERS).find(
-        inf => (inf._id || inf.id) === id
-    );
-
     useEffect(() => {
         if (influencer) {
-            // Generate dummy history
-            const history = Array.from({ length: 8 }).map((_, i) => {
+            // If the influencer has usage, we can generate some mock usage history 
+            // since we don't have a specific orders endpoint for this yet.
+            // But we'll base the length on the actual usageCount.
+            const realUsageCount = influencer.usageCount || 0;
+            const historyLength = Math.min(realUsageCount, 10); // Show up to 10 latest
+
+            const history = Array.from({ length: historyLength }).map((_, i) => {
                 const amount = Math.floor(Math.random() * 5000) + 500;
+                const discount = influencer.type === 'percentage' 
+                    ? amount * (influencer.value / 100) 
+                    : influencer.value;
+                const netAmount = Math.max(0, amount - discount);
+                
                 return {
                     id: i + 1,
-                    user: `User ${Math.floor(Math.random() * 10000)}`,
-                    date: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                    user: `Customer ${Math.floor(Math.random() * 1000) + 1}`,
+                    date: new Date(Date.now() - (i * 86400000)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
                     orderId: `#ORD-${Math.floor(Math.random() * 90000) + 10000}`,
                     amount: amount,
-                    commission: Math.floor(amount * (influencer.commissionRate / 100))
+                    commission: Math.floor(netAmount * (influencer.commissionRate / 100))
                 };
             });
             setUsageHistory(history);
         }
-    }, [id, influencer?.usageCount]);
+    }, [id, influencer]);
 
     if (isLoading) return <div className="p-10 text-center font-black animate-pulse uppercase tracking-widest text-gray-400">Loading Performance Data...</div>;
     if (!influencer) return <div className="p-10 text-center font-black uppercase tracking-widest text-gray-400">Influencer Not Found</div>;
 
     const calculateEarnings = (item) => {
-        return Math.floor((item.totalSales || 0) * (item.commissionRate / 100));
+        const totalSales = item.totalSales || 0;
+        const discountValue = item.value || 0;
+        
+        let netSales = totalSales;
+        if (item.type === 'percentage') {
+            netSales = totalSales * (1 - (discountValue / 100));
+        } else {
+            netSales = Math.max(0, totalSales - (discountValue * (item.usageCount || 0)));
+        }
+        
+        return Math.floor(netSales * (item.commissionRate / 100));
     };
 
     const handleAddPayout = () => {
@@ -62,7 +71,7 @@ const InfluencerDetailPage = () => {
             onSuccess: () => {
                 setIsAddingPayout(false);
                 setPayoutAmount('');
-                toast.success('Payout record updated!');
+                // Success toast is handled in the hook
             }
         });
     };

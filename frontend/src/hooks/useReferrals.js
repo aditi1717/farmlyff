@@ -63,6 +63,14 @@ export const useReferrals = () => {
     });
 };
 
+export const useReferral = (id) => {
+    return useQuery({
+        queryKey: ['referral', id],
+        queryFn: () => fetchData(`${API_URL}/${id}`),
+        enabled: !!id,
+    });
+};
+
 export const useCreateReferral = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -111,6 +119,7 @@ export const useAddPayout = () => {
         mutationFn: addPayout,
         onSuccess: () => {
             queryClient.invalidateQueries(['referrals']);
+            queryClient.invalidateQueries(['referral']);
             toast.success('Payout added successfully');
         },
         onError: (error) => {

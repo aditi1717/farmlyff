@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Edit2, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
+import { useOffers } from '../../../hooks/useOffers';
 
 const BannerListPage = () => {
     const { data: banners = [], isLoading: loading } = useBanners();
@@ -10,6 +12,7 @@ const BannerListPage = () => {
     const updateBannerMutation = useUpdateBanner();
     const deleteBannerMutation = useDeleteBanner();
     const uploadImageMutation = useUploadImage();
+    const { data: offers = [] } = useOffers();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
@@ -20,6 +23,8 @@ const BannerListPage = () => {
     });
     const [preview, setPreview] = useState(null);
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+    const [offerDropdownOpen, setOfferDropdownOpen] = useState(false);
+    const [linkSearch, setLinkSearch] = useState('');
 
     const activeSlide = (formData.slides && formData.slides[activeSlideIndex]) || null;
 
@@ -119,6 +124,11 @@ const BannerListPage = () => {
         });
     };
 
+    const filteredOfferLinks = offers.filter(o => 
+        o.title.toLowerCase().includes(linkSearch.toLowerCase()) || 
+        o.targetLink.toLowerCase().includes(linkSearch.toLowerCase())
+    );
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.image && (!formData.slides || formData.slides.length === 0)) {
@@ -192,9 +202,98 @@ const BannerListPage = () => {
                                             </div>
                                         </div>
                                         <input type="text" value={activeSlide.ctaText ?? ''} onChange={(e)=>updateActiveSlide('ctaText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Button Label" />
-                                        <div className="relative">
-                                            <ExternalLink size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-                                            <input type="text" value={activeSlide.link ?? ''} onChange={(e)=>updateActiveSlide('link', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Redirect URL" />
+                                        <div className="relative group/link">
+                                            <div className="flex items-center gap-2 mb-1 justify-between">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Redirect URL</label>
+                                                {offers.some(o => o.targetLink === activeSlide.link) && (
+                                                    <span className="bg-primary text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase shadow-sm shadow-primary/20">Offer Linked</span>
+                                                )}
+                                            </div>
+                                            <div className="relative">
+                                                <ExternalLink size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10" />
+                                                <input 
+                                                    type="text" 
+                                                    value={activeSlide.link ?? ''} 
+                                                    onChange={(e)=>{
+                                                        updateActiveSlide('link', e.target.value);
+                                                        setLinkSearch(e.target.value);
+                                                    }} 
+                                                    onFocus={() => setOfferDropdownOpen(true)}
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" 
+                                                    placeholder="URL or select offer..." 
+                                                />
+                                                
+                                                <AnimatePresence>
+                                                    {offerDropdownOpen && (
+                                                        <>
+                                                            <div className="fixed inset-0 z-20" onClick={() => setOfferDropdownOpen(false)} />
+                                                            <motion.div 
+                                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-30 overflow-hidden max-h-[250px] overflow-y-auto custom-scrollbar"
+                                                            >
+                                                                <div className="p-2 border-b border-gray-50 bg-gray-50/50">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Available Offers</p>
+                                                                </div>
+                                                                {filteredOfferLinks.length > 0 ? (
+                                                                    filteredOfferLinks.map(offer => (
+                                                                        <button
+                                                                            key={offer._id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                updateActiveSlide('link', offer.targetLink);
+                                                                                setOfferDropdownOpen(false);
+                                                                            }}
+                                                                            className="w-full flex items-center gap-3 p-3 hover:bg-primary/5 text-left transition-colors border-b border-gray-50 last:border-0 group"
+                                                                        >
+                                                                            <div className="w-8 h-8 rounded-lg bg-gray-50 overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
+                                                                                {offer.products?.[0]?.image ? (
+                                                                                    <img src={offer.products[0].image} className="w-full h-full object-contain" alt="" />
+                                                                                ) : (
+                                                                                    <ImageIcon size={14} className="text-gray-300" />
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-xs font-bold text-gray-900 truncate group-hover:text-primary transition-colors">{offer.title}</p>
+                                                                                <p className="text-[9px] font-medium text-gray-400 truncate">{offer.targetLink}</p>
+                                                                            </div>
+                                                                        </button>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="p-4 text-center">
+                                                                        <p className="text-[10px] font-bold text-gray-300 uppercase italic">No matching offers</p>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                <div className="p-2 border-t border-gray-50 bg-gray-50/50">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Quick Links</p>
+                                                                </div>
+                                                                {[
+                                                                    { label: 'Home Page', path: '/' },
+                                                                    { label: 'Product Catalog', path: '/catalog' },
+                                                                    { label: 'User Profile', path: '/profile' }
+                                                                ].map(link => (
+                                                                    <button
+                                                                        key={link.path}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            updateActiveSlide('link', link.path);
+                                                                            setOfferDropdownOpen(false);
+                                                                        }}
+                                                                        className="w-full p-2.5 px-4 text-left hover:bg-primary/5 transition-colors"
+                                                                    >
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[11px] font-bold text-gray-700">{link.label}</span>
+                                                                            <span className="text-[9px] font-medium text-gray-400">{link.path}</span>
+                                                                        </div>
+                                                                    </button>
+                                                                ))}
+                                                            </motion.div>
+                                                        </>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -213,12 +312,12 @@ const BannerListPage = () => {
                                 </div>
                             )}
 
-                            <div className="flex gap-3 pt-2">
-                                {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
-                                <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                                    {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
-                                </button>
-                            </div>
+                                        <div className="flex gap-3 pt-2 text-left">
+                                            {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
+                                            <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                                                {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
+                                            </button>
+                                        </div>
                         </form>
                     </div>
                 </div>

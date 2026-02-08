@@ -69,7 +69,6 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-
         try {
             const response = await fetch(`${API_URL}/users/login`, {
                 method: 'POST',
@@ -98,6 +97,68 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.error("Login Error:", error);
+            toast.error('Network error, please try again');
+            return { success: false, message: 'Network error, please try again' };
+        }
+    };
+
+    const sendOtp = async (phone) => {
+        try {
+            const response = await fetch(`${API_URL}/users/send-otp-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success('OTP sent successfully!');
+                return { success: true };
+            } else {
+                toast.error(data.message || 'Failed to send OTP');
+                return { success: false, message: data.message || 'Failed to send OTP' };
+            }
+        } catch (error) {
+            console.error("Send OTP Error:", error);
+            toast.error('Network error, please try again');
+            return { success: false, message: 'Network error, please try again' };
+        }
+    };
+
+    const verifyOtp = async (phone, otp, name = null, email = null, accountType = 'Individual') => {
+        try {
+            const response = await fetch(`${API_URL}/users/verify-otp-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp, name, email, accountType }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.isNewUser) {
+                    return { success: true, isNewUser: true, phone: data.phone };
+                }
+
+                const userObj = { ...data, id: data._id };
+                setUser(userObj);
+
+                if (data.token) {
+                    localStorage.setItem('farmlyf_token', data.token);
+                }
+
+                localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                toast.success('Logged in successfully!');
+                return { success: true };
+            } else {
+                toast.error(data.message || 'Verification failed');
+                return { success: false, message: data.message || 'Verification failed' };
+            }
+        } catch (error) {
+            console.error("Verify OTP Error:", error);
             toast.error('Network error, please try again');
             return { success: false, message: 'Network error, please try again' };
         }
@@ -163,7 +224,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, loading, sendOtp, verifyOtp }}>
             {children}
         </AuthContext.Provider>
     );

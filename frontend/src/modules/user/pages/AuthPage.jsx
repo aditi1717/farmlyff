@@ -1,67 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Leaf, Tag } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Leaf, Tag, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import authShowcaseImg from '../../../assets/auth_showcase.jpg';
 
 const AuthPage = () => {
-    const { login, signup } = useAuth();
+    const { sendOtp } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Determine initial mode based on state passed or default to 'login'
-    const [isLogin, setIsLogin] = useState(true);
-
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-    });
-    const [showPassword, setShowPassword] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        // Removed referral code handling
-    }, [location.search]);
-
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
         setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (phone.length !== 10) {
+            setError('Please enter a valid 10-digit mobile number');
+            return;
+        }
+
+        setIsLoading(true);
         setError('');
 
-        if (isLogin) {
-            const res = await login(formData.email, formData.password);
-            if (res.success) {
-                navigate('/otp-verification', { state: { contact: formData.email } });
-            } else {
-                setError(res.message);
-            }
+        const res = await sendOtp(phone);
+        setIsLoading(false);
+
+        if (res.success) {
+            navigate('/otp-verification', { state: { contact: phone } });
         } else {
-            if (formData.password !== formData.confirmPassword) {
-                setError('Passwords do not match');
-                return;
-            }
-            if (formData.password.length < 6) {
-                setError('Password must be at least 6 characters');
-                return;
-            }
-            const res = await signup({
-                name: formData.name,
-                email: formData.email,
-                password: formData.password
-            });
-            if (res.success) {
-                navigate('/otp-verification', { state: { contact: formData.email } });
-            } else {
-                setError(res.message);
-            }
+            setError(res.message);
         }
     };
 
@@ -119,10 +93,10 @@ const AuthPage = () => {
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white relative">
                     <div className="text-center md:text-left mb-8">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-['Poppins'] mb-2">
-                            {isLogin ? 'Welcome Back' : 'Create Account'}
+                            Welcome to Farmlyf
                         </h1>
                         <p className="text-gray-500 text-sm">
-                            {isLogin ? 'Please enter your details to sign in.' : 'Start your healthy journey with us today.'}
+                            Enter your mobile number to get started.
                         </p>
                     </div>
 
@@ -133,102 +107,36 @@ const AuthPage = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {!isLogin && (
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-700 ml-1">Full Name</label>
-                                <div className="relative">
-                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        required
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400"
-                                        placeholder="Enter your name"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-700 ml-1">Email Address</label>
+                            <label className="text-xs font-semibold text-gray-700 ml-1">Mobile Number</label>
                             <div className="relative">
-                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-900 font-bold text-sm">+91</span>
                                 <input
-                                    type="email"
-                                    name="email"
+                                    type="tel"
+                                    name="phone"
                                     required
-                                    value={formData.email}
+                                    value={phone}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400"
-                                    placeholder="name@company.com"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 pl-20 pr-4 text-sm font-bold text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400"
+                                    placeholder="Enter 10 digit number"
                                 />
                             </div>
                         </div>
-
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-700 ml-1">Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    required
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 pl-10 pr-10 text-sm font-medium text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400"
-                                    placeholder="••••••••"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {!isLogin && (
-                            <>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-700 ml-1">Confirm Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            name="confirmPassword"
-                                            required
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg py-3 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
-                                </div>
-
-                            </>
-                        )}
 
                         <button
                             type="submit"
-                            className="w-full bg-[#2c5336] text-white font-bold text-sm py-3.5 rounded-lg hover:bg-[#1f3b26] transition-all shadow-md active:translate-y-0.5 mt-2"
+                            disabled={isLoading}
+                            className="w-full bg-[#2c5336] text-white font-bold text-sm py-3.5 rounded-lg hover:bg-[#1f3b26] transition-all shadow-md active:translate-y-0.5 mt-2 flex items-center justify-center gap-2"
                         >
-                            {isLogin ? 'Sign In' : 'Create Account'}
+                            {isLoading ? 'Sending...' : 'Get OTP'}
                         </button>
                     </form>
 
                     <div className="mt-auto pt-6 text-center">
-                        <p className="text-gray-500 text-xs font-medium">
-                            {isLogin ? "Don't have an account?" : "Already have an account?"}
-                            <button
-                                onClick={() => { setIsLogin(!isLogin); setError(''); }}
-                                className="ml-1.5 text-[#2c5336] font-bold hover:underline transition-colors"
-                            >
-                                {isLogin ? 'Sign Up' : 'Log In'}
-                            </button>
+                        <p className="text-gray-400 text-[10px] leading-relaxed">
+                            By continuing, you agree to our <span className="text-gray-600 font-bold">Terms of Service</span> and <span className="text-gray-600 font-bold">Privacy Policy</span>.
                         </p>
                     </div>
                 </div>

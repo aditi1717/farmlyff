@@ -2,6 +2,7 @@ import Coupon from '../models/Coupon.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
+import Referral from '../models/Referral.js';
 
 // @desc    Create a new coupon
 // @route   POST /api/coupons
@@ -112,9 +113,29 @@ export const validateCoupon = async (req, res) => {
   try {
     const { userId, code, cartTotal, cartItems } = req.body;
 
-    const coupon = await Coupon.findOne({ code: { $regex: new RegExp(`^${code}$`, 'i') } });
+    let coupon = await Coupon.findOne({ code: { $regex: new RegExp(`^${code}$`, 'i') } });
 
-    if (!coupon) return res.status(404).json({ valid: false, error: 'Invalid coupon code' });
+    if (!coupon) {
+        // Check Referrals as backup
+        const referral = await Referral.findOne({ code: { $regex: new RegExp(`^${code}$`, 'i') } });
+        if (referral && referral.active) {
+            if (referral.validTo && new Date(referral.validTo) < new Date()) {
+                return res.status(400).json({ valid: false, error: 'Referral code has expired' });
+            }
+            // Map referral to coupon format for the response
+            return res.json({
+                valid: true,
+                coupon: {
+                    code: referral.code,
+                    type: referral.type === 'percentage' ? 'percent' : 'fixed',
+                    value: referral.value,
+                    applicabilityType: 'all' // Referral codes usually apply to everything
+                }
+            });
+        }
+        return res.status(404).json({ valid: false, error: 'Invalid coupon or referral code' });
+    }
+    
     if (!coupon.active) return res.status(400).json({ valid: false, error: 'Coupon is no longer active' });
     if (new Date(coupon.validUntil) < new Date()) return res.status(400).json({ valid: false, error: 'Coupon has expired' });
     if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) return res.status(400).json({ valid: false, error: 'Coupon usage limit reached' });

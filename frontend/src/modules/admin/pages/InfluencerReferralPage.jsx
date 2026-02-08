@@ -83,7 +83,20 @@ const InfluencerReferralPage = () => {
     };
 
     const calculateEarnings = (item) => {
-        return Math.floor((item.totalSales || 0) * (item.commissionRate / 100));
+        const totalSales = item.totalSales || 0;
+        const discountValue = item.value || 0;
+        
+        let netSales = totalSales;
+        if (item.type === 'percentage') {
+            netSales = totalSales * (1 - (discountValue / 100));
+        } else {
+            // If fixed, we assume it's subtracted from each sale, but since we only have totalSales
+            // we'll approximate by subtract it if it's a single sale or proportional.
+            // However, the user specifically mentioned "Profit Percentage", suggesting % is the norm.
+            netSales = Math.max(0, totalSales - (discountValue * (item.usageCount || 0)));
+        }
+        
+        return Math.floor(netSales * (item.commissionRate / 100));
     };
 
     const handleAddPayout = () => {
@@ -394,6 +407,46 @@ const InfluencerReferralPage = () => {
                                         onChange={e => setFormData({ ...formData, commissionRate: e.target.value })}
                                         className="w-full bg-white border border-gray-100 rounded-lg px-3 py-2.5 font-black text-[#1a1a1a] text-[10px] outline-none focus:border-gray-200"
                                     />
+                                </div>
+
+                                {/* Calculation Example/Preview */}
+                                <div className="col-span-full pt-4 border-t border-gray-100 mt-2">
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">Commission Logic Preview (per ₹1000 sale)</p>
+                                        <div className="bg-white/50 rounded-xl p-3 flex items-center justify-between gap-2 border border-dashed border-gray-200">
+                                            <div className="text-center flex-1">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-1">Sale</p>
+                                                <p className="text-xs font-black text-[#1a1a1a]">₹1,000</p>
+                                            </div>
+                                            <div className="text-gray-300 text-xs font-black">-</div>
+                                            <div className="text-center flex-1">
+                                                <p className="text-[9px] font-bold text-red-400 uppercase leading-none mb-1">User Profit</p>
+                                                <p className="text-xs font-black text-red-500">
+                                                    ₹{formData.type === 'percentage' 
+                                                        ? (1000 * (Number(formData.value) / 100)).toLocaleString() 
+                                                        : Number(formData.value).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-gray-300 text-xs font-black">=</div>
+                                            <div className="text-center flex-1">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-1">Net Base</p>
+                                                <p className="text-xs font-black text-[#1a1a1a]">
+                                                    ₹{(1000 - (formData.type === 'percentage' 
+                                                        ? (1000 * (Number(formData.value) / 100)) 
+                                                        : Number(formData.value))).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-gray-300 text-xs font-black">→</div>
+                                            <div className="text-center flex-1 bg-emerald-50 rounded-lg py-1">
+                                                <p className="text-[9px] font-bold text-emerald-600 uppercase leading-none mb-1">Partner Earn</p>
+                                                <p className="text-xs font-black text-emerald-700">
+                                                    ₹{Math.floor((1000 - (formData.type === 'percentage' 
+                                                        ? (1000 * (Number(formData.value) / 100)) 
+                                                        : Number(formData.value))) * (Number(formData.commissionRate) / 100)).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

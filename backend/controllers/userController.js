@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
 import asyncHandler from 'express-async-handler';
+import { sendOTP, verifyOTP } from '../utils/smsService.js';
 
 // @desc    Register new user
 // @route   POST /api/users
@@ -41,7 +42,7 @@ export const registerUser = async (req, res) => {
       res.cookie('jwt', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
@@ -49,7 +50,8 @@ export const registerUser = async (req, res) => {
         _id: user.id,
         name: user.name,
         email: user.email,
-        role: 'user'
+        role: 'user',
+        token
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -71,14 +73,15 @@ export const loginUser = async (req, res) => {
       res.cookie('jwt', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV !== 'development',
-          sameSite: 'strict',
+          sameSite: 'lax',
           maxAge: 30 * 24 * 60 * 60 * 1000,
       });
       return res.json({
           _id: 'admin_01',
           name: 'Super Admin',
           email: 'admin@farmlyf.com',
-          role: 'admin'
+          role: 'admin',
+          token
       });
   }
 
@@ -94,7 +97,7 @@ export const loginUser = async (req, res) => {
       res.cookie('jwt', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
@@ -102,7 +105,8 @@ export const loginUser = async (req, res) => {
         _id: user.id,
         name: user.name,
         email: user.email,
-        role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
+        role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user',
+        token
       });
     } else {
       res.status(401).json({ message: 'Invalid credentials' });
@@ -293,4 +297,99 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('User not found');
     }
+});
+
+/**
+ * @desc    Send OTP for login
+ * @route   POST /api/users/send-otp-login
+ * @access  Public
+ */
+export const sendOtpForLogin = asyncHandler(async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        res.status(400);
+        throw new Error('Please provide a mobile number');
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+    const result = await sendOTP(normalizedPhone, 'Customer');
+    res.json(result);
+});
+
+/**
+ * @desc    Verify OTP for login
+ * @route   POST /api/users/verify-otp-login
+ * @access  Public
+ */
+export const verifyOtpForLogin = asyncHandler(async (req, res) => {
+    const { phone, otp, name, email, accountType } = req.body;
+
+    if (!phone || !otp) {
+        res.status(400);
+        throw new Error('Please provide phone and OTP');
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+
+    // First, check if user exists to decide whether to delete OTP on success
+    let user = await User.findOne({ phone: normalizedPhone });
+    const deleteOnSuccess = !!user || (!!name && !!email);
+
+    const isValid = await verifyOTP(normalizedPhone, otp, 'Customer', deleteOnSuccess);
+
+    if (!isValid) {
+        res.status(401);
+        throw new Error('Invalid or expired OTP');
+    }
+
+    if (!user) {
+        // If user doesn't exist and name/email are not provided, signal that it's a new user
+        if (!name || !email) {
+            return res.json({ isNewUser: true, phone });
+        }
+
+        // Check if email is already taken by another account (without this phone)
+        const emailExists = await User.findOne({ email });
+        if (emailExists) {
+            res.status(400);
+            throw new Error('Email is already registered with another account');
+        }
+
+        // Create new user
+        user = await User.create({
+            id: 'user_' + Date.now(),
+            name,
+            email,
+            phone: normalizedPhone,
+            accountType: accountType || 'Individual',
+            addresses: [],
+            wishlist: [],
+            usedCoupons: []
+        });
+    }
+
+    if (user && user.isBanned) {
+        res.status(401);
+        throw new Error('Your account has been banned');
+    }
+
+    // Login successful
+    const token = generateToken(user.id);
+    res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== 'development',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        accountType: user.accountType,
+        role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user',
+        token
+    });
 });

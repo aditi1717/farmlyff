@@ -50,6 +50,9 @@ import InfluencerDetailPage from './modules/admin/pages/InfluencerDetailPage';
 import StockAdjustmentPage from './modules/admin/pages/StockAdjustmentPage';
 import StockHistoryPage from './modules/admin/pages/StockHistoryPage';
 import LowStockAlertsPage from './modules/admin/pages/LowStockAlertsPage';
+import OfferListPage from './modules/admin/pages/OfferListPage';
+import OfferFormPage from './modules/admin/pages/OfferFormPage';
+import SingleOfferPage from './modules/user/pages/SingleOfferPage';
 
 import InventoryReportsPage from './modules/admin/pages/InventoryReportsPage';
 import HomepageSectionPage from './modules/admin/pages/HomepageSectionPage';
@@ -107,6 +110,7 @@ function App() {
                 <Route path="blog/:slug" element={<BlogDetailPage />} />
                 <Route path="login" element={<AuthPage />} />
                 <Route path="otp-verification" element={<OTPPage />} />
+                <Route path="offers/:slug" element={<SingleOfferPage />} />
               </Route>
 
               <Route path="/admin/login" element={<LoginPage />} />
@@ -143,6 +147,9 @@ function App() {
                 <Route path="inventory/history" element={<StockHistoryPage />} />
                 <Route path="inventory/alerts" element={<LowStockAlertsPage />} />
                 <Route path="inventory/reports" element={<InventoryReportsPage />} />
+                <Route path="offers" element={<OfferListPage />} />
+                <Route path="offers/add" element={<OfferFormPage />} />
+                <Route path="offers/edit/:id" element={<OfferFormPage />} />
                 <Route path="sections/why-choose-us" element={<WhyChooseUsPage />} />
                 <Route path="sections/about-us" element={<AboutSectionPage />} />
                 <Route path="sections/health-benefits" element={<HealthBenefitsSectionPage />} />

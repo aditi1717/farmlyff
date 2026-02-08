@@ -14,6 +14,7 @@ import { useProducts } from '../../../hooks/useProducts';
 import { useUserProfile } from '../../../hooks/useUser';
 import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
+import { useReferrals } from '../../../hooks/useReferrals';
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -28,6 +29,7 @@ const CheckoutPage = () => {
     const { data: products = [] } = useProducts();
     const activeCoupons = useActiveCoupons();
     const { data: userData } = useUserProfile();
+    const { data: allReferrals = [] } = useReferrals();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
     const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();
 
@@ -54,19 +56,44 @@ const CheckoutPage = () => {
     const getPackById = (packId) => products.find(p => p.id === packId);
 
     const validateCoupon = (userId, code, orderValue, cartItems) => {
+        // First check actual coupons
         const coupon = activeCoupons.find(c => c.code === code);
-        if (!coupon) return { valid: false, error: 'Invalid Coupon Code' };
-        if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of ₹${coupon.minOrderValue} required` };
+        if (coupon) {
+            if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of ₹${coupon.minOrderValue} required` };
 
-        // Calculate discount
-        let discount = 0;
-        if (coupon.type === 'percent') {
-            discount = Math.round((orderValue * coupon.value) / 100);
-            if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
-        } else {
-            discount = coupon.value;
+            let discount = 0;
+            if (coupon.type === 'percent') {
+                discount = Math.round((orderValue * coupon.value) / 100);
+                if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+            } else {
+                discount = coupon.value;
+            }
+            return { valid: true, coupon, discount };
         }
-        return { valid: true, coupon, discount };
+
+        // Then check referrals (as backup)
+        const referral = allReferrals.find(r => r.code === code && r.active);
+        if (referral) {
+            // Check expiry if exists
+            if (referral.validTo && new Date(referral.validTo) < new Date()) {
+                return { valid: false, error: 'Referral code has expired' };
+            }
+
+            let discount = 0;
+            if (referral.type === 'percentage') {
+                discount = Math.round((orderValue * referral.value) / 100);
+            } else {
+                discount = referral.value;
+            }
+            // Return in same format as coupon for UI compatibility
+            return { 
+                valid: true, 
+                coupon: { ...referral, type: referral.type === 'percentage' ? 'percent' : 'fixed' }, 
+                discount 
+            };
+        }
+
+        return { valid: false, error: 'Invalid Coupon or Referral Code' };
     };
 
     const recordCouponUsage = (userId, couponId) => {

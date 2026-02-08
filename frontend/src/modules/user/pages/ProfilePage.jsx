@@ -22,7 +22,7 @@ const ProfilePage = () => {
     const { data: userData, isLoading: profileLoading } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const { data: orders = [] } = useOrders(user?.id);
-    const { data: activeCoupons = [] } = useActiveCoupons();
+    const { data: activeCoupons = [], isLoading: couponsLoading } = useActiveCoupons();
     const { tab } = useParams();
     const activeTab = tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Overview';
     const [copied, setCopied] = useState(false);
@@ -353,7 +353,12 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                    {coupons.length > 0 ? coupons.map(coupon => (
+                    {couponsLoading ? (
+                        <div className="col-span-full py-16 text-center">
+                            <RefreshCw className="animate-spin mx-auto text-primary mb-3" size={32} />
+                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Fetching Coupons...</p>
+                        </div>
+                    ) : coupons.length > 0 ? coupons.map(coupon => (
                         <div key={coupon.id} className="relative group bg-primary/[0.03] border border-primary/20 rounded-[16px] md:rounded-[24px] p-2.5 md:p-4 hover:border-primary hover:bg-primary/[0.06] transition-all shadow-sm">
                             <div className="flex items-center justify-between mb-2 md:mb-3">
                                 <div className="w-6 h-6 md:w-8 md:h-8 bg-white rounded-lg md:rounded-xl flex items-center justify-center text-primary shadow-sm border border-primary/10">

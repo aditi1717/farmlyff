@@ -38,7 +38,8 @@ import {
     HelpCircle,
     User,
     Bell,
-    Globe
+    Globe,
+    Tag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -50,11 +51,13 @@ const AdminSidebar = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
     
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    
     // Fetch Order Stats
     const { data: orderStats = {} } = useQuery({
         queryKey: ['orderStats'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/orders/stats');
+            const res = await fetch(`${API_URL}/orders/stats`);
             if (!res.ok) throw new Error('Failed to fetch stats');
             return res.json();
         },
@@ -99,6 +102,7 @@ const AdminSidebar = () => {
         { icon: RefreshCcw, label: 'Returns', path: '/admin/returns' },
         { icon: ArrowLeftRight, label: 'Replacements', path: '/admin/replacements' },
         { icon: TicketPercent, label: 'Coupons', path: '/admin/coupons' },
+        { icon: Tag, label: 'Offers & Collections', path: '/admin/offers' },
         { icon: Share2, label: 'Referrals', path: '/admin/referrals' },
     ];
 

@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import Order from '../models/Order.js';
+import Referral from '../models/Referral.js';
 import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
 
@@ -79,6 +80,19 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
         await newOrder.save();
 
+        // Update Referral Stats if a coupon/code was used
+        if (orderData.appliedCoupon) {
+            const referral = await Referral.findOne({ code: orderData.appliedCoupon });
+            if (referral) {
+                referral.usageCount = (referral.usageCount || 0) + 1;
+                // Add the gross amount (subtotal before discount) to totalSales
+                // If subtotal isn't passed, we'll use total + discount as an estimate
+                const saleAmount = orderData.amount + (orderData.discount || 0);
+                referral.totalSales = (referral.totalSales || 0) + saleAmount;
+                await referral.save();
+            }
+        }
+
         // Create shipment in Shiprocket for prepaid orders (only if configured)
         if (shiprocketService.isConfigured()) {
             try {
@@ -145,6 +159,17 @@ export const createCODOrder = asyncHandler(async (req, res) => {
         });
 
         await newOrder.save();
+
+        // Update Referral Stats if a coupon/code was used
+        if (orderData.appliedCoupon) {
+            const referral = await Referral.findOne({ code: orderData.appliedCoupon });
+            if (referral) {
+                referral.usageCount = (referral.usageCount || 0) + 1;
+                const saleAmount = orderData.amount + (orderData.discount || 0);
+                referral.totalSales = (referral.totalSales || 0) + saleAmount;
+                await referral.save();
+            }
+        }
 
         // Create shipment in Shiprocket (only if configured)
         if (shiprocketService.isConfigured()) {

@@ -28,6 +28,7 @@ import blogRoutes from './routes/blogRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import offerRoutes from './routes/offerRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -98,6 +99,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/offers', offerRoutes);
 
 // 404 Handler
 app.use((req, res) => {

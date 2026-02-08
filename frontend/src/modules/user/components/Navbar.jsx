@@ -119,8 +119,11 @@ const Navbar = () => {
             {/* Desktop View Header */}
             <div className="hidden md:flex justify-between items-center gap-4 md:gap-8">
                 {/* Logo */}
-                <Link to="/" className="flex-shrink-0 flex items-center gap-1.5">
+                <Link to="/" className="flex-shrink-0 flex items-center gap-1.5 relative">
                     <img src={logo} alt="FarmLyf" className="h-7 md:h-9 w-auto object-contain" />
+                    {user?.accountType === 'Business' && (
+                        <span className="absolute -top-1 -right-8 bg-black text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Business</span>
+                    )}
                 </Link>
 
                 {/* Search Bar - Functional */}
@@ -349,8 +352,11 @@ const Navbar = () => {
                 </button>
 
                 {/* Centered Logo */}
-                <Link to="/" className="flex-shrink-0 absolute left-1/2 -translate-x-1/2">
+                <Link to="/" className="flex-shrink-0 absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
                     <img src={logo} alt="FarmLyf" className="h-6 w-auto object-contain" />
+                    {user?.accountType === 'Business' && (
+                        <span className="bg-black text-white text-[7px] font-black px-1 py-0.5 rounded uppercase leading-none">Business</span>
+                    )}
                 </Link>
 
                 {/* Right Icons */}

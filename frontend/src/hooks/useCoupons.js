@@ -14,13 +14,20 @@ export const useCoupons = () => {
 };
 
 export const useActiveCoupons = () => {
-    const { data: coupons } = useCoupons();
-    if (!coupons) return [];
-    
-    const now = new Date();
-    return coupons.filter(c => 
-        c.active && 
-        new Date(c.validUntil) > now && 
-        (!c.usageLimit || c.usageCount < c.usageLimit)
-    );
+    return useQuery({
+        queryKey: ['coupons', 'active'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/coupons`, { credentials: 'include' });
+            if(!res.ok) throw new Error('Failed to fetch coupons');
+            return res.json();
+        },
+        select: (coupons) => {
+            const now = new Date();
+            return coupons.filter(c => 
+                c.active && 
+                new Date(c.validUntil) > now && 
+                (!c.usageLimit || c.usageCount < c.usageLimit)
+            );
+        }
+    });
 };

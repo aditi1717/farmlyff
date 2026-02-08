@@ -1,26 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShieldCheck, RefreshCw, Smartphone } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, RefreshCw, User, Mail, Briefcase } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 const OTPPage = () => {
+    const { verifyOtp, sendOtp } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState(['', '', '', '']);
     const [timer, setTimer] = useState(30);
     const [isLoading, setIsLoading] = useState(false);
+    const [isNewUser, setIsNewUser] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [accountType, setAccountType] = useState('Individual');
     const inputRefs = useRef([]);
 
-    // Get email/phone from previous navigation state
-    const contactInfo = location.state?.contact || 'your registered contact';
+    // Get phone from previous navigation state
+    const phone = location.state?.contact;
 
     useEffect(() => {
+        if (!phone) {
+            navigate('/login');
+            return;
+        }
+
         if (timer > 0) {
             const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
             return () => clearInterval(interval);
         }
-    }, [timer]);
+    }, [timer, phone]);
 
     const handleChange = (index, value) => {
         if (isNaN(value)) return;
@@ -30,7 +41,7 @@ const OTPPage = () => {
         setOtp(newOtp);
 
         // Move to next input if value is entered
-        if (value && index < 5) {
+        if (value && index < 3) {
             inputRefs.current[index + 1].focus();
         }
     };
@@ -44,46 +55,62 @@ const OTPPage = () => {
 
     const handlePaste = (e) => {
         e.preventDefault();
-        const data = e.clipboardData.getData('text').slice(0, 6);
+        const data = e.clipboardData.getData('text').slice(0, 4);
         if (!/^\d+$/.test(data)) return;
 
         const pasteData = data.split('');
         const newOtp = [...otp];
         pasteData.forEach((char, i) => {
-            if (i < 6) newOtp[i] = char;
+            if (i < 4) newOtp[i] = char;
         });
         setOtp(newOtp);
 
         // Focus last filled or next empty
-        const lastIndex = Math.min(pasteData.length, 5);
+        const lastIndex = Math.min(pasteData.length, 3);
         inputRefs.current[lastIndex].focus();
     };
 
     const handleVerify = async (e) => {
         e.preventDefault();
         const fullOtp = otp.join('');
-        if (fullOtp.length < 6) {
-            toast.error('Please enter complete 6-digit OTP');
+        if (fullOtp.length < 4) {
+            toast.error('Please enter complete 4-digit OTP');
             return;
         }
 
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            if (fullOtp === '123456') { // Demo OTP
-                toast.success('Verification successful!');
-                navigate('/');
-            } else {
-                toast.error('Invalid OTP. Use 123456 for demo.');
+
+        if (isNewUser) {
+            if (!name || !email || !accountType) {
+                toast.error('Please fill in all fields');
+                setIsLoading(false);
+                return;
             }
-        }, 1500);
+            const result = await verifyOtp(phone, fullOtp, name, email, accountType);
+            setIsLoading(false);
+            if (result.success) {
+                navigate('/');
+            }
+        } else {
+            const result = await verifyOtp(phone, fullOtp);
+            setIsLoading(false);
+            if (result.success) {
+                if (result.isNewUser) {
+                    setIsNewUser(true);
+                    toast.success('OTP verified! Please complete your registration.');
+                } else {
+                    navigate('/');
+                }
+            }
+        }
     };
 
-    const handleResend = () => {
+    const handleResend = async () => {
         if (timer > 0) return;
-        setTimer(30);
-        toast.success('New OTP sent successfully!');
+        const res = await sendOtp(phone);
+        if (res.success) {
+            setTimer(30);
+        }
     };
 
     return (
@@ -122,12 +149,12 @@ const OTPPage = () => {
 
                 <h1 className="text-2xl font-black text-gray-900 font-['Poppins'] mb-3 uppercase tracking-tight">Two-Step Verification</h1>
                 <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                    We've sent a 6-digit verification code to <br />
-                    <span className="font-bold text-[#2c5336]">{contactInfo}</span>
+                    We've sent a 4-digit verification code to <br />
+                    <span className="font-bold text-[#2c5336]">+91 {phone}</span>
                 </p>
 
-                <form onSubmit={handleVerify} className="space-y-8">
-                    <div className="flex justify-between gap-2 md:gap-3" onPaste={handlePaste}>
+                <form onSubmit={handleVerify} className="space-y-6">
+                    <div className="flex justify-center gap-3 md:gap-4 mb-4" onPaste={handlePaste}>
                         {otp.map((digit, index) => (
                             <input
                                 key={index}
@@ -137,11 +164,70 @@ const OTPPage = () => {
                                 value={digit}
                                 onChange={(e) => handleChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
-                                className="w-12 h-14 md:w-14 md:h-16 text-center text-xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
+                                className="w-14 h-16 text-center text-xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
                                 autoFocus={index === 0}
                             />
                         ))}
                     </div>
+
+                    {isNewUser && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="space-y-4 pt-4 border-t border-gray-100"
+                        >
+                            <p className="text-xs font-bold text-[#2c5336] uppercase tracking-widest text-left mb-2">Complete Profile</p>
+                            <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Full Name</label>
+                                <div className="relative">
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all"
+                                        placeholder="John Doe"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Email Address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all"
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
+                            </div>
+                             <div className="space-y-1 text-left">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Account Type</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType('Individual')}
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${accountType === 'Individual' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
+                                    >
+                                        <User size={16} />
+                                        <span className="text-xs font-bold uppercase">Individual</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType('Business')}
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${accountType === 'Business' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
+                                    >
+                                        <Briefcase size={16} />
+                                        <span className="text-xs font-bold uppercase">Business</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
 
                     <button
                         type="submit"
@@ -151,17 +237,17 @@ const OTPPage = () => {
                         {isLoading ? (
                             <RefreshCw className="animate-spin" size={18} />
                         ) : (
-                            'Verify & Proceed'
+                            isNewUser ? 'Complete Registration' : 'Verify & Proceed'
                         )}
                     </button>
                 </form>
 
-                <div className="mt-10 pt-8 border-t border-gray-100 italic">
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Didn't receive the code?</p>
+                <div className="mt-8 pt-6 border-t border-gray-100 italic">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">Didn't receive the code?</p>
                     <button
                         onClick={handleResend}
-                        disabled={timer > 0}
-                        className={`flex items-center gap-2 mx-auto font-black text-sm uppercase tracking-tighter ${timer > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
+                        disabled={timer > 0 || isNewUser}
+                        className={`flex items-center gap-2 mx-auto font-black text-xs uppercase tracking-tighter ${timer > 0 || isNewUser ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
                     >
                         {timer > 0 ? `Resend available in ${timer}s` : 'Resend New Code'}
                     </button>
