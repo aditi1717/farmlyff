@@ -41,7 +41,8 @@ export const createCategory = async (req, res) => {
       image,
       status: status || 'Active',
       showInNavbar,
-      showInShopByCategory // Keeping for now if schema re-adds it, else ignored
+      showInShopByCategory, // Keeping for now if schema re-adds it, else ignored
+      order: req.body.order || 0
     });
 
     const createdCategory = await category.save();
@@ -65,6 +66,7 @@ export const updateCategory = async (req, res) => {
       category.status = req.body.status || category.status;
       category.showInNavbar = req.body.showInNavbar !== undefined ? req.body.showInNavbar : category.showInNavbar;
       category.showInShopByCategory = req.body.showInShopByCategory !== undefined ? req.body.showInShopByCategory : category.showInShopByCategory;
+      category.order = req.body.order !== undefined ? req.body.order : category.order;
 
       const updatedCategory = await category.save();
       res.json(updatedCategory);

@@ -59,6 +59,7 @@ import HealthBenefitsSectionPage from './modules/admin/pages/HealthBenefitsSecti
 import FAQSectionPage from './modules/admin/pages/FAQSectionPage'; // New Page
 import FooterManagerPage from './modules/admin/pages/FooterManagerPage'; // New Page
 import HeaderAnnouncementPage from './modules/admin/pages/HeaderAnnouncementPage'; // New Page
+import HeaderCategoryPage from './modules/admin/pages/HeaderCategoryPage'; // New Page
 import StaticPageEditor from './modules/admin/pages/StaticPageEditor'; // New Page
 import PushNotificationPage from './modules/admin/pages/PushNotificationPage'; // New Page
 import BlogListPage from './modules/admin/pages/BlogListPage'; // New Page 
@@ -148,6 +149,7 @@ function App() {
                 <Route path="sections/:sectionId" element={<HomepageSectionPage />} />
                 <Route path="manage-faq" element={<FAQSectionPage />} />
                 <Route path="manage-header" element={<HeaderAnnouncementPage />} />
+                <Route path="manage-header-categories" element={<HeaderCategoryPage />} />
                 <Route path="manage-footer" element={<FooterManagerPage />} />
                 <Route path="pages/:pageId" element={<StaticPageEditor />} />
                 <Route path="settings" element={<SettingsPage />} />

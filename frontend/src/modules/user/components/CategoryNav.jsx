@@ -82,12 +82,12 @@ const CategoryNav = () => {
         const seen = new Set();
         for (const cat of rawCategories) {
             const id = cat._id || cat.id;
-            if (id && !seen.has(id) && cat.status === 'Active' && cat.showInNavbar !== false) {
+            if (id && !seen.has(id) && cat.status === 'Active' && cat.showInNavbar === true) {
                 seen.add(id);
                 unique.push(cat);
             }
         }
-        return unique;
+        return unique.sort((a, b) => (a.order || 0) - (b.order || 0));
     }, [rawCategories]);
 
     // Build Shop Menu Data properly from DB

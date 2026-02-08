@@ -295,6 +295,7 @@ const CheckoutPage = () => {
 
         const orderData = {
             userId: user?.id,
+            userName: formData.fullName,
             items: enrichedCart,
             shippingAddress: formData,
             paymentMethod: paymentMethod,

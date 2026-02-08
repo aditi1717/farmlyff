@@ -16,6 +16,7 @@ const statusHistorySchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   id: { type: String, unique: true }, // Custom ID: "ORD-..."
   userId: String,
+  userName: String,
   date: Date,
   status: { type: String, default: 'pending' },
   deliveryStatus: { type: String, default: 'pending' },

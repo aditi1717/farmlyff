@@ -16,6 +16,7 @@ import { useProducts, useUpdateProduct } from '../../../hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+import Pagination from '../components/Pagination';
 
 const StockAdjustmentPage = () => {
     const navigate = useNavigate();
@@ -24,8 +25,11 @@ const StockAdjustmentPage = () => {
     const updateProductMutation = useUpdateProduct();
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [adjustments, setAdjustments] = useState({}); // { productId: addedQuantity }
+    const [adjustments, setAdjustments] = useState({}); // { 'productId:variantId' or 'productId': addedQuantity }
+    const [selectedVariants, setSelectedVariants] = useState({}); // { productId: variantId }
     const [isSaving, setIsSaving] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const filteredProducts = useMemo(() => {
         return products.filter(p =>
@@ -34,10 +38,17 @@ const StockAdjustmentPage = () => {
         );
     }, [products, searchTerm]);
 
-    const handleAdjustmentChange = (productId, value) => {
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredProducts, currentPage]);
+
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+    const handleAdjustmentChange = (id, value) => {
         if (value === '') {
             const newAdjustments = { ...adjustments };
-            delete newAdjustments[productId];
+            delete newAdjustments[id];
             setAdjustments(newAdjustments);
             return;
         }
@@ -47,31 +58,48 @@ const StockAdjustmentPage = () => {
 
         setAdjustments(prev => ({
             ...prev,
-            [productId]: qty
+            [id]: qty
         }));
     };
 
     const handleSaveAll = async () => {
-        const productIdsToUpdate = Object.keys(adjustments);
-        if (productIdsToUpdate.length === 0) return;
+        const adjustedKeys = Object.keys(adjustments);
+        if (adjustedKeys.length === 0) return;
 
         setIsSaving(true);
         const loadingToast = toast.loading('Syncing stock ledger...');
 
         try {
-            for (const id of productIdsToUpdate) {
-                const product = products.find(p => p.id === id || p._id === id);
+            // Group by productId
+            const productUpdates = {};
+            adjustedKeys.forEach(key => {
+                const [pid, vid] = key.split(':'); // Using colon to avoid confusion with potential hyphens in IDs
+                if (!productUpdates[pid]) productUpdates[pid] = [];
+                productUpdates[pid].push({ vid, adjustment: adjustments[key] });
+            });
+
+            for (const pid of Object.keys(productUpdates)) {
+                const product = products.find(p => p.id === pid || p._id === pid);
                 if (!product) continue;
 
-                const currentStock = product.stock?.quantity || 0;
-                const adjustment = adjustments[id] || 0;
-                const newTotal = Math.max(0, currentStock + adjustment);
+                const updatedData = JSON.parse(JSON.stringify(product)); // Deep clone
+                
+                productUpdates[pid].forEach(({ vid, adjustment }) => {
+                    if (!vid) {
+                        // Main product adjustment
+                        const currentStock = updatedData.stock?.quantity || 0;
+                        updatedData.stock = { ...updatedData.stock, quantity: Math.max(0, currentStock + adjustment) };
+                    } else {
+                        // Variant adjustment
+                        const variantIndex = updatedData.variants?.findIndex(v => v.id === vid || v._id === vid);
+                        if (variantIndex !== -1) {
+                            const currentVStock = updatedData.variants[variantIndex].stock || 0;
+                            updatedData.variants[variantIndex].stock = Math.max(0, currentVStock + adjustment);
+                        }
+                    }
+                });
 
-                const updatedData = {
-                    ...product,
-                    stock: { quantity: newTotal }
-                };
-                await updateProductMutation.mutateAsync({ id, data: updatedData });
+                await updateProductMutation.mutateAsync({ id: pid, data: updatedData });
             }
 
             toast.success('Stock updated successfully!', { id: loadingToast });
@@ -79,6 +107,7 @@ const StockAdjustmentPage = () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
 
         } catch (error) {
+            console.error('Stock update error:', error);
             toast.error('Failed to update some items', { id: loadingToast });
         } finally {
             setIsSaving(false);
@@ -158,11 +187,17 @@ const StockAdjustmentPage = () => {
                                 </AdminTableCell>
                             </AdminTableRow>
                         ) : (
-                            filteredProducts.map((p) => {
+                            paginatedProducts.map((p) => {
                                 const productId = p.id || p._id;
-                                const adjustment = adjustments[productId];
+                                const hasVariants = p.variants && p.variants.length > 0;
+                                const selectedVariantId = selectedVariants[productId] || (hasVariants ? p.variants[0].id || p.variants[0]._id : null);
+                                const selectedVariant = hasVariants ? p.variants.find(v => (v.id || v._id) === selectedVariantId) : null;
+                                
+                                const adjustmentKey = selectedVariantId ? `${productId}:${selectedVariantId}` : productId;
+                                const adjustment = adjustments[adjustmentKey];
                                 const isModified = adjustment !== undefined && adjustment !== 0;
-                                const currentStock = p.stock?.quantity || 0;
+                                
+                                const currentStock = hasVariants ? (selectedVariant?.stock || 0) : (p.stock?.quantity || 0);
                                 const finalStock = Math.max(0, currentStock + (adjustment || 0));
 
                                 return (
@@ -176,17 +211,31 @@ const StockAdjustmentPage = () => {
                                                         <Package size={20} className="text-gray-300" />
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium text-gray-900 text-sm line-clamp-1">
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-footerBg text-sm line-clamp-1 uppercase">
                                                         {p.name}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">{p.category || 'Uncategorized'}</p>
+                                                    {hasVariants ? (
+                                                        <select
+                                                            value={selectedVariantId}
+                                                            onChange={(e) => setSelectedVariants(prev => ({ ...prev, [productId]: e.target.value }))}
+                                                            className="mt-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary outline-none focus:border-primary transition-all cursor-pointer"
+                                                        >
+                                                            {p.variants.map(v => (
+                                                                <option key={v.id || v._id} value={v.id || v._id}>
+                                                                    {v.weight}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.category || 'Uncategorized'}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </AdminTableCell>
                                         <AdminTableCell>
-                                            <span className="text-sm font-medium text-gray-600 font-mono">
-                                                {p.sku || '-'}
+                                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest font-mono">
+                                                {hasVariants ? (selectedVariant?.id?.slice(-6).toUpperCase()) : (p.sku || p.id?.slice(-6).toUpperCase() || '-')}
                                             </span>
                                         </AdminTableCell>
                                         <AdminTableCell className="text-center">
@@ -203,17 +252,12 @@ const StockAdjustmentPage = () => {
                                                         type="number"
                                                         placeholder="0"
                                                         value={adjustment !== undefined ? adjustment : ''}
-                                                        onChange={(e) => handleAdjustmentChange(productId, e.target.value)}
+                                                        onChange={(e) => handleAdjustmentChange(adjustmentKey, e.target.value)}
                                                         className={`w-full text-center text-sm font-bold border rounded-lg py-2 outline-none transition-all placeholder:text-gray-300 ${isModified
                                                                 ? (adjustment > 0 ? 'border-green-400 bg-green-50 text-green-700' : 'border-red-400 bg-red-50 text-red-700')
                                                                 : 'border-gray-200 bg-white text-gray-900 focus:border-blue-500'
                                                             }`}
                                                     />
-                                                    {isModified && (
-                                                        <div className={`absolute top-1/2 -translate-y-1/2 left-2 pointer-events-none`}>
-                                                            {adjustment > 0 ? <Plus size={10} className="text-green-600" /> : <Minus size={10} className="text-red-600" />}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </AdminTableCell>
@@ -246,6 +290,19 @@ const StockAdjustmentPage = () => {
                         )}
                     </AdminTableBody>
                 </AdminTable>
+                
+                {filteredProducts.length > itemsPerPage && (
+                    <div className="px-6 py-4 border-t border-gray-100">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={(page) => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Bottom Floating Bar */}

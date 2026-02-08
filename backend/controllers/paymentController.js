@@ -68,6 +68,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         const newOrder = new Order({
             ...orderData,
             id: orderId,
+            userName: orderData.shippingAddress?.fullName, // Added for quick access
             date: new Date(),
             paymentStatus: 'paid',
             status: 'pending', // Order received
@@ -136,6 +137,7 @@ export const createCODOrder = asyncHandler(async (req, res) => {
         const newOrder = new Order({
             ...orderData,
             id: orderId,
+            userName: orderData.shippingAddress?.fullName, // Added for quick access
             date: new Date(),
             paymentMethod: 'cod',
             paymentStatus: 'pending',

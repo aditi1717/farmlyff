@@ -42,11 +42,33 @@ const OrderDetailPage = () => {
     });
 
     const [status, setStatus] = useState(null);
+    const [liveTracking, setLiveTracking] = useState(null);
+    const [trackingLoading, setTrackingLoading] = useState(false);
 
     // Sync status when order loads
     useEffect(() => {
         if (order) setStatus(order.status);
     }, [order]);
+
+    // Fetch live tracking from Shiprocket
+    useEffect(() => {
+        const fetchLiveTracking = async () => {
+            if (!order?.awbCode) return;
+            setTrackingLoading(true);
+            try {
+                const res = await fetch(`http://localhost:5000/api/orders/${order._id || order.id}/tracking`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setLiveTracking(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch live tracking:', error);
+            } finally {
+                setTrackingLoading(false);
+            }
+        };
+        fetchLiveTracking();
+    }, [order?.awbCode, order?._id, order?.id]);
 
     if (!order && !isLoading) {
         return (
@@ -61,13 +83,26 @@ const OrderDetailPage = () => {
 
     if (isLoading) return <div className="p-20 text-center">Loading Order...</div>;
 
-    const handleUpdateStatus = (newStatus) => {
-        setStatus(newStatus);
-        toast.success(`Order status updated to ${newStatus}`);
+    const handleUpdateStatus = async (newStatus) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/orders/${order._id || order.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                setStatus(newStatus);
+                toast.success(`Order status updated to ${newStatus}`);
+            } else {
+                toast.error('Failed to update status');
+            }
+        } catch (error) {
+            toast.error('Network error updating status');
+        }
     };
 
     // Derived Data Mocks
-    const isBusiness = order.userName?.toLowerCase().includes('enterprise') || false; // Mock
+    const isBusiness = (order.userName || order.shippingAddress?.fullName || '').toLowerCase().includes('enterprise') || false; // Mock
     const gstNumber = isBusiness ? '29ABCDE1234F1Z5' : null;
     const companyName = isBusiness ? 'Tech Solutions Pvt Ltd' : null;
 
@@ -330,11 +365,11 @@ const OrderDetailPage = () => {
                                 className={`flex items-center gap-4 p-2 -ml-2 rounded-xl transition-all ${(order.userId || order.user?.id || order.user?._id) ? 'cursor-pointer hover:bg-gray-50 group' : ''}`}
                             >
                                 <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center font-black text-sm text-gray-400 uppercase border border-gray-200 shrink-0 group-hover:border-gray-300 group-hover:bg-white transition-colors">
-                                    {order.userName?.charAt(0) || 'U'}
+                                    {(order.userName || order.shippingAddress?.fullName || 'U').charAt(0)}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <h3 className="font-bold text-footerBg text-sm truncate group-hover:text-primary group-hover:underline decoration-2 underline-offset-2 transition-all">
-                                        {order.userName || 'Unknown User'}
+                                        {order.userName || order.shippingAddress?.fullName || 'Unknown User'}
                                     </h3>
                                     <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1 truncate group-hover:text-gray-700">
                                         <Phone size={12} /> {order.user?.phone || order.address?.phone || order.shippingAddress?.phone || 'N/A'}
@@ -439,20 +474,52 @@ const OrderDetailPage = () => {
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span className="text-gray-500">Courier Partner</span>
-                                    <span className="font-bold text-footerBg">Delhivery Express</span>
+                                    <span className="font-bold text-footerBg">{order.courierName || 'Pending Assignment'}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-gray-500">AWB Number</span>
-                                    <span className="font-mono font-bold text-footerBg select-all">123456789012</span>
+                                    <span className="font-mono font-bold text-footerBg select-all">{order.awbCode || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-gray-500">Estimated Delivery</span>
-                                    <span className="font-bold text-emerald-600">30 Jan 2026</span>
+                                    <span className="font-bold text-emerald-600">{order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString() : 'TBD'}</span>
                                 </div>
-                                <button className="w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-colors">
-                                    Track Shipment
-                                </button>
+                                {order.awbCode && (
+                                    <a 
+                                        href={`https://www.shiprocket.co/tracking/${order.awbCode}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-colors text-center"
+                                    >
+                                        Track Shipment
+                                    </a>
+                                )}
                             </div>
+                            {/* Live Tracking Activities */}
+                            {(liveTracking?.tracking || trackingLoading) && (
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Clock size={12} /> Live Tracking Activity
+                                        {trackingLoading && <span className="animate-pulse">...</span>}
+                                    </h4>
+                                    {liveTracking?.tracking?.tracking_data?.shipment_track_activities && (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {liveTracking.tracking.tracking_data.shipment_track_activities.map((activity, idx) => (
+                                                <div key={idx} className="flex gap-2 items-start">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] font-bold text-footerBg">{activity.activity}</p>
+                                                        <p className="text-[9px] text-gray-400">{activity.location} - {new Date(activity.date).toLocaleString()}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {!liveTracking?.tracking?.tracking_data?.shipment_track_activities && !trackingLoading && (
+                                        <p className="text-[10px] text-gray-400 italic">Tracking activities will appear once shipment is picked up.</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 

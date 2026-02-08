@@ -52,7 +52,8 @@ const OrderListPage = () => {
                 order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.userName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-            const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
+            const normalizedStatus = order.status === 'pending' ? 'Processing' : order.status;
+            const matchesStatus = statusFilter === 'All' || normalizedStatus === statusFilter;
 
             return matchesSearch && matchesStatus;
         });
@@ -65,11 +66,15 @@ const OrderListPage = () => {
 
     const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
-    const getStatusStyles = (status) => {
-        switch (status) {
+    const getStatusStyles = (st) => {
+        const normalized = st === 'pending' ? 'Processing' : st;
+        switch (normalized) {
             case 'Delivered': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
             case 'Shipped': return 'bg-blue-50 text-blue-600 border-blue-100';
             case 'Processing': return 'bg-amber-50 text-amber-600 border-amber-100';
+            case 'Received': return 'bg-sky-50 text-sky-600 border-sky-100';
+            case 'Processed': return 'bg-teal-50 text-teal-600 border-teal-100';
+            case 'OutForDelivery': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
             case 'Cancelled': return 'bg-red-50 text-red-600 border-red-100';
             default: return 'bg-gray-50 text-gray-500 border-gray-100';
         }
@@ -128,15 +133,15 @@ const OrderListPage = () => {
                 </div>
                 {statusFilter === 'All' && (
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-                            {['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(s => (
+                        <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 overflow-x-auto no-scrollbar">
+                            {['All', 'Processing', 'Received', 'Processed', 'Shipped', 'OutForDelivery', 'Delivered', 'Cancelled'].map(s => (
                                 <button
                                     key={s}
                                     onClick={() => navigate(`/admin/orders?status=${s}`)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-footerBg'
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === s ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-footerBg'
                                         }`}
                                 >
-                                    {s === 'Processing' ? 'Pending' : s}
+                                    {s === 'Processing' ? 'Pending' : s === 'OutForDelivery' ? 'Out For Delivery' : s}
                                 </button>
                             ))}
                         </div>
@@ -163,10 +168,6 @@ const OrderListPage = () => {
                     <AdminTableBody>
                         {paginatedOrders.map((order, index) => {
                             const realIndex = (currentPage - 1) * itemsPerPage + index + 1;
-                            // Mock derived data
-                            const shipmentStatus = order.status === 'Delivered' ? 'Delivered' :
-                                order.status === 'Shipped' ? 'In Transit' :
-                                    order.status === 'Cancelled' ? 'Cancelled' : 'Pending';
 
                             return (
                                 <AdminTableRow key={order.id}>
@@ -180,7 +181,7 @@ const OrderListPage = () => {
                                         {(new Date(order.date)).toLocaleDateString('en-GB')}
                                     </AdminTableCell>
                                     <AdminTableCell>
-                                        <span className="font-bold text-footerBg text-sm">{order.userName || 'Unknown'}</span>
+                                        <span className="font-bold text-footerBg text-sm">{order.userName || order.shippingAddress?.fullName || 'Unknown'}</span>
                                     </AdminTableCell>
                                     <AdminTableCell>
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${(order.id?.charCodeAt(order.id.length - 1) || 0) % 2 === 0 ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
@@ -201,11 +202,20 @@ const OrderListPage = () => {
                                     <AdminTableCell>
                                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${getStatusStyles(order.status)}`}>
                                             <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{order.status}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                                {order.status === 'pending' ? 'Processing' : order.status}
+                                            </span>
                                         </div>
                                     </AdminTableCell>
                                     <AdminTableCell>
-                                        <span className="text-xs font-medium text-gray-500 uppercase">{shipmentStatus}</span>
+                                        {order.awbCode ? (
+                                            <div>
+                                                <span className="text-xs font-bold text-footerBg">{order.courierName || 'Courier'}</span>
+                                                <span className="block text-[10px] font-mono text-gray-400">{order.awbCode}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs font-medium text-gray-400 uppercase">Pending</span>
+                                        )}
                                     </AdminTableCell>
                                     <AdminTableCell className="text-right">
                                         <button

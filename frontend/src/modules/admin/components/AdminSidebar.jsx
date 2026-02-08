@@ -42,12 +42,25 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import logo from '../../../assets/logo.png';
 
 const AdminSidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
+    
+    // Fetch Order Stats
+    const { data: orderStats = {} } = useQuery({
+        queryKey: ['orderStats'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/orders/stats');
+            if (!res.ok) throw new Error('Failed to fetch stats');
+            return res.json();
+        },
+        refetchInterval: 30000 // Refetch every 30 seconds
+    });
+
     const [combosExpanded, setCombosExpanded] = useState(false);
     const [comboProductsExpanded, setComboProductsExpanded] = useState(false);
     const [productsExpanded, setProductsExpanded] = useState(false);
@@ -251,6 +264,16 @@ const AdminSidebar = () => {
                             >
                                 <Layout size={16} />
                                 <span className="font-semibold">Top Bar & Marquee</span>
+                            </Link>
+                            <Link
+                                to="/admin/manage-header-categories"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/manage-header-categories'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Layers size={16} />
+                                <span className="font-semibold">Header Categories</span>
                             </Link>
                             <Link
                                 to="/admin/sections/top-selling"
@@ -458,14 +481,14 @@ const AdminSidebar = () => {
                     {ordersExpanded && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             {[
-                                { label: 'All Order', count: 405, color: 'bg-pink-500', icon: ShoppingCart, path: '/admin/orders?status=All' },
-                                { label: 'Pending Order', count: 22, color: 'bg-orange-500', icon: Clock, path: '/admin/orders?status=Processing' },
-                                { label: 'Received Order', count: 195, color: 'bg-blue-500', icon: CheckCircle, path: '/admin/orders?status=Received' },
-                                { label: 'Processed Order', count: 13, color: 'bg-teal-500', icon: FileText, path: '/admin/orders?status=Processed' },
-                                { label: 'Shipped Order', count: 13, color: 'bg-gray-500', icon: Truck, path: '/admin/orders?status=Shipped' },
-                                { label: 'Out For Delivery', count: 18, color: 'bg-white text-footerBg', icon: MapPin, path: '/admin/orders?status=OutForDelivery' },
-                                { label: 'Delivered Order', count: 44, color: 'bg-orange-600', icon: CheckCircle2, path: '/admin/orders?status=Delivered' },
-                                { label: 'Cancelled Order', count: 40, color: 'bg-red-500', icon: XCircle, path: '/admin/orders?status=Cancelled' },
+                                { label: 'All Order', count: orderStats.All || 0, color: 'bg-pink-500', icon: ShoppingCart, path: '/admin/orders?status=All' },
+                                { label: 'Pending Order', count: orderStats.Processing || 0, color: 'bg-orange-500', icon: Clock, path: '/admin/orders?status=Processing' },
+                                { label: 'Received Order', count: orderStats.Received || 0, color: 'bg-blue-500', icon: CheckCircle, path: '/admin/orders?status=Received' },
+                                { label: 'Processed Order', count: orderStats.Processed || 0, color: 'bg-teal-500', icon: FileText, path: '/admin/orders?status=Processed' },
+                                { label: 'Shipped Order', count: orderStats.Shipped || 0, color: 'bg-gray-500', icon: Truck, path: '/admin/orders?status=Shipped' },
+                                { label: 'Out For Delivery', count: orderStats.OutForDelivery || 0, color: 'bg-white text-footerBg', icon: MapPin, path: '/admin/orders?status=OutForDelivery' },
+                                { label: 'Delivered Order', count: orderStats.Delivered || 0, color: 'bg-orange-600', icon: CheckCircle2, path: '/admin/orders?status=Delivered' },
+                                { label: 'Cancelled Order', count: orderStats.Cancelled || 0, color: 'bg-red-500', icon: XCircle, path: '/admin/orders?status=Cancelled' },
                             ].map((item, idx) => (
                                 <Link
                                     key={idx}
