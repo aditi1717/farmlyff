@@ -665,7 +665,7 @@ const ProductFormPage = () => {
                                     onChange={handleChange}
                                     className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all cursor-pointer"
                                 >
-                                    <option value="">Select Sub-Category</option>
+                                    <option value="">None (Optional)</option>
                                     {dbSubCategories
                                         .filter(sub => {
                                             const parentId = sub.parent?._id || sub.parent;

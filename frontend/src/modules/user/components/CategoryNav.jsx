@@ -43,32 +43,7 @@ const shopMenuData = [
     }
 ];
 
-const comboMenuData = [
-    {
-        title: 'ALL COMBOS',
-        slug: 'combos-packs',
-        items: [
-            { name: 'Daily Packs', slug: 'daily-packs' },
-            { name: 'Family Packs', slug: 'family-packs' },
-            { name: 'Party Packs', slug: 'party-packs' },
-            { name: 'Festival Packs', slug: 'festival-packs' },
-            { name: 'Health & Fitness Packs', slug: 'health-fitness-packs' },
-            { name: 'Wedding / Gifting Packs', slug: 'wedding-gifting-packs' }
-        ]
-    }
-];
 
-const categories = [
-    { name: 'Home', icon: Home, path: '/' },
-    { name: 'Shop', icon: Store, path: '/catalog', hasMenu: true, menuData: shopMenuData },
-    { name: 'Jumbo Nuts', icon: Nut, path: '/category/nuts' },
-    { name: 'Snacking', icon: Coffee, path: '/category/dried-fruits' },
-    { name: 'Dates', icon: Calendar, path: '/category/wet-dates' },
-    { name: 'Combos', icon: Package2, path: '/category/combos-packs', hasMenu: true, menuData: comboMenuData },
-    { name: 'Seeds', icon: Sprout, path: '/category/seeds-mixes' },
-    { name: 'Gifting', icon: Gift, path: '/category/wedding-gifting-packs' },
-    { name: 'Exotic Nuts', icon: Gem, path: '/category/macadamia-nuts' },
-];
 
 const CategoryNav = () => {
     const [activeMenu, setActiveMenu] = useState(null);
@@ -105,6 +80,37 @@ const CategoryNav = () => {
                 items: subs.map(s => ({ name: s.name, slug: s.slug }))
             };
         });
+    }, [categoriesDB, rawSubCategories]);
+
+    // Build Combo Menu Data dynamically from DB
+    const comboMenuData = React.useMemo(() => {
+        // Find the "Combos & Packs" category
+        const combosCategory = categoriesDB.find(cat => 
+            cat.slug === 'combos-packs' || 
+            cat.name.toLowerCase().includes('combo') || 
+            cat.name.toLowerCase().includes('pack')
+        );
+
+        if (!combosCategory) {
+            // Fallback to empty if category doesn't exist
+            return [{
+                title: 'ALL COMBOS',
+                slug: 'combos-packs',
+                items: []
+            }];
+        }
+
+        const catId = combosCategory._id || combosCategory.id;
+        const comboSubs = rawSubCategories.filter(sub => {
+            const subParentId = sub.parent?._id || sub.parent;
+            return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
+        });
+
+        return [{
+            title: 'ALL COMBOS',
+            slug: combosCategory.slug,
+            items: comboSubs.map(s => ({ name: s.name, slug: s.slug }))
+        }];
     }, [categoriesDB, rawSubCategories]);
 
     // Build Top Level Navigation Items

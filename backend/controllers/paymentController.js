@@ -12,6 +12,49 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
 });
 
+// Helper function to deduct stock from products
+const deductStock = async (orderItems) => {
+  const Product = (await import('../models/Product.js')).default;
+  
+  for (const item of orderItems) {
+    try {
+      const product = await Product.findOne({ id: item.productId });
+      
+      if (!product) {
+        console.error(`Product not found: ${item.productId}`);
+        continue;
+      }
+
+      // Check if it's a variant product or simple product
+      if (item.id && item.id.includes('_')) {
+        // Variant product (format: productId_variantId)
+        const variantId = item.id.split('_')[1];
+        const variant = product.variants.find(v => v.id === variantId);
+        
+        if (variant) {
+          variant.stock = Math.max(0, (variant.stock || 0) - item.qty);
+          console.log(`Deducted ${item.qty} from variant ${variantId} of ${product.name}. New stock: ${variant.stock}`);
+        }
+      } else {
+        // Simple product
+        product.stock.quantity = Math.max(0, (product.stock.quantity || 0) - item.qty);
+        console.log(`Deducted ${item.qty} from ${product.name}. New stock: ${product.stock.quantity}`);
+      }
+
+      // Update inStock flag
+      const hasStock = product.variants.length > 0
+        ? product.variants.some(v => (v.stock || 0) > 0)
+        : (product.stock.quantity || 0) > 0;
+      
+      product.inStock = hasStock;
+
+      await product.save();
+    } catch (error) {
+      console.error(`Error deducting stock for item ${item.id}:`, error.message);
+    }
+  }
+};
+
 // @desc    Create Razorpay Order
 // @route   POST /api/payments/order
 // @access  Public (or Private if auth is needed)
@@ -79,6 +122,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         });
 
         await newOrder.save();
+
+        // Deduct stock from products
+        await deductStock(orderData.items || []);
 
         // Update Referral Stats if a coupon/code was used
         if (orderData.appliedCoupon) {
@@ -159,6 +205,9 @@ export const createCODOrder = asyncHandler(async (req, res) => {
         });
 
         await newOrder.save();
+
+        // Deduct stock from products
+        await deductStock(orderData.items || []);
 
         // Update Referral Stats if a coupon/code was used
         if (orderData.appliedCoupon) {

@@ -42,68 +42,36 @@ const ComboProductsPage = () => {
 
     const itemsPerPage = 8;
 
-    // Dummy Data for Preview if no real combo products exist
-    const dummyCombos = [
-        {
-            id: 'dc1',
-            name: 'Diwali Celebration Mega Pack',
-            brand: 'Farmlyf Premium',
-            category: 'Combos & Packs',
-            subcategory: 'Festival Combos',
-            image: 'https://images.unsplash.com/photo-1511018556340-d16986a1c194?q=80&w=200&auto=format&fit=crop',
-            variants: [{ price: 2999, stock: 45 }],
-            rating: 4.9,
-            createdAt: new Date().toISOString(),
-            contents: [
-                { productName: 'Premium Almonds', variant: '500g', quantity: 2 },
-                { productName: 'Organic Cashews', variant: '500g', quantity: 2 },
-                { productName: 'Original Honey', variant: '250ml', quantity: 1 }
-            ]
-        },
-        {
-            id: 'dc2',
-            name: 'Immunity Booster Kit',
-            brand: 'FARMLYF',
-            category: 'Combos & Packs',
-            subcategory: 'Health & Wellness',
-            image: 'https://images.unsplash.com/photo-1610725666202-1a4686940337?q=80&w=200&auto=format&fit=crop',
-            variants: [{ price: 1499, stock: 12 }],
-            rating: 4.7,
-            createdAt: new Date().toISOString(),
-            contents: [
-                { productName: 'Amla Candy', variant: '200g', quantity: 2 },
-                { productName: 'Giloy Juice', variant: '500ml', quantity: 1 }
-            ]
-        },
-        {
-            id: 'dc3',
-            name: 'Gourmet Breakfast Bundle',
-            brand: 'FARMLYF',
-            category: 'Combos & Packs',
-            subcategory: 'Daily Essentials',
-            image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=200&auto=format&fit=crop',
-            variants: [{ price: 899, stock: 0 }],
-            rating: 4.5,
-            createdAt: new Date().toISOString(),
-            contents: [
-                { productName: 'Multigrain Oats', variant: '1kg', quantity: 1 },
-                { productName: 'Peanut Butter Creamy', variant: '350g', quantity: 1 }
-            ]
+    // Fetch categories to find combo category
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/categories');
+            if (!res.ok) throw new Error('Failed to fetch categories');
+            return res.json();
         }
-    ];
+    });
 
-    // Get all COMBOS (Parent Products)
-    const combos = useMemo(() => {
-        const realCombos = allProducts.filter(p =>
-            p.category === 'combos-packs' ||
-            p.subcategory?.toLowerCase().includes('pack') ||
-            p.name?.toLowerCase().includes('combo') ||
-            p.type === 'combo'
+    // Find the Combos & Packs category
+    const combosCategory = useMemo(() => {
+        return categories.find(cat => 
+            cat.slug === 'combos-packs' || 
+            cat.name?.toLowerCase().includes('combo') ||
+            cat.name?.toLowerCase().includes('pack')
         );
+    }, [categories]);
 
-        // If real combos are empty, show dummy data
-        return realCombos.length > 0 ? realCombos : dummyCombos;
-    }, [allProducts]);
+    // Get all COMBOS from database (filter by combos category)
+    const combos = useMemo(() => {
+        if (!combosCategory) return [];
+        
+        const combosCategoryId = combosCategory._id || combosCategory.id;
+        
+        return allProducts.filter(p => {
+            const productCategoryId = p.category?._id || p.category;
+            return productCategoryId && String(productCategoryId) === String(combosCategoryId);
+        });
+    }, [allProducts, combosCategory]);
 
     const filteredCombos = useMemo(() => {
         return combos.filter(combo => {
@@ -156,16 +124,12 @@ const ComboProductsPage = () => {
 
     // --- Actions ---
     const handleDelete = (id) => {
-        if (id.startsWith('dc')) return toast.error("Cannot delete dummy data!");
         if (window.confirm('Are you sure you want to delete this combo product?')) {
             deleteProductMutation.mutate(id);
         }
     };
 
     const handleBulkDelete = () => {
-        const skipCount = selectedProducts.filter(id => id.startsWith('dc')).length;
-        if (skipCount > 0) return toast.error(`Ignored ${skipCount} dummy items. Re-select only real data.`);
-
         if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} combos?`)) {
             selectedProducts.forEach(id => deleteProductMutation.mutate(id));
             setSelectedProducts([]);
