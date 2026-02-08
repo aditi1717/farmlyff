@@ -27,6 +27,7 @@ import websiteContentRoutes from './routes/websiteContentRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -96,6 +97,7 @@ app.use('/api/page-content', websiteContentRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/shipments', shipmentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 Handler
 app.use((req, res) => {

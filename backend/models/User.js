@@ -23,7 +23,8 @@ const userSchema = new mongoose.Schema({
   addresses: [addressSchema],
   wishlist: [String],
   usedCoupons: [String],
-  isBanned: { type: Boolean, default: false }
+  isBanned: { type: Boolean, default: false },
+  fcmToken: String // FCM device token for push notifications
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);

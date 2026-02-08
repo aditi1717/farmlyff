@@ -65,7 +65,7 @@ const HealthBenefitsSection = ({ data }) => {
                 <div className="grid grid-cols-2 md:flex md:flex-wrap justify-center gap-3 md:gap-6 pb-4">
                     {sectionData.benefits.slice(0, 5).map((benefit, index) => (
                         <motion.div
-                            key={index}
+                            key={benefit.title || index}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}

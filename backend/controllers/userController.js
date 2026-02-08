@@ -127,7 +127,9 @@ export const logoutUser = (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 export const getUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ id: req.user.id });
+  // Use the user already attached by 'protect' middleware
+  const user = req.user;
+
   if (user) {
     res.json({
         id: user.id,
@@ -141,7 +143,9 @@ export const getUserProfile = asyncHandler(async (req, res) => {
         role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
     });
   } else {
-    res.status(404).json({ message: 'User not found' });
+    // This case is actually handled by 'protect' middleware now, 
+    // but kept as a safety fallback.
+    res.status(401).json({ message: 'Not authorized, profile unavailable' });
   }
 });
 
@@ -262,3 +266,31 @@ export const toggleBanUser = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Update FCM token for push notifications
+// @route   PUT /api/users/fcm-token
+// @access  Private
+export const updateFcmToken = asyncHandler(async (req, res) => {
+    const { token } = req.body;
+    
+    if (!token) {
+        res.status(400);
+        throw new Error('FCM token is required');
+    }
+
+    // Skip FCM token storage for backdoor admin (they send notifications, not receive)
+    if (req.user.id === 'admin_01') {
+        return res.json({ message: 'Admin FCM token acknowledged (not stored)' });
+    }
+
+    const user = await User.findOne({ id: req.user.id });
+
+    if (user) {
+        user.fcmToken = token;
+        await user.save();
+        res.json({ message: 'FCM token updated successfully' });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});

@@ -1,35 +1,175 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Send, Bell, CheckCircle } from 'lucide-react';
+import { Send, Bell, CheckCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../../hooks/useNotifications.jsx';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const PushNotificationPage = () => {
     const [searchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'list';
+    const { notificationPermission, initNotifications } = useNotifications();
 
     // Push Notification State
     const [pushMessage, setPushMessage] = useState({
         heading: '',
         message: '',
-        target: 'all' // all, active, inactive
+        target: 'all' // all, active, cart
     });
+    const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
 
-    const handleSendPush = () => {
+    // Fetch notification history
+    useEffect(() => {
+        if (activeTab === 'list') {
+            fetchHistory();
+        }
+    }, [activeTab]);
+
+    const fetchHistory = async () => {
+        try {
+            setHistoryLoading(true);
+            const response = await fetch(`${API_URL}/notifications/history`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setHistory(data);
+            } else {
+                console.error('Failed to fetch notification history');
+            }
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleSendPush = async () => {
         if (!pushMessage.heading || !pushMessage.message) {
             toast.error("Please enter both heading and message");
             return;
         }
-        toast.success(`Push notification sent to ${pushMessage.target === 'all' ? 'All Users' : pushMessage.target} successfully!`);
-        setPushMessage({ heading: '', message: '', target: 'all' });
+
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_URL}/notifications/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
+                },
+                credentials: 'include',
+                body: JSON.stringify(pushMessage)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message || 'Notification sent successfully!');
+                setPushMessage({ heading: '', message: '', target: 'all' });
+                // Refresh history
+                fetchHistory();
+            } else {
+                toast.error(data.error || 'Failed to send notification');
+            }
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            toast.error('Failed to send notification. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResend = async (notification) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_URL}/notifications/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    heading: notification.heading,
+                    message: notification.message,
+                    target: notification.target
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message || 'Notification resent successfully!');
+                fetchHistory();
+            } else {
+                toast.error(data.error || 'Failed to resend notification');
+            }
+        } catch (error) {
+            console.error('Error resending notification:', error);
+            toast.error('Failed to resend notification. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        return date.toLocaleDateString();
+    };
+
+    const getTargetLabel = (target) => {
+        switch (target) {
+            case 'all': return 'All Users';
+            case 'active': return 'Active Users';
+            case 'cart': return 'Cart Users';
+            default: return target;
+        }
     };
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Page Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-black text-[#1a1a1a] uppercase tracking-tight">Push Notifications</h1>
                     <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">Engage with your mobile users</p>
+                </div>
+
+                {/* Permission Status */}
+                <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${
+                        notificationPermission === 'granted' ? 'bg-green-500' :
+                        notificationPermission === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
+                    }`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">
+                        Status: {notificationPermission}
+                    </span>
+                    {notificationPermission !== 'granted' && (
+                        <button 
+                            onClick={initNotifications}
+                            className="bg-black text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
+                        >
+                            Enable Now
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -39,21 +179,47 @@ const PushNotificationPage = () => {
                     <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm min-h-[600px]">
                         <div className="space-y-4">
                             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2">History</h4>
-                            {[
-                                { t: 'Big Savings on Almonds', m: 'Check out our refined selection...', d: '2 hours ago', s: 'Sent' },
-                                { t: 'Welcome Gift Inside 🎁', m: 'Open to redeem your code...', d: 'Yesterday', s: 'Sent' },
-                            ].map((n, i) => (
-                                <div key={i} className="flex items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-all">
-                                    <div>
-                                        <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{n.t}</p>
-                                        <p className="text-[10px] text-gray-400 font-bold mt-1 truncate max-w-[200px]">{n.m}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="block px-3 py-1 bg-green-100 text-green-600 rounded-full text-[9px] font-black uppercase tracking-wider mb-1">{n.s}</span>
-                                        <span className="text-[9px] font-bold text-gray-300 uppercase">{n.d}</span>
-                                    </div>
+                            {historyLoading ? (
+                                <div className="flex items-center justify-center py-20">
+                                    <p className="text-sm text-gray-400">Loading...</p>
                                 </div>
-                            ))}
+                            ) : history.length === 0 ? (
+                                <div className="flex items-center justify-center py-20">
+                                    <p className="text-sm text-gray-400">No notifications sent yet</p>
+                                </div>
+                            ) : (
+                                history.map((n, i) => (
+                                    <div key={n._id || i} className="flex items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-all">
+                                        <div className="flex-1">
+                                            <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{n.heading}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold mt-1 truncate max-w-[300px]">{n.message}</p>
+                                            <p className="text-[9px] text-gray-300 font-bold mt-1">
+                                                Target: {getTargetLabel(n.target)} • {n.successCount}/{n.sentCount} delivered
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => handleResend(n)}
+                                                disabled={loading}
+                                                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all disabled:opacity-50"
+                                                title="Resend this notification"
+                                            >
+                                                <RefreshCw size={14} className={`text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                                            </button>
+                                            <div className="text-right">
+                                                <span className={`block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider mb-1 ${
+                                                    n.status === 'sent' ? 'bg-green-100 text-green-600' :
+                                                    n.status === 'failed' ? 'bg-red-100 text-red-600' :
+                                                    'bg-yellow-100 text-yellow-600'
+                                                }`}>
+                                                    {n.status}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-gray-300 uppercase">{formatDate(n.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -75,7 +241,8 @@ const PushNotificationPage = () => {
                                         placeholder="e.g. Flash Sale is Live! 🔥"
                                         value={pushMessage.heading}
                                         onChange={(e) => setPushMessage({ ...pushMessage, heading: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-black transition-all shadow-sm"
+                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-black transition-all shadow-sm text-gray-900"
+                                        disabled={loading}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2">
@@ -85,7 +252,8 @@ const PushNotificationPage = () => {
                                         placeholder="e.g. Get 50% OFF on all items valid for next 2 hours only."
                                         value={pushMessage.message}
                                         onChange={(e) => setPushMessage({ ...pushMessage, message: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-black transition-all shadow-sm resize-none"
+                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-medium outline-none focus:border-black transition-all shadow-sm resize-none text-gray-900"
+                                        disabled={loading}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2">
@@ -93,7 +261,8 @@ const PushNotificationPage = () => {
                                     <select
                                         value={pushMessage.target}
                                         onChange={(e) => setPushMessage({ ...pushMessage, target: e.target.value })}
-                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-black transition-all shadow-sm appearance-none cursor-pointer"
+                                        className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-black transition-all shadow-sm appearance-none cursor-pointer text-gray-900"
+                                        disabled={loading}
                                     >
                                         <option value="all">Send to All Users</option>
                                         <option value="active">Active Users (Last 30 Days)</option>
@@ -102,9 +271,10 @@ const PushNotificationPage = () => {
                                 </div>
                                 <button
                                     onClick={handleSendPush}
-                                    className="w-full py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-black/20 hover:bg-gray-900 active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-2 mt-4"
+                                    disabled={loading}
+                                    className="w-full py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-black/20 hover:bg-gray-900 active:scale-[0.98] transition-all text-xs flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Send size={16} /> Send Blast
+                                    <Send size={16} /> {loading ? 'Sending...' : 'Send Blast'}
                                 </button>
                             </div>
                         </div>

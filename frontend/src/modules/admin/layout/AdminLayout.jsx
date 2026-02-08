@@ -2,9 +2,13 @@ import { Outlet, Navigate } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminHeader from '../components/AdminHeader';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../hooks/useNotifications.jsx';
 
 const AdminLayout = () => {
     const { user, loading } = useAuth();
+    
+    // Initialize notification listeners and token registration
+    useNotifications();
 
     if (loading) return null;
 

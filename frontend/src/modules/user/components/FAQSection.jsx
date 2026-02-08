@@ -70,7 +70,7 @@ const FAQSection = () => {
                     <div className="bg-gray-50/50 rounded-3xl p-4 md:p-6 border border-gray-100">
                         {faqs.map((faq, index) => (
                             <FAQItem
-                                key={faq.id}
+                                key={faq._id || faq.id || index}
                                 item={faq}
                                 isOpen={openIndex === index}
                                 onClick={() => toggleFAQ(index)}

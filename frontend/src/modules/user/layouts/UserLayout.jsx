@@ -8,10 +8,14 @@ import OfferStrip from '../components/OfferStrip';
 import Footer from '../components/Footer';
 import FloatingContact from '../components/FloatingContact';
 import BottomNavbar from '../components/BottomNavbar';
+import { useNotifications } from '../../../hooks/useNotifications.jsx';
 
 const UserLayout = () => {
     const location = useLocation();
     const isHome = location.pathname === '/';
+    
+    // Initialize notification listeners and token registration
+    useNotifications();
 
     return (
         <div className="flex flex-col min-h-screen font-sans bg-background">

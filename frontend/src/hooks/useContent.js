@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 // However, the prompt asked for "Products -> React Query", implies data fetching.
 // I will assume Banners are data.
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const defaultBanners = [
     {
