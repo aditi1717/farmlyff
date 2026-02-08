@@ -17,7 +17,7 @@ import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ImageResize from 'quill-image-resize-module-react';
 import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -55,6 +55,15 @@ const ProductFormPage = () => {
     const uploadImageMutation = useUploadImage();
     const { data: dbCategories = [] } = useCategories();
     const { data: dbSubCategories = [] } = useSubCategories();
+    
+    // Fetch Combo Categories
+    const { data: dbComboCategories = [] } = useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/combo-categories');
+            return res.json();
+        }
+    });
 
     const isEdit = Boolean(id);
 
@@ -655,6 +664,10 @@ const ProductFormPage = () => {
                                     {dbCategories.filter(c => c.status === 'Active').map(cat => (
                                         <option key={cat.id || cat._id} value={cat.slug}>{cat.name}</option>
                                     ))}
+                                    {/* Always show Combos & Packs option */}
+                                    {!dbCategories.some(c => c.slug === 'combos-packs' && c.status === 'Active') && (
+                                        <option value="combos-packs">Combos & Packs</option>
+                                    )}
                                 </select>
                             </div>
                             <div className="flex flex-col gap-2">
@@ -666,7 +679,8 @@ const ProductFormPage = () => {
                                     className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all cursor-pointer"
                                 >
                                     <option value="">None (Optional)</option>
-                                    {dbSubCategories
+                                    {/* Show regular subcategories for non-combo categories */}
+                                    {formData.category !== 'combos-packs' && dbSubCategories
                                         .filter(sub => {
                                             const parentId = sub.parent?._id || sub.parent;
                                             const parentSlug = dbCategories.find(c => String(c._id || c.id) === String(parentId))?.slug;
@@ -674,6 +688,13 @@ const ProductFormPage = () => {
                                         })
                                         .map(sub => (
                                             <option key={sub.id || sub._id} value={sub.name}>{sub.name}</option>
+                                        ))
+                                    }
+                                    {/* Show combo categories when Combos & Packs is selected */}
+                                    {formData.category === 'combos-packs' && dbComboCategories
+                                        .filter(combo => combo.status === 'Active')
+                                        .map(combo => (
+                                            <option key={combo.id || combo._id} value={combo.name}>{combo.name}</option>
                                         ))
                                     }
                                 </select>

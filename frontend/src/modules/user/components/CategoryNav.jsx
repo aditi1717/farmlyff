@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';
+import { useQuery } from '@tanstack/react-query';
 import {
     Store,
     Nut,
@@ -51,6 +52,15 @@ const CategoryNav = () => {
     const { data: rawSubCategories = [] } = useSubCategories();
     const { data: products = [] } = useProducts();
 
+    // Fetch Combo Categories from new dedicated endpoint
+    const { data: comboCategories = [] } = useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/combo-categories');
+            return res.json();
+        }
+    });
+
     // Deduplicate and filter active categories
     const categoriesDB = React.useMemo(() => {
         const unique = [];
@@ -82,36 +92,15 @@ const CategoryNav = () => {
         });
     }, [categoriesDB, rawSubCategories]);
 
-    // Build Combo Menu Data dynamically from DB
+    // Build Combo Menu Data dynamically from new dedicated DB
     const comboMenuData = React.useMemo(() => {
-        // Find the "Combos & Packs" category
-        const combosCategory = categoriesDB.find(cat => 
-            cat.slug === 'combos-packs' || 
-            cat.name.toLowerCase().includes('combo') || 
-            cat.name.toLowerCase().includes('pack')
-        );
-
-        if (!combosCategory) {
-            // Fallback to empty if category doesn't exist
-            return [{
-                title: 'ALL COMBOS',
-                slug: 'combos-packs',
-                items: []
-            }];
-        }
-
-        const catId = combosCategory._id || combosCategory.id;
-        const comboSubs = rawSubCategories.filter(sub => {
-            const subParentId = sub.parent?._id || sub.parent;
-            return subParentId && catId && String(subParentId) === String(catId) && sub.status === 'Active';
-        });
-
+        const activeCombos = comboCategories.filter(c => c.status === 'Active');
         return [{
             title: 'ALL COMBOS',
-            slug: combosCategory.slug,
-            items: comboSubs.map(s => ({ name: s.name, slug: s.slug }))
+            slug: 'combos-packs',
+            items: activeCombos.map(s => ({ name: s.name, slug: s.slug }))
         }];
-    }, [categoriesDB, rawSubCategories]);
+    }, [comboCategories]);
 
     // Build Top Level Navigation Items
     const navItems = React.useMemo(() => {

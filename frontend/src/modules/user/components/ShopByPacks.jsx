@@ -38,33 +38,32 @@ const defaultPacks = [
 
 // import { useShop } from '../../../context/ShopContext'; // Removed
 import { useCategories, useSubCategories } from '../../../hooks/useProducts';
+import { useQuery } from '@tanstack/react-query';
 
 const ShopByPacks = () => {
     const { data: categories = [] } = useCategories();
-    const { data: subCategories = [] } = useSubCategories();
+    // Fetch Combo Categories from new dedicated endpoint
+    const { data: comboCategories = [] } = useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/combo-categories');
+            return res.json();
+        }
+    });
 
-    // Find "Combos & Packs" parent category first
-    const comboParent = categories.find(c => (c.slug === 'combos-packs' || c.name === 'Combos & Packs'));
-    
     const packs = React.useMemo(() => {
-        if (!comboParent) return defaultPacks;
-        
-        // Find children in SubCategories
-        const dbPacks = subCategories.filter(c => 
-            (c.parent === comboParent._id || c.parent === comboParent.id || c.parent?._id === comboParent._id) && c.status === 'Active'
-        );
+        const activeCombos = comboCategories.filter(c => c.status === 'Active');
+        if (activeCombos.length === 0) return defaultPacks;
 
-        if (dbPacks.length === 0) return defaultPacks;
-
-        return dbPacks.map(p => ({
+        return activeCombos.map(p => ({
             title: p.name,
             subtitle: p.description || 'Curated collection',
             image: packAssetMap[p.slug] || p.image || dailyPackImg,
-            path: `/category/${p.slug}`,
-            tag: 'SPECIAL', // Dynamic capability can be added later
+            path: `/category/combos-packs/${p.slug}`,
+            tag: 'SPECIAL',
             id: p._id || p.id
         }));
-    }, [categories, comboParent]);
+    }, [comboCategories]);
     return (
         <section className="bg-[#FFFBEB] py-8 md:py-20 px-3 md:px-12 relative overflow-hidden">
             <div className="container mx-auto relative z-10">

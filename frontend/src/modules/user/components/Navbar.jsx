@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';
+import { useQuery } from '@tanstack/react-query';
 
 import logo from '../../../assets/logo.png';
 
@@ -26,6 +27,15 @@ const Navbar = () => {
     const { data: rawCategories = [] } = useCategories();
     const { data: rawSubCategories = [] } = useSubCategories();
     const { data: products = [] } = useProducts();
+
+    // Fetch Combo Categories from new dedicated endpoint
+    const { data: comboCategories = [] } = useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/combo-categories');
+            return res.json();
+        }
+    });
 
     const categories = React.useMemo(() => {
         const unique = [];
@@ -61,8 +71,8 @@ const Navbar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const [expandedMenu, setExpandedMenu] = React.useState(null); // Accordion State
 
-    const { filteredProducts, filteredCats, filteredSubs } = React.useMemo(() => {
-        if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [] };
+    const { filteredProducts, filteredCats, filteredSubs, filteredCombos } = React.useMemo(() => {
+        if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [], filteredCombos: [] };
 
         const q = searchQuery.toLowerCase();
 
@@ -91,9 +101,13 @@ const Navbar = () => {
         const fs = subCategories.filter(s =>
             s.name?.toLowerCase().includes(q) && s.status === 'Active'
         );
+        
+        const fcom = comboCategories.filter(c => 
+            c.name?.toLowerCase().includes(q) && c.status === 'Active'
+        );
 
-        return { filteredProducts: fp, filteredCats: fc, filteredSubs: fs };
-    }, [searchQuery, products, categories, subCategories, selectedCategory]);
+        return { filteredProducts: fp, filteredCats: fc, filteredSubs: fs, filteredCombos: fcom };
+    }, [searchQuery, products, categories, subCategories, selectedCategory, comboCategories]);
 
     const getSubLink = React.useCallback((sub) => {
         const parentId = sub.parent?._id || sub.parent;
@@ -260,23 +274,23 @@ const Navbar = () => {
                                         </div>
                                     )}
 
-                                    {filteredSubs.length > 0 && (
+                                    {filteredCombos.length > 0 && (
                                         <div className="mb-1">
-                                            <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Collections</div>
-                                            {filteredSubs.map(s => (
+                                            <div className="px-4 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">Combo Packs</div>
+                                            {filteredCombos.map(c => (
                                                 <Link
-                                                    key={s.id || s._id}
-                                                    to={getSubLink(s)}
+                                                    key={c.id || c._id}
+                                                    to={`/category/combos-packs/${c.slug}`}
                                                     onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
                                                     className="block px-4 py-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-gray-50"
                                                 >
-                                                    {s.name}
+                                                    {c.name}
                                                 </Link>
                                             ))}
                                         </div>
                                     )}
 
-                                    {filteredProducts.length === 0 && filteredCats.length === 0 && filteredSubs.length === 0 && (
+                                    {filteredProducts.length === 0 && filteredCats.length === 0 && filteredSubs.length === 0 && filteredCombos.length === 0 && (
                                         <div className="px-4 py-8 text-center text-gray-400 text-sm">
                                             No results found for "<span className="font-bold text-gray-600">{searchQuery}</span>"
                                         </div>
@@ -439,19 +453,59 @@ const Navbar = () => {
                                         </Link>
 
                                         {/* Combos & Packs */}
-                                        <Link
-                                            to="/category/combos-packs"
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
-                                        >
-                                            <span className="text-[#25D366]">
-                                                <Package size={22} />
-                                            </span>
-                                            <span className="font-bold tracking-wide text-sm">COMBOS & PACKS</span>
-                                        </Link>
+                                        <div className="flex flex-col">
+                                            <button
+                                                onClick={() => {
+                                                    setExpandedMenu(expandedMenu === 'combos' ? null : 'combos');
+                                                }}
+                                                className="flex items-center justify-between w-full px-4 py-3 rounded-xl hover:bg-white/5 transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[#25D366]">
+                                                        <Package size={22} />
+                                                    </span>
+                                                    <span className="font-bold tracking-wide text-sm uppercase">COMBOS & PACKS</span>
+                                                </div>
+                                                <ChevronDown
+                                                    size={16}
+                                                    className={`text-gray-400 transition-transform duration-300 ${expandedMenu === 'combos' ? 'rotate-180' : ''}`}
+                                                />
+                                            </button>
+
+                                            <AnimatePresence>
+                                                {expandedMenu === 'combos' && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        className="overflow-hidden bg-black/20 rounded-lg mx-2"
+                                                    >
+                                                        <div className="flex flex-col py-2">
+                                                            <Link
+                                                                to="/category/combos-packs"
+                                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                                className="px-11 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2"
+                                                            >
+                                                                <span>View All Combos</span>
+                                                            </Link>
+                                                            {comboCategories.filter(c => c.status === 'Active').map(combo => (
+                                                                <Link
+                                                                    key={combo.id || combo._id}
+                                                                    to={`/category/combos-packs/${combo.slug}`}
+                                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                                    className="px-11 py-2.5 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                                                                >
+                                                                    {combo.name}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
 
                                         {/* Categories */}
-                                        {categories.filter(c => c.status === 'Active').map((category) => {
+                                        {categories.filter(c => c.status === 'Active' && c.slug !== 'combos-packs').map((category) => {
                                             const isExpanded = expandedMenu === (category.id || category._id);
                                             const catSubs = subCategories.filter(s => {
                                                 const parentId = s.parent?._id || s.parent;

@@ -25,7 +25,7 @@ export const getSubCategories = async (req, res) => {
 // Create new sub-category
 export const createSubCategory = async (req, res) => {
     try {
-        const { name, slug, parent, status, showInShopByCategory } = req.body;
+        const { name, slug, parent, status, showInShopByCategory, image, description } = req.body;
         // Basic slug generation if not provided
         const finalSlug = slug || name.toLowerCase().replace(/ /g, '-');
 
@@ -34,7 +34,9 @@ export const createSubCategory = async (req, res) => {
             slug: finalSlug,
             parent, // ID of Category
             status,
-            showInShopByCategory
+            showInShopByCategory,
+            image,
+            description
         });
 
         await newSub.save();
@@ -47,7 +49,7 @@ export const createSubCategory = async (req, res) => {
 // Update sub-category
 export const updateSubCategory = async (req, res) => {
     try {
-        const { name, slug, parent, status, showInShopByCategory } = req.body;
+        const { name, slug, parent, status, showInShopByCategory, image, description } = req.body;
         const sub = await SubCategory.findById(req.params.id);
 
         if (sub) {
@@ -56,6 +58,8 @@ export const updateSubCategory = async (req, res) => {
             if (parent) sub.parent = parent;
             if (status) sub.status = status;
             if (showInShopByCategory !== undefined) sub.showInShopByCategory = showInShopByCategory;
+            if (image !== undefined) sub.image = image;
+            if (description !== undefined) sub.description = description;
 
             const updatedSub = await sub.save();
             res.json(updatedSub);

@@ -17,7 +17,7 @@ import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ImageResize from 'quill-image-resize-module-react';
 import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -49,6 +49,15 @@ const ComboFormPage = () => {
     const { data: productToEdit } = useProduct(id);
     const { data: dbCategories = [] } = useCategories();
     const { data: dbSubCategories = [] } = useSubCategories();
+    
+    // Fetch Combo Categories from new dedicated endpoint
+    const { data: comboCategories = [] } = useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/api/combo-categories');
+            return res.json();
+        }
+    });
 
     // Mutations
     const addProductMutation = useAddProduct();
@@ -230,15 +239,6 @@ const ComboFormPage = () => {
             });
         }
     };
-
-    // Filter subcategories for Combos
-    const comboSubCategories = useMemo(() => {
-        return dbSubCategories.filter(sub => {
-            const parentId = sub.parent?._id || sub.parent;
-            const parentSlug = dbCategories.find(c => String(c._id || c.id) === String(parentId))?.slug;
-            return parentSlug === 'combos-packs' && sub.status === 'Active';
-        });
-    }, [dbSubCategories, dbCategories]);
 
     return (
         <div className="space-y-10 pb-20">
@@ -729,9 +729,12 @@ const ComboFormPage = () => {
                                     className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all cursor-pointer"
                                 >
                                     <option value="">Select Category</option>
-                                    {comboSubCategories.map(sub => (
-                                        <option key={sub.id || sub._id} value={sub.name}>{sub.name}</option>
-                                    ))}
+                                    {comboCategories
+                                        .filter(combo => combo.status === 'Active')
+                                        .map(combo => (
+                                            <option key={combo.id || combo._id} value={combo.name}>{combo.name}</option>
+                                        ))
+                                    }
                                 </select>
                             </div>
                         </div>

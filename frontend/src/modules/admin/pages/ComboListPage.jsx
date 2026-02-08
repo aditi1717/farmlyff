@@ -18,20 +18,11 @@ import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTabl
 const ComboListPage = () => {
     const queryClient = useQueryClient();
 
-    // Fetch Categories
-    const { data: categories = [] } = useQuery({
-        queryKey: ['categories'],
+    // Fetch Combo Categories directly
+    const { data: comboCategories = [], isLoading } = useQuery({
+        queryKey: ['combo-categories'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/categories');
-            return res.json();
-        }
-    });
-
-    // Fetch SubCategories
-    const { data: subCategories = [] } = useQuery({
-        queryKey: ['subcategories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/subcategories');
+            const res = await fetch('http://localhost:5000/api/combo-categories');
             return res.json();
         }
     });
@@ -45,32 +36,6 @@ const ComboListPage = () => {
     const [newItem, setNewItem] = useState({ name: '', image: '', description: '', status: 'Active' });
     const [preview, setPreview] = useState(null);
     const fileInputRef = useRef(null);
-
-    // Find "Combos & Packs" Parent ID
-    const comboParentId = useMemo(() => {
-        const parent = categories.find(c => c.slug === 'combos-packs' || c.name === 'Combos & Packs');
-        return parent?._id || parent?.id;
-    }, [categories]);
-
-    // Dummy Data for Preview if no real categories exist
-    const dummyCategories = [
-        { id: 'd1', name: 'Festival Combos', image: 'https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=200&auto=format&fit=crop', description: 'Special packs for Diwali, Holi and other festivals.', status: 'Active' },
-        { id: 'd2', name: 'Health & Wellness', image: 'https://images.unsplash.com/photo-1547514701-42782101795e?q=80&w=200&auto=format&fit=crop', description: 'Curated packs for weight loss, stamina and immunity.', status: 'Active' },
-        { id: 'd3', name: 'Corporate Gifting', image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=200&auto=format&fit=crop', description: 'Premium boxes for corporate partners and employees.', status: 'Active' },
-        { id: 'd4', name: 'Daily Essentials', image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=200&auto=format&fit=crop', description: 'Monthly requirements packed together with savings.', status: 'Hidden' }
-    ];
-
-    // Filter SubCategories for Combos
-    const comboCategories = useMemo(() => {
-        const realData = subCategories.filter(s => {
-            if (!s.parent) return false;
-            const pId = typeof s.parent === 'object' ? s.parent._id || s.parent.id : s.parent;
-            return pId === comboParentId;
-        });
-
-        // If real data is empty, show dummy data for visual excellence
-        return realData.length > 0 ? realData : dummyCategories;
-    }, [subCategories, comboParentId]);
 
     const filteredCombos = useMemo(() => {
         return comboCategories.filter(combo =>
@@ -96,19 +61,18 @@ const ComboListPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!comboParentId) return toast.error("Parent Category 'Combos & Packs' not found!");
 
         setLoading(true);
         const isEdit = !!editingCombo;
         const targetUrl = isEdit
-            ? `http://localhost:5000/api/subcategories/${editingCombo.id || editingCombo._id}`
-            : `http://localhost:5000/api/subcategories`;
+            ? `http://localhost:5000/api/combo-categories/${editingCombo.id || editingCombo._id}`
+            : `http://localhost:5000/api/combo-categories`;
 
         const method = isEdit ? 'PUT' : 'POST';
 
         const payload = isEdit
-            ? { ...editingCombo, parent: comboParentId }
-            : { ...newItem, parent: comboParentId, showInShopByCategory: true };
+            ? { ...editingCombo }
+            : { ...newItem };
 
         try {
             const res = await fetch(targetUrl, {
@@ -118,7 +82,7 @@ const ComboListPage = () => {
             });
 
             if (res.ok) {
-                queryClient.invalidateQueries(['subcategories']);
+                queryClient.invalidateQueries(['combo-categories']);
                 setShowAddModal(false);
                 setEditingCombo(null);
                 setNewItem({ name: '', image: '', description: '', status: 'Active' });
@@ -136,12 +100,11 @@ const ComboListPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (id.startsWith('d')) return toast.error("Cannot delete dummy data!");
         if (window.confirm('Are you sure you want to delete this combo category?')) {
             try {
-                const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
+                const res = await fetch(`http://localhost:5000/api/combo-categories/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    queryClient.invalidateQueries(['subcategories']);
+                    queryClient.invalidateQueries(['combo-categories']);
                     toast.success('Combo deleted');
                 } else {
                     toast.error('Failed to delete');
@@ -153,15 +116,14 @@ const ComboListPage = () => {
     };
 
     const toggleStatus = async (item) => {
-        if (item.id?.startsWith('d')) return toast.error("Cannot edit dummy data status!");
         const newStatus = item.status === 'Active' ? 'Hidden' : 'Active';
         try {
-            await fetch(`http://localhost:5000/api/subcategories/${item.id || item._id}`, {
+            await fetch(`http://localhost:5000/api/combo-categories/${item.id || item._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...item, status: newStatus, parent: comboParentId })
+                body: JSON.stringify({ ...item, status: newStatus })
             });
-            queryClient.invalidateQueries(['subcategories']);
+            queryClient.invalidateQueries(['combo-categories']);
         } catch (error) {
             console.error(error);
         }
