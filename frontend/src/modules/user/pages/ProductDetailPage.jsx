@@ -251,7 +251,7 @@ const ProductDetailPage = () => {
                 <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Product Not Found</h2>
                     <p className="text-gray-500 mb-6">The product you're looking for might have been moved or deleted.</p>
-                    <button 
+                    <button
                         onClick={() => navigate('/catalog')}
                         className="bg-primary text-white px-8 py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-primaryHover transition-all"
                     >
@@ -435,10 +435,10 @@ const ProductDetailPage = () => {
                                     {product.contents.map((item, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-lg border border-gray-50">
                                             <div className="w-8 h-8 bg-white rounded flex items-center justify-center p-1 shrink-0 border border-gray-100">
-                                                <img 
-                                                    src={allProducts.find(p => p.id === item.productId)?.image || product.image} 
-                                                    alt="" 
-                                                    className="w-full h-full object-contain mix-blend-multiply" 
+                                                <img
+                                                    src={allProducts.find(p => p.id === item.productId)?.image || product.image}
+                                                    alt=""
+                                                    className="w-full h-full object-contain mix-blend-multiply"
                                                 />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -542,29 +542,6 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {/* Combo Transparency Card */}
-                        {isCombo && (
-                            <div className="bg-[#fcfdfd] border border-primary/10 rounded-xl p-4 mb-6 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Activity size={14} className="text-primary animate-pulse" /> Price Transparency
-                                </h4>
-                                <div className="space-y-2 relative z-10">
-                                    <div className="flex justify-between items-center text-[11px] font-medium text-gray-400">
-                                        <span>Sum of Individual Items</span>
-                                        <span className="line-through">₹{product.individualTotal || (product.mrp || Math.round(product.price * 1.2))}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm font-black text-black">
-                                        <span>Combo Deal Price</span>
-                                        <span className="text-primary">₹{product.price}</span>
-                                    </div>
-                                    <div className="mt-2 pt-2 border-t border-dashed border-primary/20 flex justify-between items-center text-[11px] font-bold text-emerald-600">
-                                        <span className="flex items-center gap-1"><Tag size={12} /> Total Savings</span>
-                                        <span>₹{product.savings || (product.individualTotal - product.price) || (saveAmount)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         <div className="h-px bg-gray-200 w-full mb-6"></div>
 
@@ -629,8 +606,8 @@ const ProductDetailPage = () => {
                                 }}
                                 disabled={isOutOfStock}
                                 className={`flex-[1.2] py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 
-                                    ${isOutOfStock 
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
+                                    ${isOutOfStock
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                                         : 'bg-primary text-white hover:bg-primaryHover'}`}
                             >
                                 <ShoppingBag size={18} /> {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
@@ -643,8 +620,8 @@ const ProductDetailPage = () => {
                                 }}
                                 disabled={isOutOfStock}
                                 className={`flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors 
-                                    ${isOutOfStock 
-                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100' 
+                                    ${isOutOfStock
+                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100'
                                         : 'bg-[#111827] text-white hover:bg-black'}`}
                             >
                                 {isOutOfStock ? 'OUT OF STOCK' : 'BUY NOW'}
@@ -727,7 +704,7 @@ const ProductDetailPage = () => {
                             {activeTab === 'Description' && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-bold text-black font-semibold">Product Description</h3>
-                                    <div 
+                                    <div
                                         className="text-sm md:text-base text-gray-600 leading-relaxed text-justify px-2 prose prose-sm max-w-none"
                                         dangerouslySetInnerHTML={{ __html: product.description || `Nutraj brings a premium assortment of walnut kernels to your plate in the form of ${product.name}. As the name says, these Anmol walnut kernels are nothing short of precious treats as they come from 1% of the Rarest Crop, grown worldwide. Since the crop is handpicked from the best, these walnut kernels are jumbo-sized, extra crunchier in taste, and contain exceptional nutritional value.` }}
                                     />
@@ -775,7 +752,7 @@ const ProductDetailPage = () => {
                                     <div className="flex flex-col md:flex-row items-center justify-between mb-6 border-b border-gray-100 pb-6 gap-4">
                                         <div className="text-center md:text-left">
                                             <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                            <div className="flex text-primary">
+                                                <div className="flex text-primary">
                                                     {[1, 2, 3, 4, 5].map(i => (
                                                         <Star key={i} size={16} fill={i <= Math.round(product.rating || 0) ? "currentColor" : "none"} />
                                                     ))}
@@ -983,8 +960,8 @@ const ProductDetailPage = () => {
                                 }}
                                 disabled={isOutOfStock}
                                 className={`px-6 py-2.5 rounded font-bold text-sm transition-all
-                                    ${isOutOfStock 
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    ${isOutOfStock
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-[#6B242E] text-white active:scale-95'}`}
                             >
                                 {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
