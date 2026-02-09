@@ -29,6 +29,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+import InvoiceGenerator from '../components/InvoiceGenerator';
 
 const OrderDetailPage = () => {
     const { id } = useParams();
@@ -48,6 +49,8 @@ const OrderDetailPage = () => {
     const [status, setStatus] = useState(null);
     const [liveTracking, setLiveTracking] = useState(null);
     const [trackingLoading, setTrackingLoading] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const queryClient = useQueryClient();
 
     // Sync status when order loads
     useEffect(() => {
@@ -130,8 +133,6 @@ const OrderDetailPage = () => {
     };
 
     // Cancel order handler for admin
-    const queryClient = useQueryClient();
-    const [isCancelling, setIsCancelling] = useState(false);
 
     const handleCancelOrder = async () => {
         if (!window.confirm('Are you sure you want to cancel this order? This will notify Shiprocket and initiate a refund if applicable.')) {
@@ -222,9 +223,14 @@ const OrderDetailPage = () => {
                     <ArrowLeft size={16} /> Back to Orders
                 </button>
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold uppercase tracking-widest hover:border-footerBg hover:text-footerBg transition-all shadow-sm">
-                        <Printer size={14} /> Print Invoice
-                    </button>
+                    <InvoiceGenerator 
+                        order={order} 
+                        customTrigger={
+                            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold uppercase tracking-widest hover:border-footerBg hover:text-footerBg transition-all shadow-sm">
+                                <Printer size={14} /> Print Invoice
+                            </button>
+                        }
+                    />
                     <button className="flex items-center gap-2 px-4 py-2 bg-footerBg text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-footerBg/20">
                         <Download size={14} /> Download Slip
                     </button>
