@@ -96,7 +96,10 @@ const ProductFormPage = () => {
             { label: 'Fat', value: '49g' },
             { label: 'Carbs', value: '22g' }
         ],
-        contents: [] // For combo products
+        contents: [], // For combo products
+        seoTitle: '',
+        seoDescription: '',
+        seoImage: ''
     });
 
     useEffect(() => {
@@ -125,7 +128,10 @@ const ProductFormPage = () => {
                 faqs: productToEdit.faqs?.length ? productToEdit.faqs : prev.faqs,
                 benefits: normalizedBenefits.length ? normalizedBenefits : prev.benefits,
                 images: productToEdit.images || [],
-                contents: productToEdit.contents || []
+                contents: productToEdit.contents || [],
+                seoTitle: productToEdit.seoTitle || '',
+                seoDescription: productToEdit.seoDescription || '',
+                seoImage: productToEdit.seoImage || ''
             }));
         }
     }, [isEdit, productToEdit]);
@@ -742,38 +748,82 @@ const ProductFormPage = () => {
                         </div>
                     </div>
 
-                    {/* Specifications - Moved to Right Side */}
+                    {/* SEO Settings */}
                     <div className="bg-white p-8 rounded-[2.5rem] border border-gray-300 shadow-sm space-y-6 text-left">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-black text-green-700 uppercase tracking-widest flex items-center gap-2">
-                                Specifications
-                            </h3>
-                            <button type="button" onClick={() => addItem('specifications', { label: '', value: '' })} className="text-[10px] font-black text-primary uppercase">+ Add</button>
-                        </div>
-                        <div className="space-y-3">
-                            {formData.specifications.map((spec, idx) => (
-                                <div key={idx} className="flex gap-2 items-center">
-                                    <div className="w-1/3 relative">
-                                        <input
-                                            list={`spec-options-${idx}`}
-                                            placeholder="Label"
-                                            value={spec.label}
-                                            onChange={(e) => updateItem('specifications', idx, 'label', e.target.value)}
-                                            className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
-                                        />
-                                        <datalist id={`spec-options-${idx}`}>
-                                            {SPECIFICATION_LABELS.map((opt, i) => <option key={i} value={opt} />)}
-                                        </datalist>
-                                    </div>
-                                    <input
-                                        placeholder="Value"
-                                        value={spec.value}
-                                        onChange={(e) => updateItem('specifications', idx, 'value', e.target.value)}
-                                        className="flex-1 bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
-                                    />
-                                    <button type="button" onClick={() => removeItem('specifications', idx)} className="text-red-400"><Trash2 size={16} /></button>
+                        <h3 className="text-sm font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
+                            <Plus size={18} className="text-blue-700" />
+                            SEO Settings (Optional)
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">SEO Title</label>
+                                <input
+                                    type="text"
+                                    name="seoTitle"
+                                    value={formData.seoTitle}
+                                    onChange={handleChange}
+                                    placeholder="Meta title for search engines..."
+                                    className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">SEO Description</label>
+                                <textarea
+                                    name="seoDescription"
+                                    value={formData.seoDescription}
+                                    onChange={handleChange}
+                                    placeholder="Meta description for search engines..."
+                                    rows="3"
+                                    className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all"
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">SEO Image (Social Share)</label>
+                                <div className="aspect-video bg-gray-50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center p-4 relative group overflow-hidden">
+                                    {formData.seoImage ? (
+                                        <>
+                                            <img src={formData.seoImage} alt="SEO Preview" className="w-full h-full object-contain" />
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, seoImage: '' }))}
+                                                className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity font-bold text-[10px] uppercase"
+                                            >
+                                                Remove Image
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white transition-all">
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const res = await uploadImageMutation.mutateAsync(file);
+                                                        if (res?.url) {
+                                                            setFormData(prev => ({ ...prev, seoImage: res.url }));
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <Plus size={20} className="text-gray-300" />
+                                            <span className="text-[8px] font-black text-gray-400 uppercase mt-1">Upload SEO Image</span>
+                                        </label>
+                                    )}
                                 </div>
-                            ))}
+                                <input
+                                    type="text"
+                                    name="seoImage"
+                                    value={formData.seoImage}
+                                    onChange={handleChange}
+                                    placeholder="Or paste SEO image URL..."
+                                    className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-xs font-bold text-black outline-none focus:border-black transition-all"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

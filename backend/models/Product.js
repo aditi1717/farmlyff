@@ -39,7 +39,10 @@ const productSchema = new mongoose.Schema({
     quantity: { type: Number, default: 0 }
   },
   lowStockThreshold: { type: Number, default: 10 },
-  inStock: { type: Boolean, default: true }
+  inStock: { type: Boolean, default: true },
+  seoImage: { type: String, default: null },
+  seoTitle: { type: String, default: null },
+  seoDescription: { type: String, default: null }
 }, { timestamps: true });
 
 export default mongoose.model('Product', productSchema);
