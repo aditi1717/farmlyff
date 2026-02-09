@@ -292,11 +292,11 @@ export const useAdminReviews = () => {
     });
 };
 
-const adminReviews = createCRUDHooks('admin-reviews', 'reviews/admin');
-export const useAllUserReviews = adminReviews.useData;
-export const useAddAdminReview = adminReviews.useAdd;
-export const useUpdateAdminReview = adminReviews.useUpdate;
-export const useDeleteAdminReview = adminReviews.useDelete;
+const adminReviewsFactory = createCRUDHooks('user-reviews-admin', 'reviews/admin');
+export const useAllUserReviews = adminReviewsFactory.useData;
+export const useAddAdminReview = adminReviewsFactory.useAdd;
+export const useUpdateAdminReview = adminReviewsFactory.useUpdate;
+export const useDeleteAdminReview = adminReviewsFactory.useDelete;
 
 export const useUpdateReviewStatus = () => {
     const queryClient = useQueryClient();
@@ -313,6 +313,7 @@ export const useUpdateReviewStatus = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            queryClient.invalidateQueries({ queryKey: ['user-reviews-admin'] });
             toast.success('Review status updated!');
         },
         onError: (err) => toast.error(err.message)

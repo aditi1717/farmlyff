@@ -15,8 +15,13 @@ const AdminReviewsPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedReview, setSelectedReview] = useState(null);
-    const [statusFilter, setStatusFilter] = useState('All');
+    const [statusFilter, setStatusFilter] = useState(activeTab === 'user' ? 'Pending' : 'All');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Reset status filter when switching tabs
+    React.useEffect(() => {
+        setStatusFilter(activeTab === 'user' ? 'Pending' : 'All');
+    }, [activeTab]);
 
     // API Hooks
     const { data: adminReviews = [], isLoading: isLoadingAdmin } = useAdminReviews();

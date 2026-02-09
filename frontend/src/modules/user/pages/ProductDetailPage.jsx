@@ -141,7 +141,7 @@ const ProductDetailPage = () => {
             });
 
             if (res.ok) {
-                toast.success('Review submitted for approval!');
+                toast.success('Review submitted!');
                 setNewReview({ rating: 5, title: '', text: '' });
                 setShowReviewForm(false);
             } else {
@@ -520,10 +520,10 @@ const ProductDetailPage = () => {
                         {/* Rating */}
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex items-center gap-1 bg-primary text-white px-2 py-0.5 rounded text-xs font-bold">
-                                <span>{product.rating || 4.8}</span>
+                                <span>{product.rating || 0}</span>
                                 <Star size={10} fill="white" stroke="white" />
                             </div>
-                            <span className="text-xs text-gray-500">25 review / Write a review</span>
+                            <span className="text-xs text-gray-500">{reviewsList.length} reviews / Write a review</span>
                         </div>
 
                         {/* Pricing */}
@@ -775,14 +775,14 @@ const ProductDetailPage = () => {
                                     <div className="flex flex-col md:flex-row items-center justify-between mb-6 border-b border-gray-100 pb-6 gap-4">
                                         <div className="text-center md:text-left">
                                             <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                                <div className="flex text-primary">
+                                            <div className="flex text-primary">
                                                     {[1, 2, 3, 4, 5].map(i => (
-                                                        <Star key={i} size={16} fill={i <= 5 ? "currentColor" : "none"} />
+                                                        <Star key={i} size={16} fill={i <= Math.round(product.rating || 0) ? "currentColor" : "none"} />
                                                     ))}
                                                 </div>
-                                                <span className="text-lg font-black text-black tracking-tight">5.0</span>
+                                                <span className="text-lg font-black text-black tracking-tight">{product.rating || 0}</span>
                                             </div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Based on 6 reviews</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Based on {reviewsList.length} reviews</p>
                                         </div>
                                         <button
                                             onClick={() => setShowReviewForm(!showReviewForm)}
@@ -845,30 +845,29 @@ const ProductDetailPage = () => {
                                     </AnimatePresence>
 
                                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
-                                        {[
-                                            { name: 'Aditi Sharma', rating: 5, date: '12/01/2024', title: 'Excellent quality', comment: 'The almonds are jumbo-sized and very fresh. Highly recommended!' },
-                                            { name: 'Rahul Gupta', rating: 5, date: '05/01/2024', title: 'Best badam ever', comment: 'Quality is superior to local markets. Crunchy and sweet.' },
-                                            { name: 'Priya Verma', rating: 5, date: '28/12/2023', title: 'Great packaging', comment: 'Arrived on time. The vacuum seal was intact.' },
-                                            { name: 'Amit Kumar', rating: 5, date: '15/12/2023', title: 'Premium product', comment: 'Worth every penny. Nutraj maintains great standards.' },
-                                            { name: 'Sneh Lata', rating: 5, date: '10/12/2023', title: 'Crunchy and delicious', comment: 'Perfect for my morning routine. Will buy again.' },
-                                            { name: 'Vijay Singh', rating: 5, date: '01/12/2023', title: 'Good value', comment: 'Great discount on the price. Happy with the purchase.' }
-                                        ].map((review, idx) => (
+                                        {reviewsList.length > 0 ? reviewsList.map((review, idx) => (
                                             <div key={idx} className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl border border-gray-50 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 flex flex-col justify-between h-full">
                                                 <div>
                                                     <div className="flex items-center justify-between mb-2.5">
                                                         <div className="flex text-primary">
                                                             {[...Array(5)].map((_, i) => <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} />)}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-gray-300">{review.date}</span>
+                                                        <span className="text-[10px] font-bold text-gray-300">
+                                                            {new Date(review.createdAt).toLocaleDateString()}
+                                                        </span>
                                                     </div>
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className="font-black text-black text-sm">{review.name}</span>
+                                                        <span className="font-black text-black text-sm">{review.user?.name || 'Anonymous'}</span>
                                                     </div>
                                                     <h4 className="font-bold text-[15px] text-black mb-2 leading-tight">{review.title}</h4>
                                                     <p className="text-xs text-gray-500 leading-relaxed">{review.comment}</p>
                                                 </div>
                                             </div>
-                                        ))}
+                                        )) : (
+                                            <div className="col-span-full py-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No approved reviews yet. Be the first to review!</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
