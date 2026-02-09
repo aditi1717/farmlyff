@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Edit2, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner } from '../../../hooks/useContent';
+import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner, usePromoCard, useUpdatePromoCard } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
 import { useOffers } from '../../../hooks/useOffers';
 
@@ -14,6 +14,10 @@ const BannerListPage = () => {
     const uploadImageMutation = useUploadImage();
     const { data: offers = [] } = useOffers();
 
+    // Promo Card Data
+    const { data: promoData } = usePromoCard();
+    const updatePromoMutation = useUpdatePromoCard();
+
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
     const [formData, setFormData] = useState({
@@ -21,10 +25,31 @@ const BannerListPage = () => {
         ctaText: 'Shop Now', link: '/', section: 'hero',
         image: '', publicId: '', slides: [], isActive: true
     });
+    const [promoForm, setPromoForm] = useState({
+        topBadge: 'Hot Deal',
+        badgeText1: 'Upto',
+        discountTitle: '60',
+        discountSuffix: '%',
+        discountLabel: 'OFF',
+        extraDiscountSubtitle: 'EXTRA SAVE',
+        extraDiscount: '15',
+        extraDiscountSuffix: '%',
+        couponCode: 'FRESH20',
+        showCouponCode: true,
+        isVisible: true
+    });
+
+    useEffect(() => {
+        if (promoData) {
+            setPromoForm(prev => ({ ...prev, ...promoData }));
+        }
+    }, [promoData]);
+
     const [preview, setPreview] = useState(null);
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
     const [offerDropdownOpen, setOfferDropdownOpen] = useState(false);
     const [linkSearch, setLinkSearch] = useState('');
+    const [editMode, setEditMode] = useState('banner');
 
     const activeSlide = (formData.slides && formData.slides[activeSlideIndex]) || null;
 
@@ -159,19 +184,62 @@ const BannerListPage = () => {
                         </div>
 
                         {activeSlide && (
-                            <div className="mb-6 aspect-[21/9] bg-gray-50 rounded-2xl overflow-hidden relative border border-gray-100 shadow-inner">
+                            <div className="mb-6 aspect-[21/9] bg-gray-50 rounded-2xl overflow-hidden relative border border-gray-100 shadow-inner group/preview">
                                 <img src={activeSlide.image} className="w-full h-full object-cover" alt="" />
                                 <div className="absolute inset-0 bg-black/20" />
-                                <div className="absolute bottom-3 left-4 scale-75 origin-bottom-left">
-                                    <div className="inline-block px-2 py-0.5 bg-primary text-white text-[8px] font-bold rounded-full mb-1">{formData.badgeText || 'OFFER'}</div>
-                                    <h4 className="text-white font-black leading-tight text-xl">{formData.title}</h4>
-                                    <button className="mt-2 px-4 py-1 bg-white text-black text-[9px] font-bold rounded-full">{activeSlide.ctaText || 'Shop Now'}</button>
+                                <div className="absolute inset-0 z-10 flex flex-col justify-center px-6 pointer-events-none">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="bg-primary text-white text-[6px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shadow-lg">
+                                            {formData.badgeText || 'SPECIAL'}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-white font-black leading-tight text-lg mb-0.5 truncate drop-shadow-md">
+                                        {formData.title}
+                                    </h4>
+                                    <p className="text-white/80 text-[7px] font-bold max-w-[80%] mb-2 leading-tight drop-shadow-md italic underline-offset-2">
+                                        {formData.subtitle || 'Perfect for your premium needs'}
+                                    </p>
+                                    <button className="bg-white text-black text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all shadow-xl w-fit">
+                                        {activeSlide.ctaText || 'Shop Now'}
+                                    </button>
                                 </div>
-                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold text-white uppercase border border-white/10">Slide {activeSlideIndex + 1}/{formData.slides.length}</div>
+                                {promoForm.isVisible && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-lg border border-white/40 shadow-xl z-20 scale-[0.4] origin-right pointer-events-none">
+                                        <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg h-fit w-fit">{promoForm.topBadge}</div>
+                                        <div className="text-center font-sans">
+                                            <p className="text-gray-500 font-bold text-[8px] uppercase">{promoForm.badgeText1}</p>
+                                            <div className="flex items-baseline gap-0.5 justify-center leading-none">
+                                                <span className="text-3xl font-black text-red-500">{promoForm.discountTitle}</span>
+                                                <span className="text-lg font-black text-gray-800">{promoForm.discountSuffix}</span>
+                                            </div>
+                                            <div className="w-8 h-0.5 bg-primary/30 mx-auto rounded-full my-1"></div>
+                                            <p className="text-gray-500 font-bold text-[8px] uppercase leading-none">{promoForm.extraDiscountSubtitle}</p>
+                                            <div className="flex items-baseline gap-0.5 justify-center mt-0.5">
+                                                <span className="text-xl font-black text-primary">{promoForm.extraDiscount}</span>
+                                                <span className="text-sm font-bold text-gray-800">{promoForm.extraDiscountSuffix}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[7px] font-bold text-white uppercase border border-white/10 z-20">Slide {activeSlideIndex + 1}/{formData.slides.length}</div>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="flex gap-2 p-1 bg-gray-50 rounded-2xl mb-6">
+                            {['banner', 'promo'].map(tab => (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => setEditMode(tab)}
+                                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${editMode === tab ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    {tab === 'banner' ? 'Banner Settings' : 'Offer Box'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {editMode === 'banner' ? (
+                            <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-bold text-gray-800 uppercase tracking-tighter">Slides ({formData.slides.length})</label>
@@ -312,13 +380,60 @@ const BannerListPage = () => {
                                 </div>
                             )}
 
-                                        <div className="flex gap-3 pt-2 text-left">
-                                            {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
-                                            <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                                                {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
-                                            </button>
-                                        </div>
+                            <div className="flex gap-3 pt-2 text-left">
+                                {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
+                                <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                                    {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
+                                </button>
+                            </div>
                         </form>
+                        ) : (
+                            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 mb-4">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Offer Box Visible</span>
+                                    <label className="relative inline-flex items-center cursor-pointer scale-75">
+                                        <input type="checkbox" className="sr-only peer" checked={promoForm.isVisible} onChange={(e)=>setPromoForm(prev=>({...prev, isVisible:e.target.checked}))} />
+                                        <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Top Badge</label>
+                                            <input type="text" value={promoForm.topBadge} onChange={(e)=>setPromoForm(prev=>({...prev, topBadge:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Discount Title</label>
+                                            <input type="text" value={promoForm.discountTitle} onChange={(e)=>setPromoForm(prev=>({...prev, discountTitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Text</label>
+                                        <input type="text" value={promoForm.extraDiscountSubtitle} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscountSubtitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Value</label>
+                                            <input type="text" value={promoForm.extraDiscount} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscount:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Coupon Code</label>
+                                            <input type="text" value={promoForm.couponCode} onChange={(e)=>setPromoForm(prev=>({...prev, couponCode:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all uppercase" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    type="button"
+                                    onClick={() => updatePromoMutation.mutate(promoForm)} 
+                                    disabled={updatePromoMutation.isPending}
+                                    className="w-full bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mt-4"
+                                >
+                                    {updatePromoMutation.isPending ? <Loader size={16} className="animate-spin" /> : 'Save Offer Box'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -343,7 +458,12 @@ const BannerListPage = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded tracking-tighter border ${banner.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{banner.isActive !== false ? 'LIVE' : 'HIDDEN'}</span>
+                                            <button 
+                                                onClick={() => updateBannerMutation.mutate({ id: banner._id || banner.id, data: { ...banner, isActive: banner.isActive === false } })}
+                                                className={`text-[8px] font-black px-1.5 py-0.5 rounded tracking-tighter border transition-all hover:scale-105 active:scale-95 ${banner.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
+                                            >
+                                                {banner.isActive !== false ? 'LIVE' : 'HIDDEN'}
+                                            </button>
                                             <h3 className="text-xs font-black text-gray-900 truncate uppercase tracking-tight italic">{banner.title}</h3>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold italic truncate"><ExternalLink size={10} className="text-primary" />{banner.link || '/'}</div>

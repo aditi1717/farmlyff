@@ -46,6 +46,7 @@ export const createBanner = async (req, res) => {
       link,
       section,
       order,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true
     });
 
     const createdBanner = await banner.save();

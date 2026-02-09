@@ -381,3 +381,35 @@ export const useUpdateWebsiteContent = (slug) => {
         onError: (err) => toast.error(err.message)
     });
 };
+
+export const usePromoCard = () => {
+    return useQuery({
+        queryKey: ['promo-card'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to fetch promo card');
+            return res.json();
+        }
+    });
+};
+
+export const useUpdatePromoCard = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data) => {
+            const res = await fetch(`${API_URL}/promo-card`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Failed to update promo card');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['promo-card'] });
+            toast.success('Promo card updated!');
+        },
+        onError: (err) => toast.error(err.message)
+    });
+};

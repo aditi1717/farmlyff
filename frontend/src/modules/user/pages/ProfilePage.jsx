@@ -687,6 +687,43 @@ const ProfilePage = () => {
                                 className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-4 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                             />
                         </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
+                            <input
+                                type="tel"
+                                value={editForm.phone}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-4 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                placeholder="+91"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2 text-left">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
+                                <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
+                                    {['Male', 'Female'].map((g) => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setEditForm({ ...editForm, gender: g })}
+                                            className={`flex-1 py-3 px-1 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${editForm.gender === g ? 'bg-footerBg text-white' : 'text-gray-400 hover:text-footerBg'}`}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2 text-left">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Birth Date</label>
+                                <input
+                                    type="date"
+                                    value={editForm.birthDate}
+                                    onChange={(e) => setEditForm({ ...editForm, birthDate: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-3 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-xs"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="pt-4 flex items-center gap-6">

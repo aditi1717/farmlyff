@@ -33,7 +33,7 @@ const HeroSection = () => {
         discountTitle: '60',
         discountSuffix: '%',
         discountLabel: 'OFF',
-        subtitle: 'EXTRA SAVE',
+        extraDiscountSubtitle: 'EXTRA SAVE',
         extraDiscount: '15',
         extraDiscountSuffix: '%',
         couponCode: 'REPUBLICJOY',
@@ -185,7 +185,7 @@ const HeroSection = () => {
                                     </div>
                                 </div>
                                 <div className="w-10 h-1 bg-primary/30 mx-auto rounded-full my-2"></div>
-                                <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">{promoSettings.subtitle}</p>
+                                <p className="text-footerBg/60 font-black text-[9px] uppercase tracking-[0.2em]">{promoSettings.extraDiscountSubtitle}</p>
                                 <div className="flex items-baseline gap-0.5 justify-center leading-none mt-1">
                                     <span className="text-3xl font-black text-primary">{promoSettings.extraDiscount}</span>
                                     <span className="text-lg font-bold text-footerBg">{promoSettings.extraDiscountSuffix}</span>

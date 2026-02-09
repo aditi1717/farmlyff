@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import Order from '../models/Order.js';
+import User from '../models/User.js';
 import Referral from '../models/Referral.js';
 import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
@@ -59,7 +60,17 @@ const deductStock = async (orderItems) => {
 // @route   POST /api/payments/order
 // @access  Public (or Private if auth is needed)
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount, currency = 'INR', receipt } = req.body;
+  const { amount, currency = 'INR', receipt, userId } = req.body;
+
+  // Validation: Check if user profile is complete
+  if (userId) {
+      const user = await User.findOne({ id: userId });
+      if (!user || !user.phone || !user.addresses || user.addresses.length === 0) {
+          return res.status(400).json({ 
+              message: 'Please complete your profile (Mobile Number and Address) before placing an order.' 
+          });
+      }
+  }
 
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       // In development, if keys are missing, we might want to throw a specific error or 
@@ -186,8 +197,18 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 // @route   POST /api/payments/cod
 // @access  Public
 export const createCODOrder = asyncHandler(async (req, res) => {
-    const { orderData } = req.body;
+    const { orderData, userId } = req.body;
     
+    // Validation: Check if user profile is complete
+    if (userId) {
+        const user = await User.findOne({ id: userId });
+        if (!user || !user.phone || !user.addresses || user.addresses.length === 0) {
+            return res.status(400).json({ 
+                message: 'Please complete your profile (Mobile Number and Address) before placing an order.' 
+            });
+        }
+    }
+
     try {
         // Generate unique order ID
         const timestamp = Date.now();

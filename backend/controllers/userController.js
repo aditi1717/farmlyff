@@ -160,11 +160,11 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
     const user = await User.findOne({ id: req.user.id });
 
     if (user) {
-        user.name = req.body.name || user.name;
-        user.email = req.body.email || user.email;
-        user.phone = req.body.phone || user.phone;
-        user.gender = req.body.gender || user.gender;
-        user.birthDate = req.body.birthDate || user.birthDate;
+        if (req.body.name !== undefined) user.name = req.body.name;
+        if (req.body.email !== undefined) user.email = req.body.email;
+        if (req.body.phone !== undefined) user.phone = req.body.phone;
+        if (req.body.gender !== undefined) user.gender = req.body.gender;
+        if (req.body.birthDate !== undefined) user.birthDate = req.body.birthDate;
         
         if (req.body.addresses) {
             user.addresses = req.body.addresses;
