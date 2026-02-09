@@ -10,6 +10,9 @@ const bannerSchema = new mongoose.Schema({
   slides: [{
     image: { type: String, required: true },
     publicId: { type: String },
+    title: { type: String }, // Individual slide title
+    subtitle: { type: String }, // Individual slide subtitle
+    badgeText: { type: String }, // Individual slide badge
     link: { type: String, default: '/' },
     ctaText: { type: String, default: 'Shop Now' }
   }],

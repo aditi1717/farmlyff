@@ -18,6 +18,9 @@ const PromoSlider = () => {
                     ...b,
                     image: s.image,
                     publicId: s.publicId,
+                    title: s.title || b.title,
+                    subtitle: s.subtitle || b.subtitle,
+                    badgeText: s.badgeText || b.badgeText,
                     link: s.link || b.link,
                     ctaText: s.ctaText || b.ctaText
                 }));

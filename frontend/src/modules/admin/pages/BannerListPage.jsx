@@ -144,6 +144,7 @@ const BannerListPage = () => {
             if (updatedSlides[activeSlideIndex]) {
                 updatedSlides[activeSlideIndex] = { ...updatedSlides[activeSlideIndex], [key]: value };
             }
+            // Also update root for legacy/fallback support if it's the first slide
             const rootUpdates = activeSlideIndex === 0 ? { [key]: value } : {};
             return { ...prev, slides: updatedSlides, ...rootUpdates };
         });
@@ -194,10 +195,10 @@ const BannerListPage = () => {
                                         </span>
                                     </div>
                                     <h4 className="text-white font-black leading-tight text-lg mb-0.5 truncate drop-shadow-md">
-                                        {formData.title}
+                                        {activeSlide.title || formData.title}
                                     </h4>
                                     <p className="text-white/80 text-[7px] font-bold max-w-[80%] mb-2 leading-tight drop-shadow-md italic underline-offset-2">
-                                        {formData.subtitle || 'Perfect for your premium needs'}
+                                        {activeSlide.subtitle || formData.subtitle || 'Perfect for your premium needs'}
                                     </p>
                                     <button className="bg-white text-black text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all shadow-xl w-fit">
                                         {activeSlide.ctaText || 'Shop Now'}
@@ -365,10 +366,10 @@ const BannerListPage = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info</label>
-                                        <input type="text" value={formData.title} onChange={(e)=>setFormData(prev=>({...prev, title:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
-                                        <input type="text" value={formData.subtitle} onChange={(e)=>setFormData(prev=>({...prev, subtitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Subtitle" />
-                                        <input type="text" value={formData.badgeText} onChange={(e)=>setFormData(prev=>({...prev, badgeText:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info (Current Slide)</label>
+                                        <input type="text" value={activeSlide.title ?? ''} onChange={(e)=>updateActiveSlide('title', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
+                                        <input type="text" value={activeSlide.subtitle ?? ''} onChange={(e)=>updateActiveSlide('subtitle', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Subtitle" />
+                                        <input type="text" value={activeSlide.badgeText ?? ''} onChange={(e)=>updateActiveSlide('badgeText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                                         <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
