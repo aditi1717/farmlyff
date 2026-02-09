@@ -15,9 +15,7 @@ const OfferStrip = () => {
             {marqueeItems.map((item, index) => (
                 <React.Fragment key={index}>
                     <span className="flex items-center gap-2">{item}</span>
-                    {index < marqueeItems.length - 1 && (
-                        <span className="text-amber-300 font-light">|</span>
-                    )}
+                    <span className="text-amber-300 font-light ml-8 md:ml-14">|</span>
                 </React.Fragment>
             ))}
         </div>

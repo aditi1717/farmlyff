@@ -184,7 +184,11 @@ const HeaderAnnouncementPage = () => {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <span className="text-xs font-bold text-gray-700 break-words flex-1 leading-relaxed">{a.text}</span>
+                                                        <span className="text-xs font-bold text-gray-700 break-words flex-1 leading-relaxed flex items-center gap-3">
+                                                            <span className="text-gray-300 font-light text-[10px]">|</span>
+                                                            {a.text}
+                                                            <span className="text-gray-300 font-light text-[10px]">|</span>
+                                                        </span>
                                                         <div className="flex gap-2 ml-2">
                                                             <button
                                                                 onClick={() => handleStartEdit(a)}
