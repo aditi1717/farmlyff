@@ -11,21 +11,17 @@ import {
     CheckCircle2,
     Image as ImageIcon
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useComboCategories, useAddComboCategory, useUpdateComboCategory, useDeleteComboCategory } from '../../../hooks/useProducts';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const ComboListPage = () => {
-    const queryClient = useQueryClient();
 
-    // Fetch Combo Categories directly
-    const { data: comboCategories = [], isLoading } = useQuery({
-        queryKey: ['combo-categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
-            return res.json();
-        }
-    });
+    // Data & Mutation Hooks
+    const { data: comboCategories = [], isLoading } = useComboCategories();
+    const addMutation = useAddComboCategory();
+    const updateMutation = useUpdateComboCategory();
+    const deleteMutation = useDeleteComboCategory();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -61,36 +57,22 @@ const ComboListPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         setLoading(true);
         const isEdit = !!editingCombo;
-        const targetUrl = isEdit
-            ? `http://localhost:5000/api/combo-categories/${editingCombo.id || editingCombo._id}`
-            : `http://localhost:5000/api/combo-categories`;
-
-        const method = isEdit ? 'PUT' : 'POST';
-
-        const payload = isEdit
-            ? { ...editingCombo }
-            : { ...newItem };
+        const payload = isEdit ? { ...editingCombo } : { ...newItem };
 
         try {
-            const res = await fetch(targetUrl, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                queryClient.invalidateQueries(['combo-categories']);
-                setShowAddModal(false);
-                setEditingCombo(null);
-                setNewItem({ name: '', image: '', description: '', status: 'Active' });
-                setPreview(null);
-                toast.success(isEdit ? 'Combo category updated!' : 'Combo category added!');
+            if (isEdit) {
+                await updateMutation.mutateAsync({ id: editingCombo.id || editingCombo._id, data: payload });
             } else {
-                toast.error('Failed to save combo category');
+                await addMutation.mutateAsync(payload);
             }
+
+            setShowAddModal(false);
+            setEditingCombo(null);
+            setNewItem({ name: '', image: '', description: '', status: 'Active' });
+            setPreview(null);
+            toast.success(isEdit ? 'Combo category updated!' : 'Combo category added!');
         } catch (error) {
             console.error(error);
             toast.error('Error saving combo category');
@@ -102,15 +84,11 @@ const ComboListPage = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this combo category?')) {
             try {
-                const res = await fetch(`http://localhost:5000/api/combo-categories/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    queryClient.invalidateQueries(['combo-categories']);
-                    toast.success('Combo deleted');
-                } else {
-                    toast.error('Failed to delete');
-                }
+                await deleteMutation.mutateAsync(id);
+                toast.success('Combo deleted');
             } catch (error) {
                 console.error(error);
+                toast.error('Failed to delete');
             }
         }
     };
@@ -118,14 +96,13 @@ const ComboListPage = () => {
     const toggleStatus = async (item) => {
         const newStatus = item.status === 'Active' ? 'Hidden' : 'Active';
         try {
-            await fetch(`http://localhost:5000/api/combo-categories/${item.id || item._id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...item, status: newStatus })
+            await updateMutation.mutateAsync({
+                id: item.id || item._id,
+                data: { ...item, status: newStatus }
             });
-            queryClient.invalidateQueries(['combo-categories']);
         } catch (error) {
             console.error(error);
+            toast.error('Failed to update status');
         }
     };
 

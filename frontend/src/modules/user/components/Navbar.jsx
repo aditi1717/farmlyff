@@ -5,7 +5,7 @@ import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown, M
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
-import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';
+import { useCategories, useSubCategories, useProducts, useComboCategories } from '../../../hooks/useProducts';
 import { useQuery } from '@tanstack/react-query';
 
 import logo from '../../../assets/logo.png';
@@ -28,14 +28,8 @@ const Navbar = () => {
     const { data: rawSubCategories = [] } = useSubCategories();
     const { data: products = [] } = useProducts();
 
-    // Fetch Combo Categories from new dedicated endpoint
-    const { data: comboCategories = [] } = useQuery({
-        queryKey: ['combo-categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
-            return res.json();
-        }
-    });
+    // Fetch Combo Categories from centralized hook
+    const { data: comboCategories = [] } = useComboCategories();
 
     const categories = React.useMemo(() => {
         const unique = [];
@@ -101,8 +95,8 @@ const Navbar = () => {
         const fs = subCategories.filter(s =>
             s.name?.toLowerCase().includes(q) && s.status === 'Active'
         );
-        
-        const fcom = comboCategories.filter(c => 
+
+        const fcom = comboCategories.filter(c =>
             c.name?.toLowerCase().includes(q) && c.status === 'Active'
         );
 

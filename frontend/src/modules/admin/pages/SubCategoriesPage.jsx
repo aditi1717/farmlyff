@@ -62,7 +62,7 @@ const SubCategoriesPage = () => {
     const fetchData = async () => {
         try {
             // Only fetch SubCategories, rely on Context for Parents
-            const resS = await fetch('http://localhost:5000/api/subcategories');
+            const resS = await fetch(`${import.meta.env.VITE_API_URL}/subcategories`);
             const dataS = await resS.json();
 
             if (resS.ok) {
@@ -87,8 +87,8 @@ const SubCategoriesPage = () => {
         try {
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit
-                ? `http://localhost:5000/api/subcategories/${editingSub.id}`
-                : 'http://localhost:5000/api/subcategories';
+                ? `${import.meta.env.VITE_API_URL}/subcategories/${editingSub.id}`
+                : `${import.meta.env.VITE_API_URL}/subcategories`;
 
             let payload;
             if (isEdit) {
@@ -137,7 +137,7 @@ const SubCategoriesPage = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this sub-category?')) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/subcategories/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/subcategories/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success('Deleted');
                 setSubCategories(subCategories.filter(s => (s._id || s.id) !== id));

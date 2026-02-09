@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useCategories, useSubCategories, useProducts } from '../../../hooks/useProducts';
+import { useCategories, useSubCategories, useProducts, useComboCategories } from '../../../hooks/useProducts';
 import { useQuery } from '@tanstack/react-query';
 import {
     Store,
@@ -52,14 +52,8 @@ const CategoryNav = () => {
     const { data: rawSubCategories = [] } = useSubCategories();
     const { data: products = [] } = useProducts();
 
-    // Fetch Combo Categories from new dedicated endpoint
-    const { data: comboCategories = [] } = useQuery({
-        queryKey: ['combo-categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
-            return res.json();
-        }
-    });
+    // Fetch Combo Categories from centralized hook
+    const { data: comboCategories = [] } = useComboCategories();
 
     // Deduplicate and filter active categories
     const categoriesDB = React.useMemo(() => {

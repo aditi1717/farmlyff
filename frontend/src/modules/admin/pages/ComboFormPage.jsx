@@ -16,7 +16,7 @@ import {
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ImageResize from 'quill-image-resize-module-react';
-import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
+import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage, useComboCategories } from '../../../hooks/useProducts';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -49,15 +49,9 @@ const ComboFormPage = () => {
     const { data: productToEdit } = useProduct(id);
     const { data: dbCategories = [] } = useCategories();
     const { data: dbSubCategories = [] } = useSubCategories();
-    
-    // Fetch Combo Categories from new dedicated endpoint
-    const { data: comboCategories = [] } = useQuery({
-        queryKey: ['combo-categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
-            return res.json();
-        }
-    });
+
+    // Fetch Combo Categories from centralized hook
+    const { data: comboCategories = [] } = useComboCategories();
 
     // Mutations
     const addProductMutation = useAddProduct();
