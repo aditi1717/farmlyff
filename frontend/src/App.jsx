@@ -68,12 +68,27 @@ import PushNotificationPage from './modules/admin/pages/PushNotificationPage'; /
 import BlogListPage from './modules/admin/pages/BlogListPage'; // New Page 
 import BlogFormPage from './modules/admin/pages/BlogFormPage'; // New Page
 import BlogDetailPage from './modules/user/pages/BlogDetailPage'; // New Page
+import ProtectedRoute from './components/ProtectedRoute'; // Auth Guard
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { Provider } from 'react-redux'; // Removed
 // import store from './redux/store'; // Removed
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // Don't retry on 401 (Unauthorized) or 403 (Forbidden) errors
+        if (error?.message?.includes('401') || error?.message?.includes('403')) {
+          return false;
+        }
+        // Retry up to 3 times for other errors
+        return failureCount < 3;
+      },
+      refetchOnWindowFocus: false, // Disable automatic refetch on window focus
+    },
+  },
+});
 
 function App() {
   return (
@@ -115,8 +130,8 @@ function App() {
 
               <Route path="/admin/login" element={<LoginPage />} />
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
+              {/* Admin Routes - Protected */}
+              <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="users" element={<UsersPage />} />

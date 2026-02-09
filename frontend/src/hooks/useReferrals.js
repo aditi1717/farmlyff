@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
+// Helper to check if user is authenticated
+const isAuthenticated = () => {
+    try {
+        const user = localStorage.getItem('farmlyf_current_user');
+        const token = localStorage.getItem('farmlyf_token');
+        return !!(user && token);
+    } catch {
+        return false;
+    }
+};
+
 const API_URL = import.meta.env.VITE_API_URL + '/referrals';
 
 // Helper function to handle fetch calls
@@ -60,6 +71,7 @@ export const useReferrals = () => {
     return useQuery({
         queryKey: ['referrals'],
         queryFn: fetchReferrals,
+        enabled: isAuthenticated() // Only fetch if authenticated
     });
 };
 

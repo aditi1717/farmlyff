@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
+// Helper to check if user is authenticated
+const isAuthenticated = () => {
+    try {
+        const user = localStorage.getItem('farmlyf_current_user');
+        const token = localStorage.getItem('farmlyf_token');
+        return !!(user && token);
+    } catch {
+        return false;
+    }
+};
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Admin Reviews (Control List)
@@ -11,7 +22,8 @@ export const useAdminReviews = () => {
             const res = await fetch(`${API_URL}/reviews/admin`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch admin reviews');
             return res.json();
-        }
+        },
+        enabled: isAuthenticated() // Only fetch if authenticated
     });
 };
 
@@ -25,7 +37,8 @@ export const useUserReviews = () => {
             const res = await fetch(`${API_URL}/reviews`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch user reviews');
             return res.json();
-        }
+        },
+        enabled: isAuthenticated() // Only fetch if authenticated
     });
 };
 

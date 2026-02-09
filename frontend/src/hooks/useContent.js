@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
+// Helper to check if user is authenticated
+const isAuthenticated = () => {
+    try {
+        const user = localStorage.getItem('farmlyf_current_user');
+        const token = localStorage.getItem('farmlyf_token');
+        return !!(user && token);
+    } catch {
+        return false;
+    }
+};
+
 // Mock Banners Data for now if API not ready, or use local storage logic if that was the plan.
 // Previous implementation used localStorage 'farmlyf_banners'.
 // We can use a query that reads from localStorage for now to mimic "Server/Persisted" state,
@@ -227,7 +238,8 @@ export const useAboutSection = () => {
             const data = await res.json();
             // Return the nested content object to maintain compatibility with existing components
             return data.content || {};
-        }
+        },
+        enabled: isAuthenticated() // Only fetch if authenticated
     });
 };
 export const useUpdateAboutSectionInfo = () => {
