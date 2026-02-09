@@ -222,17 +222,41 @@ const CatalogPage = () => {
         // Category/Subcategory Filter
         if (selectedCategory !== 'all') {
             result = result.filter(p => {
-                const pCat = p.category?.slug || p.category?._id || p.category?.id || p.category || '';
-                const productCatSlug = String(pCat).toLowerCase().replace(/ /g, '-');
+                // Find category slug by ID, Slug, or Name
+                const pCatRef = p.category?._id || p.category?.id || p.category;
+                const categoryObj = categories.find(c =>
+                    String(c._id || c.id) === String(pCatRef) ||
+                    String(c.slug).toLowerCase() === String(pCatRef).toLowerCase() ||
+                    String(c.name).toLowerCase() === String(pCatRef).toLowerCase()
+                );
+
+                const productCatSlug = categoryObj ? categoryObj.slug : String(pCatRef || '').toLowerCase().replace(/ /g, '-');
+
+                // Special case for virtual Combos & Packs
+                if (selectedCategory === 'combos-packs') {
+                    const isExplicitCombo = productCatSlug === 'combos-packs';
+                    const hasComboContents = p.contents && p.contents.length > 0;
+                    if (isExplicitCombo || hasComboContents) return true;
+                }
+
                 return productCatSlug === selectedCategory;
             });
         }
         if (selectedSubcategory !== 'all') {
             result = result.filter(p => {
-                const pSub = p.subcategory?.name || p.subcategory?._id || p.subcategory?.id || p.subcategory || '';
-                const productSubSlug = String(pSub).toLowerCase().replace(/ /g, '-');
+                const pSubRef = p.subcategory?.name || p.subcategory?._id || p.subcategory?.id || p.subcategory || '';
+
+                // Try to find subcategory object to get its name
+                const subObj = subCategories.find(s =>
+                    String(s._id || s.id) === String(pSubRef) ||
+                    String(s.name).toLowerCase() === String(pSubRef).toLowerCase()
+                );
+
+                const productSubName = subObj ? subObj.name : String(pSubRef);
+                const productSubSlug = productSubName.toLowerCase().replace(/ /g, '-');
                 const selectedSubSlug = String(selectedSubcategory).toLowerCase().replace(/ /g, '-');
-                return productSubSlug === selectedSubSlug;
+
+                return productSubSlug === selectedSubSlug || productSubName === selectedSubcategory;
             });
         }
 

@@ -7,30 +7,12 @@ import ImageResize from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
 import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
+import { PAGES_CONFIG } from '../../../config/pagesConfig';
 
 // Register Quill Modules only if not already registered
 if (!Quill.imports['modules/imageResize']) {
     Quill.register('modules/imageResize', ImageResize);
 }
-
-// Static configuration for reference
-export const PAGES_CONFIG = {
-    // Legal & Policy
-    'privacy-policy': { title: 'Privacy Policy', category: 'Legal' },
-    'terms-conditions': { title: 'Terms & Conditions', category: 'Legal' },
-    'refund-policy': { title: 'Refund & Return Policy', category: 'Legal' },
-    'shipping-policy': { title: 'Shipping Policy', category: 'Legal' },
-    'cancellation-policy': { title: 'Cancellation Policy', category: 'Legal' },
-    'disclaimer': { title: 'Disclaimer', category: 'Legal' },
-    'cookie-policy': { title: 'Cookie Policy', category: 'Legal' },
-
-    // Informational
-    'about-us': { title: 'About Us', category: 'Info' },
-    'contact-us': { title: 'Contact Us', category: 'Info' },
-    'how-to-order': { title: 'How to Order', category: 'Info' },
-    'size-guide': { title: 'Size Guide', category: 'Info' },
-    'payment-methods': { title: 'Payment Methods', category: 'Info' }
-};
 
 const StaticPageEditor = () => {
     const { pageId } = useParams();
@@ -40,7 +22,7 @@ const StaticPageEditor = () => {
     const { data: pageData, isLoading: loading } = useWebsiteContent(pageId);
     const updateMutation = useUpdateWebsiteContent(pageId);
     const uploadMutation = useUploadImage();
-    
+
     const [content, setContent] = useState('');
     const [title, setTitle] = useState('');
 
@@ -50,10 +32,10 @@ const StaticPageEditor = () => {
             navigate('/admin/dashboard');
             return;
         }
-        
+
         if (pageData) {
             let initialContent = pageData.content || '';
-            
+
             // Migrate structured data if found
             if (pageId === 'about-us' && typeof initialContent === 'object' && initialContent !== null) {
                 const d = initialContent;
@@ -73,7 +55,7 @@ const StaticPageEditor = () => {
                     </div>
                 `;
             }
-            
+
             setContent(initialContent);
             setTitle(pageData.title || pageConfig?.title || '');
         } else if (pageConfig) {
@@ -90,7 +72,7 @@ const StaticPageEditor = () => {
                 slug: pageId
             };
             console.log('StaticPageEditor: Sending data to mutation', dataToSave);
-            
+
             await updateMutation.mutateAsync(dataToSave);
             console.log('StaticPageEditor: Save successful');
         } catch (error) {
