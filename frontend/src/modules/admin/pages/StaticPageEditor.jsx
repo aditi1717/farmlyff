@@ -43,9 +43,6 @@ const StaticPageEditor = () => {
     
     const [content, setContent] = useState('');
     const [title, setTitle] = useState('');
-    
-    // Structured data state for about-us
-    const [structuredData, setStructuredData] = useState(null);
 
     useEffect(() => {
         if (!pageConfig && !loading) {
@@ -55,24 +52,41 @@ const StaticPageEditor = () => {
         }
         
         if (pageData) {
-            if (pageId === 'about-us' && pageData.content && typeof pageData.content === 'object') {
-                setStructuredData(pageData.content);
-                setTitle(pageData.title || pageConfig?.title || '');
-            } else {
-                setContent(pageData.content || '');
-                setTitle(pageData.title || pageConfig?.title || '');
+            let initialContent = pageData.content || '';
+            
+            // Migrate structured data if found
+            if (pageId === 'about-us' && typeof initialContent === 'object' && initialContent !== null) {
+                const d = initialContent;
+                initialContent = `
+                    <h1>${d.title || ''} <span style="color: #ed7d31;">${d.highlightedTitle || ''}</span></h1>
+                    <p><strong>${d.sectionLabel || ''}</strong></p>
+                    <img src="${d.image || ''}" alt="About Us" style="max-width: 100%; border-radius: 20px; margin: 20px 0;" />
+                    <p>${d.description1 || ''}</p>
+                    <p>${d.description2 || ''}</p>
+                    <div style="display: flex; gap: 40px; margin-top: 30px; border-top: 1px solid #eee; pt: 20px;">
+                        ${(d.stats || []).map(s => `
+                            <div>
+                                <h2 style="margin: 0;">${s.value}</h2>
+                                <p style="font-size: 12px; color: #666; margin: 0;">${s.label}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
             }
+            
+            setContent(initialContent);
+            setTitle(pageData.title || pageConfig?.title || '');
         } else if (pageConfig) {
             setTitle(pageConfig.title);
         }
     }, [pageId, navigate, pageConfig, pageData, loading]);
 
     const handleSave = async () => {
-        console.log('StaticPageEditor: Starting handleSave', { pageId, title, content, structuredData });
+        console.log('StaticPageEditor: Starting handleSave', { pageId, title, content });
         try {
             const dataToSave = {
                 title: title,
-                content: pageId === 'about-us' ? structuredData : content,
+                content: content,
                 slug: pageId
             };
             console.log('StaticPageEditor: Sending data to mutation', dataToSave);
@@ -81,31 +95,6 @@ const StaticPageEditor = () => {
             console.log('StaticPageEditor: Save successful');
         } catch (error) {
             console.error('StaticPageEditor: Save failed', error);
-        }
-    };
-
-    const handleStructuredChange = (field, value) => {
-        setStructuredData(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleStatChange = (id, field, value) => {
-        const newStats = structuredData.stats.map(stat => {
-            const isMatch = stat.id === id || stat._id === id;
-            return isMatch ? { ...stat, [field]: value } : stat;
-        });
-        setStructuredData(prev => ({ ...prev, stats: newStats }));
-    };
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        try {
-            const res = await uploadMutation.mutateAsync(file);
-            handleStructuredChange('image', res.url);
-            toast.success('Image uploaded successfully!');
-        } catch (error) {
-            toast.error(error.message || 'Failed to upload image');
         }
     };
 
@@ -196,176 +185,18 @@ const StaticPageEditor = () => {
             </div>
 
             {/* Editor Area */}
-            {pageId === 'about-us' && structuredData ? (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 space-y-8">
-                        <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                <Type size={20} />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900">Content Editor</h3>
-                                <p className="text-xs text-gray-400">Update text and images</p>
-                            </div>
-                        </div>
-
-                        {/* Headings */}
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="col-span-1">
-                                    <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Section Label</label>
-                                    <input
-                                        type="text"
-                                        value={structuredData.sectionLabel}
-                                        onChange={(e) => handleStructuredChange('sectionLabel', e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:bg-white focus:border-primary outline-none transition-all"
-                                    />
-                                </div>
-                                <div className="col-span-1">
-                                    <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Main Title</label>
-                                    <input
-                                        type="text"
-                                        value={structuredData.title}
-                                        onChange={(e) => handleStructuredChange('title', e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:bg-white focus:border-primary outline-none transition-all"
-                                    />
-                                </div>
-                                <div className="col-span-1">
-                                    <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Highlighted Title</label>
-                                    <input
-                                        type="text"
-                                        value={structuredData.highlightedTitle}
-                                        onChange={(e) => handleStructuredChange('highlightedTitle', e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Image */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Image URL / Upload</label>
-                            <div className="flex gap-3">
-                                <div className="relative flex-1">
-                                    <ImageIcon size={16} className="absolute left-4 top-3 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={structuredData.image}
-                                        onChange={(e) => handleStructuredChange('image', e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:bg-white focus:border-primary outline-none transition-all"
-                                        placeholder="Paste image URL here..."
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        id="about-image-upload"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={uploadMutation.isPending}
-                                    />
-                                    <label
-                                        htmlFor="about-image-upload"
-                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed transition-all cursor-pointer font-bold text-xs ${
-                                            uploadMutation.isPending 
-                                            ? 'bg-gray-50 border-gray-200 text-gray-400' 
-                                            : 'border-primary/30 text-primary hover:bg-primary/5 hover:border-primary'
-                                        }`}
-                                    >
-                                        {uploadMutation.isPending ? (
-                                            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                        ) : (
-                                            <Upload size={16} />
-                                        )}
-                                        {uploadMutation.isPending ? 'Uploading...' : 'Upload Image'}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Paragraphs */}
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Paragraph 1</label>
-                                <textarea
-                                    rows="3"
-                                    value={structuredData.description1}
-                                    onChange={(e) => handleStructuredChange('description1', e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-primary outline-none transition-all"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-500 mb-1.5 block">Paragraph 2</label>
-                                <textarea
-                                    rows="3"
-                                    value={structuredData.description2}
-                                    onChange={(e) => handleStructuredChange('description2', e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-primary outline-none transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="space-y-4">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block border-t pt-4">Key Statistics</label>
-                            <div className="grid grid-cols-1 gap-4">
-                                {structuredData.stats.map((stat, index) => (
-                                    <div key={stat.id || stat._id || index} className="flex gap-4 items-end bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        <div className="flex-1 space-y-1">
-                                            <input
-                                                type="text"
-                                                value={stat.value}
-                                                onChange={(e) => handleStatChange(stat.id || stat._id, 'value', e.target.value)}
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-black focus:border-primary outline-none"
-                                            />
-                                        </div>
-                                        <div className="flex-[2] space-y-1">
-                                            <input
-                                                type="text"
-                                                value={stat.label}
-                                                onChange={(e) => handleStatChange(stat.id || stat._id, 'label', e.target.value)}
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium focus:border-primary outline-none"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Preview */}
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 overflow-hidden">
-                        <div className="flex items-center justify-between mb-4 border-b pb-2">
-                             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Preview</h3>
-                             <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded font-bold">Desktop</span>
-                        </div>
-                        <div className="p-4 space-y-6">
-                            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border-2 border-primary/20">
-                                <img src={structuredData.image} alt="Preview" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="space-y-2">
-                                <span className="text-primary font-bold text-[10px] uppercase tracking-widest">{structuredData.sectionLabel}</span>
-                                <h2 className="text-xl font-bold text-gray-900">{structuredData.title} <span className="text-primary">{structuredData.highlightedTitle}</span></h2>
-                                <p className="text-xs text-gray-500 leading-relaxed">{structuredData.description1}</p>
-                            </div>
-                        </div>
-                    </div>
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden p-1">
+                <div className="h-[600px] flex flex-col">
+                    <ReactQuill
+                        theme="snow"
+                        value={content}
+                        onChange={setContent}
+                        placeholder={`Start writing content for ${pageConfig.title}...`}
+                        className="h-full"
+                        modules={modules}
+                    />
                 </div>
-            ) : (
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden p-1">
-                    <div className="h-[600px] flex flex-col">
-                        <ReactQuill
-                            theme="snow"
-                            value={content}
-                            onChange={setContent}
-                            placeholder={`Start writing content for ${pageConfig.title}...`}
-                            className="h-full"
-                            modules={modules}
-                        />
-                    </div>
-                </div>
-            )}
+            </div>
 
             <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                 <h4 className="font-bold text-blue-900 mb-2 text-xs flex items-center gap-2">

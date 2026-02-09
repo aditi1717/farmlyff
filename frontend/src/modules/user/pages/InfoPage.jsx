@@ -112,7 +112,7 @@ const InfoPage = ({ type }) => {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-5xl mx-auto"
+                className="max-w-7xl mx-auto md:px-0"
             >
                 <div className="text-center mb-8">
                     <h1 className="text-3xl lg:text-5xl font-black text-footerBg uppercase tracking-tighter mb-2">{displayTitle}</h1>

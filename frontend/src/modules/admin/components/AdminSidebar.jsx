@@ -301,6 +301,17 @@ const AdminSidebar = () => {
                             </Link>
 
                             <Link
+                                to="/admin/sections/about-us"
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/about-us'
+                                    ? 'bg-primary/20 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }`}
+                            >
+                                <Info size={16} />
+                                <span className="font-semibold">About Us Section</span>
+                            </Link>
+
+                            <Link
                                 to="/admin/sections/health-benefits"
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/sections/health-benefits'
                                     ? 'bg-primary/20 text-white'

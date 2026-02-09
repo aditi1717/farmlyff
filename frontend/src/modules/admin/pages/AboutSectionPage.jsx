@@ -58,13 +58,15 @@ const AboutSectionPage = () => {
 
     const handleSave = async () => {
         try {
-            await updateMutation.mutateAsync({ 
+            await updateAboutMutation.mutateAsync({ 
                 data: {
                     title: 'About Us Section',
                     content: formData
                 } 
             });
-        } catch (error) {}
+        } catch (error) {
+            console.error('Failed to save about section:', error);
+        }
     };
 
     const handleReset = () => {
@@ -101,12 +103,24 @@ const AboutSectionPage = () => {
                         <RotateCcw size={16} />
                         Reset Default
                     </button>
-                    <button
+                     <button
                         onClick={handleSave}
-                        className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
+                        disabled={updateAboutMutation.isPending}
+                        className={`px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-gray-200 ${
+                            updateAboutMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
+                        }`}
                     >
-                        <Save size={16} />
-                        Save Changes
+                        {updateAboutMutation.isPending ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={16} />
+                                Save Changes
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

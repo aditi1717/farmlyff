@@ -222,8 +222,8 @@ export const useAboutSection = () => {
     return useQuery({
         queryKey: ['about-section'], // Keep queryKey for cache stability if needed, or unify to ['page-content', 'about-us']
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/page-content/about-us`, { credentials: 'include' });
-            if (!res.ok) throw new Error(`Failed to fetch about-us content`);
+            const res = await fetch(`${API_URL}/page-content/homepage-about`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Failed to fetch homepage-about content`);
             const data = await res.json();
             // Return the nested content object to maintain compatibility with existing components
             return data.content || {};
@@ -234,17 +234,18 @@ export const useUpdateAboutSectionInfo = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ data }) => {
-            const res = await fetch(`${API_URL}/about-section`, {
+            const res = await fetch(`${API_URL}/page-content/homepage-about`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
-            if (!res.ok) throw new Error(`Failed to update about-section`);
+            if (!res.ok) throw new Error(`Failed to update homepage-about`);
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['about-section'] });
+            queryClient.invalidateQueries({ queryKey: ['page-content', 'about-us'] });
             toast.success(`About section updated!`);
         },
         onError: (err) => toast.error(err.message)
