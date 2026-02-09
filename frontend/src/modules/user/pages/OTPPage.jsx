@@ -16,6 +16,7 @@ const OTPPage = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [accountType, setAccountType] = useState('Individual');
+    const [gstNumber, setGstNumber] = useState('');
     const inputRefs = useRef([]);
 
     // Get phone from previous navigation state
@@ -86,7 +87,7 @@ const OTPPage = () => {
                 setIsLoading(false);
                 return;
             }
-            const result = await verifyOtp(phone, fullOtp, name, email, accountType);
+            const result = await verifyOtp(phone, fullOtp, name, email, accountType, gstNumber);
             setIsLoading(false);
             if (result.success) {
                 navigate('/');
@@ -226,6 +227,24 @@ const OTPPage = () => {
                                     </button>
                                 </div>
                             </div>
+                            {accountType === 'Business' && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="space-y-1 text-left"
+                                >
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">GST Number (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={gstNumber}
+                                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all uppercase"
+                                        placeholder="22AAAAA0000A1Z5"
+                                        maxLength={15}
+                                    />
+                                    <p className="text-[9px] text-gray-400 mt-1 ml-1">Leave blank if you don't have a GST number</p>
+                                </motion.div>
+                            )}
                         </motion.div>
                     )}
 

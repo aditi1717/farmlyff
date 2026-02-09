@@ -34,7 +34,9 @@ const ProfilePage = () => {
         email: '',
         phone: '',
         gender: 'Male',
-        birthDate: ''
+        birthDate: '',
+        accountType: 'Individual',
+        gstNumber: ''
     });
     const [updateSuccess, setUpdateSuccess] = useState(false);
     const [showAddressForm, setShowAddressForm] = useState(false);
@@ -60,7 +62,9 @@ const ProfilePage = () => {
                 email: userData.email || '',
                 phone: userData.phone || '',
                 gender: userData.gender || 'Male',
-                birthDate: userData.birthDate || ''
+                birthDate: userData.birthDate || '',
+                accountType: userData.accountType || 'Individual',
+                gstNumber: userData.gstNumber || ''
             });
         }
     }, [userData]);
@@ -85,7 +89,9 @@ const ProfilePage = () => {
                 email: editForm.email,
                 phone: editForm.phone,
                 gender: editForm.gender,
-                birthDate: editForm.birthDate
+                birthDate: editForm.birthDate,
+                accountType: editForm.accountType,
+                gstNumber: editForm.gstNumber
             });
             setUpdateSuccess(true);
             setTimeout(() => setUpdateSuccess(false), 3000);
@@ -698,7 +704,24 @@ const ProfilePage = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+
+                            <div className="space-y-2 text-left">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Account Type</label>
+                                <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
+                                    {['Individual', 'Business'].map((type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setEditForm({ ...editForm, accountType: type })}
+                                            className={`flex-1 py-3 px-1 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${editForm.accountType === type ? 'bg-footerBg text-white' : 'text-gray-400 hover:text-footerBg'}`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2 text-left">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
                                 <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
@@ -724,9 +747,24 @@ const ProfilePage = () => {
                                 />
                             </div>
                         </div>
+
+                        {editForm.accountType === 'Business' && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">GST Number (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={editForm.gstNumber}
+                                    onChange={(e) => setEditForm({ ...editForm, gstNumber: e.target.value.toUpperCase() })}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-4 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all uppercase"
+                                    placeholder="22AAAAA0000A1Z5"
+                                    maxLength={15}
+                                />
+                                <p className="text-[9px] text-gray-400 ml-1">Leave blank if you don't have a GST number</p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="pt-4 flex items-center gap-6">
+                <div className="pt-4 flex items-center gap-6">
                         <button
                             type="submit"
                             className="bg-footerBg text-white px-10 py-4 rounded-none font-black uppercase tracking-widest text-xs hover:bg-primary transition-all shadow-lg shadow-footerBg/10"

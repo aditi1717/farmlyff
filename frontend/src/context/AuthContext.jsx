@@ -127,12 +127,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const verifyOtp = async (phone, otp, name = null, email = null, accountType = 'Individual') => {
+    const verifyOtp = async (phone, otp, name = null, email = null, accountType = 'Individual', gstNumber = null) => {
         try {
             const response = await fetch(`${API_URL}/users/verify-otp-login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, name, email, accountType }),
+                body: JSON.stringify({ phone, otp, name, email, accountType, gstNumber }),
                 credentials: 'include'
             });
 
