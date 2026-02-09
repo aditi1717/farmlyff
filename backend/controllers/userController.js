@@ -144,6 +144,8 @@ export const getUserProfile = asyncHandler(async (req, res) => {
         gender: user.gender,
         birthDate: user.birthDate,
         addresses: user.addresses,
+        accountType: user.accountType,
+        gstNumber: user.gstNumber,
         role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
     });
   } else {
@@ -165,6 +167,8 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
         if (req.body.phone !== undefined) user.phone = req.body.phone;
         if (req.body.gender !== undefined) user.gender = req.body.gender;
         if (req.body.birthDate !== undefined) user.birthDate = req.body.birthDate;
+        if (req.body.accountType !== undefined) user.accountType = req.body.accountType;
+        if (req.body.gstNumber !== undefined) user.gstNumber = req.body.gstNumber;
         
         if (req.body.addresses) {
             user.addresses = req.body.addresses;
@@ -186,6 +190,8 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
             gender: updatedUser.gender,
             birthDate: updatedUser.birthDate,
             addresses: updatedUser.addresses,
+            accountType: updatedUser.accountType,
+            gstNumber: updatedUser.gstNumber,
             role: updatedUser.email === 'admin@farmlyf.com' ? 'admin' : 'user'
         });
     } else {
@@ -323,7 +329,7 @@ export const sendOtpForLogin = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const verifyOtpForLogin = asyncHandler(async (req, res) => {
-    const { phone, otp, name, email, accountType } = req.body;
+    const { phone, otp, name, email, accountType, gstNumber } = req.body;
 
     if (!phone || !otp) {
         res.status(400);
@@ -363,6 +369,7 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
             email,
             phone: normalizedPhone,
             accountType: accountType || 'Individual',
+            gstNumber: gstNumber || undefined,
             addresses: [],
             wishlist: [],
             usedCoupons: []

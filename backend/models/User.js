@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
   wishlist: [String],
   usedCoupons: [String],
   accountType: { type: String, enum: ['Individual', 'Business'], default: 'Individual' },
+  gstNumber: String, // Optional GST number for business accounts
   isBanned: { type: Boolean, default: false },
   fcmToken: String // FCM device token for push notifications
 }, { timestamps: true });

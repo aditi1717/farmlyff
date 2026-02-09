@@ -74,6 +74,21 @@ const OrderDetailPage = () => {
         fetchLiveTracking();
     }, [order?.awbCode, order?._id, order?.id]);
 
+    // Fetch user details to get accountType and gstNumber
+    const { data: user } = useQuery({
+        queryKey: ['order-user', order?.userId],
+        queryFn: async () => {
+            const res = await fetch(`http://localhost:5000/api/users/${order.userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
+                }
+            });
+            if (!res.ok) return null;
+            return res.json();
+        },
+        enabled: !!order?.userId
+    });
+
     if (!order && !isLoading) {
         return (
             <div className="p-20 text-center">
@@ -105,10 +120,10 @@ const OrderDetailPage = () => {
         }
     };
 
-    // Derived Data Mocks
-    const isBusiness = (order.userName || order.shippingAddress?.fullName || '').toLowerCase().includes('enterprise') || false; // Mock
-    const gstNumber = isBusiness ? '29ABCDE1234F1Z5' : null;
-    const companyName = isBusiness ? 'Tech Solutions Pvt Ltd' : null;
+    // Use real user data if available, otherwise fallback to order fields
+    const isBusiness = user?.accountType === 'Business' || order.accountType === 'Business';
+    const gstNumber = user?.gstNumber || order.gstNumber || null;
+    const companyName = isBusiness ? (user?.name || order.userName || order.shippingAddress?.fullName) : null;
 
     const timelineSteps = [
         { label: 'Order Placed', status: 'Processing', completed: true, date: new Date(order.date).toLocaleDateString() },

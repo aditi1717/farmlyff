@@ -18,6 +18,7 @@ const PushNotificationPage = () => {
         target: 'all' // all, active, cart
     });
     const [loading, setLoading] = useState(false);
+    const [resendingIds, setResendingIds] = useState(new Set()); // Track which notifications are being resent
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(true);
 
@@ -89,7 +90,9 @@ const PushNotificationPage = () => {
 
     const handleResend = async (notification) => {
         try {
-            setLoading(true);
+            const notificationId = notification._id;
+            setResendingIds(prev => new Set(prev).add(notificationId));
+            
             const response = await fetch(`${API_URL}/notifications/send`, {
                 method: 'POST',
                 headers: {
@@ -116,7 +119,11 @@ const PushNotificationPage = () => {
             console.error('Error resending notification:', error);
             toast.error('Failed to resend notification. Please try again.');
         } finally {
-            setLoading(false);
+            setResendingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(notification._id);
+                return newSet;
+            });
         }
     };
 
@@ -200,11 +207,11 @@ const PushNotificationPage = () => {
                                         <div className="flex items-center gap-3">
                                             <button
                                                 onClick={() => handleResend(n)}
-                                                disabled={loading}
+                                                disabled={resendingIds.has(n._id)}
                                                 className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all disabled:opacity-50"
                                                 title="Resend this notification"
                                             >
-                                                <RefreshCw size={14} className={`text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                                                <RefreshCw size={14} className={`text-gray-600 ${resendingIds.has(n._id) ? 'animate-spin' : ''}`} />
                                             </button>
                                             <div className="text-right">
                                                 <span className={`block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider mb-1 ${

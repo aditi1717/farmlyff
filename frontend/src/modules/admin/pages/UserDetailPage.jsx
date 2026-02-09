@@ -16,55 +16,68 @@ import {
     ShoppingBag,
     Wallet,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Briefcase,
+    Building2
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [showAllOrders, setShowAllOrders] = useState(false);
 
-    // Premium Dummy Data
-    const DUMMY_USERS = [
-        {
-            id: 'u1',
-            name: 'Kabir Singh',
-            email: 'kabir.s@example.com',
-            phone: '+91 98765 43210',
-            isBlocked: false,
-            totalOrders: 12,
-            totalSpend: 45200,
-            since: 'January 2024',
-            addresses: [
-                { type: 'Home', fullName: 'Kabir Singh', address: 'Apartment 402, Sky High Towers, Worli Sea Face', city: 'Mumbai', state: 'Maharashtra', pincode: '400018', isDefault: true },
-                { type: 'Office', fullName: 'Kabir Singh', address: 'Tech Park South, Level 15, BKC', city: 'Mumbai', state: 'Maharashtra', pincode: '400051', isDefault: false }
-            ]
+    // Fetch real user data
+    const { data: user, isLoading, error } = useQuery({
+        queryKey: ['admin-user', id],
+        queryFn: async () => {
+            const token = localStorage.getItem('farmlyf_token');
+            const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!res.ok) throw new Error('Failed to fetch user');
+            return res.json();
+        }
+    });
+
+    // Fetch real order history for this user
+    const { data: orders } = useQuery({
+        queryKey: ['admin-user-orders', id],
+        queryFn: async () => {
+            const token = localStorage.getItem('farmlyf_token');
+            const res = await fetch(`http://localhost:5000/api/orders/user/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!res.ok) return [];
+            return res.json();
         },
-        { id: 'u2', name: 'Ananya Sharma', email: 'ananya.sh@gmail.com', phone: '+91 91234 56789', isBlocked: false, totalOrders: 5, totalSpend: 15600, since: 'March 2024', addresses: [] },
-        { id: 'u3', name: 'Rahul Malhotra', email: 'rahul.m@outlook.com', phone: '+91 88888 77777', isBlocked: true, totalOrders: 0, totalSpend: 0, since: 'May 2024', addresses: [] },
-        { id: 'u4', name: 'Priya Verma', email: 'p.verma@example.com', phone: '+91 77776 55555', isBlocked: false, totalOrders: 28, totalSpend: 125400, since: 'December 2023', addresses: [] },
-        { id: 'u5', name: 'Ishaan Gupta', email: 'ishaan.g@gmail.com', phone: '+91 99900 11122', isBlocked: false, totalOrders: 8, totalSpend: 24300, since: 'June 2024', addresses: [] },
-        { id: 'u6', name: 'Meera Rajput', email: 'meera.r@tata.com', phone: '+91 95555 44433', isBlocked: false, totalOrders: 15, totalSpend: 56900, since: 'February 2024', addresses: [] },
-        { id: 'u7', name: 'Aditya Das', email: 'aditya.d@yahoo.com', phone: '+91 82222 33311', isBlocked: false, totalOrders: 3, totalSpend: 8900, since: 'July 2024', addresses: [] },
-        { id: 'u8', name: 'Sanya Mirza', email: 'sanya.m@company.in', phone: '+91 70000 12345', isBlocked: true, totalOrders: 1, totalSpend: 2100, since: 'August 2024', addresses: [] },
-        { id: 'u9', name: 'Vikram Seth', email: 'v.seth@reliance.com', phone: '+91 91111 22233', isBlocked: false, totalOrders: 10, totalSpend: 31200, since: 'April 2024', addresses: [] },
-        { id: 'u10', name: 'Zoya Khan', email: 'zoya.k@gmail.com', phone: '+91 90000 00001', isBlocked: false, totalOrders: 6, totalSpend: 18400, since: 'September 2024', addresses: [] }
-    ];
+        enabled: !!user
+    });
 
-    const user = DUMMY_USERS.find(u => u.id === id) || DUMMY_USERS[0];
-
-    // Simple Order History for u1
-    const allDummyOrders = [
-        { id: 'ORD-8821', date: '24 Oct 2024', amount: 12400, status: 'Delivered', method: 'Prepaid' },
-        { id: 'ORD-8755', date: '12 Oct 2024', amount: 3500, status: 'Delivered', method: 'COD' },
-        { id: 'ORD-8610', date: '05 Sep 2024', amount: 8200, status: 'Cancelled', method: 'Prepaid' },
-        { id: 'ORD-8502', date: '15 Aug 2024', amount: 15600, status: 'Delivered', method: 'Prepaid' },
-        { id: 'ORD-8411', date: '10 Aug 2024', amount: 2100, status: 'Delivered', method: 'COD' },
-        { id: 'ORD-8390', date: '01 Jul 2024', amount: 5400, status: 'Delivered', method: 'Prepaid' },
-    ];
-
-    const orderHistory = user?.id === 'u1' ? allDummyOrders : [];
+    const orderHistory = useMemo(() => orders || [], [orders]);
     const displayedOrders = showAllOrders ? orderHistory : orderHistory.slice(0, 4);
+
+    if (isLoading) return <div className="p-20 text-center text-xs font-black uppercase tracking-widest text-gray-400">Loading User Details...</div>;
+    if (error || !user) return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                <ShieldOff size={40} className="text-gray-300" />
+            </div>
+            <h2 className="text-2xl font-black text-footerBg mb-2 uppercase tracking-tighter">Error Loading User</h2>
+            <button
+                onClick={() => navigate('/admin/users')}
+                className="flex items-center gap-2 px-6 py-3 bg-footerBg text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-95 uppercase text-xs tracking-widest"
+            >
+                <ArrowLeft size={18} /> Back to Users
+            </button>
+        </div>
+    );
+
+    const totalSpend = orderHistory.reduce((acc, ord) => acc + (ord.totalAmount || ord.amount || 0), 0);
 
     if (!user) {
         return (
@@ -117,6 +130,10 @@ const UserDetailPage = () => {
                                 }`}>
                                 {user.isBlocked ? 'Restricted' : 'Verified Resident'}
                             </span>
+                            <span className={`w-fit mx-auto md:mx-0 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.accountType === 'Business' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
+                                }`}>
+                                {user.accountType || 'Individual'}
+                            </span>
                         </div>
                         <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1">
                             <div className="flex items-center gap-1.5 text-footerBg text-xs font-bold">
@@ -129,8 +146,14 @@ const UserDetailPage = () => {
                             </div>
                             <div className="flex items-center gap-1.5 text-gray-400 text-[8px] font-black uppercase tracking-widest">
                                 <Calendar size={12} />
-                                Member since {user.since}
+                                Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </div>
+                            {user.accountType === 'Business' && user.gstNumber && (
+                                <div className="flex items-center gap-1.5 text-blue-600 text-[8px] font-black uppercase tracking-widest">
+                                    <Building2 size={12} />
+                                    GST: {user.gstNumber}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -153,7 +176,7 @@ const UserDetailPage = () => {
                                 <Wallet size={20} />
                             </div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Spend</p>
-                            <p className="text-2xl font-black text-footerBg tabular-nums">₹{user.totalSpend.toLocaleString()}</p>
+                            <p className="text-2xl font-black text-footerBg tabular-nums">₹{totalSpend.toLocaleString()}</p>
                         </div>
                     </div>
 

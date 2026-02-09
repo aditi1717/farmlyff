@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, User, ArrowLeft, Share2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useBlogBySlug } from '../../../hooks/useContent';
 
 const BlogDetailPage = () => {
@@ -11,6 +12,31 @@ const BlogDetailPage = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    const handleShare = async () => {
+        const shareData = {
+            title: blog.title,
+            text: `Check out this article: ${blog.title}`,
+            url: window.location.href,
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.error('Error sharing:', err);
+            }
+        } else {
+            // Fallback: Copy to clipboard
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success('Link copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy link:', err);
+                toast.error('Failed to copy link');
+            }
+        }
+    };
 
     if (isLoading) {
         return (
@@ -55,9 +81,6 @@ const BlogDetailPage = () => {
                         
                         <div className="max-w-4xl">
                             <div className="flex flex-wrap items-center gap-4 text-white/90 text-xs md:text-sm font-bold uppercase tracking-widest mb-4">
-                                <span className="bg-primary px-3 py-1 rounded">
-                                    {blog.category}
-                                </span>
                                 <span className="flex items-center gap-2">
                                     <Calendar size={16} />
                                     {new Date(blog.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -77,51 +100,24 @@ const BlogDetailPage = () => {
 
             {/* Main Content */}
             <div className="container mx-auto px-4 md:px-12 py-12 md:py-20">
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex flex-col md:flex-row gap-12">
-                        {/* Article Content */}
-                        <div className="flex-1 overflow-hidden">
-                            <div 
-                                className="prose prose-lg max-w-none prose-img:rounded-3xl prose-headings:font-black prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: blog.content }}
-                            />
-                            
-                            {/* Share & Footer */}
-                            <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                                <div className="flex items-center gap-4">
-                                    <span className="font-bold text-gray-900">Share this article:</span>
-                                    <div className="flex gap-2">
-                                        {[1, 2, 3].map((i) => (
-                                            <button key={i} className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-primary hover:text-white transition-all">
-                                                <Share2 size={18} />
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                <Link to="/" className="text-primary font-bold hover:underline">
-                                    Read more exciting stories
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Sidebar (Optional) */}
-                        <div className="md:w-80 hidden lg:block">
-                            <div className="sticky top-24 space-y-8">
-                                <div className="bg-gray-50 p-8 rounded-[2.5rem]">
-                                    <h3 className="font-black text-gray-900 uppercase tracking-tight mb-4">About the Author</h3>
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden">
-                                            <img src="/logo.png" alt="FarmLyf" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-900 leading-none">{blog.author}</p>
-                                            <p className="text-xs text-gray-500 mt-1">FarmLyf Official</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                        Sharing the best of nature's purity and health benefits from our farms directly to your doorstep.
-                                    </p>
+                <div className="max-w-5xl mx-auto">
+                    <div className="overflow-hidden">
+                        <div 
+                            className="prose prose-lg max-w-none prose-img:rounded-3xl prose-headings:font-black prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: blog.content }}
+                        />
+                        
+                        {/* Share & Footer */}
+                        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <span className="font-bold text-gray-900">Share this article:</span>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={handleShare}
+                                        className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-primary hover:text-white transition-all"
+                                    >
+                                        <Share2 size={18} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -133,6 +129,7 @@ const BlogDetailPage = () => {
             <style>{`
                 .prose {
                     color: #4b5563;
+                    text-align: left;
                 }
                 .prose h1, .prose h2, .prose h3, .prose h4 {
                     color: #111827;
@@ -140,9 +137,14 @@ const BlogDetailPage = () => {
                     margin-top: 2em;
                     margin-bottom: 0.5em;
                 }
-                .prose p {
+                .prose p, .prose li {
                     margin-bottom: 1.5em;
                     line-height: 1.8;
+                    font-size: 1.25rem;
+                    text-align: left;
+                }
+                .prose li {
+                    margin-bottom: 0.5em;
                 }
                 .prose blockquote {
                     border-left: 4px solid #16a34a;
@@ -154,9 +156,6 @@ const BlogDetailPage = () => {
                     list-style-type: disc;
                     padding-left: 1.5em;
                     margin-bottom: 1.5em;
-                }
-                .prose li {
-                    margin-bottom: 0.5em;
                 }
             `}</style>
         </div>
