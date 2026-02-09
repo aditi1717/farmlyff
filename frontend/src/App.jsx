@@ -104,9 +104,9 @@ function App() {
                 <Route path="wishlist" element={<WishlistPage />} />
                 <Route path="vault" element={<VaultPage />} />
                 <Route path="profile/:tab?" element={<ProfilePage />} />
-                <Route path="about-us" element={<InfoPage type="about" />} />
-                <Route path="privacy-policy" element={<InfoPage type="privacy" />} />
-                <Route path="contact-us" element={<InfoPage type="contact" />} />
+                <Route path="about-us" element={<InfoPage type="about-us" />} />
+                <Route path="privacy-policy" element={<InfoPage type="privacy-policy" />} />
+                <Route path="contact-us" element={<InfoPage type="contact-us" />} />
                 <Route path="blog/:slug" element={<BlogDetailPage />} />
                 <Route path="login" element={<AuthPage />} />
                 <Route path="otp-verification" element={<OTPPage />} />

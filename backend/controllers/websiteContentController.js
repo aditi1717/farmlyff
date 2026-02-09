@@ -14,20 +14,29 @@ export const updateContentBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
     const { title, content, isActive, metadata } = req.body;
+    
+    console.log('Update Content Request:', { slug, body: req.body });
+
+    const updateData = { 
+      title, 
+      content, 
+      isActive: isActive !== undefined ? isActive : true
+    };
+
+    if (metadata) {
+      updateData.metadata = metadata;
+    }
 
     const updatedContent = await WebsiteContent.findOneAndUpdate(
       { slug },
-      { 
-        title, 
-        content, 
-        isActive: isActive !== undefined ? isActive : true,
-        metadata: metadata || {}
-      },
+      updateData,
       { new: true, upsert: true, runValidators: true }
     );
 
+    console.log('Content Updated Successfully:', updatedContent.slug);
     res.json(updatedContent);
   } catch (error) {
+    console.error('Error Updating Content:', error);
     res.status(400).json({ message: error.message });
   }
 };

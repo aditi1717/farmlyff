@@ -22,57 +22,57 @@ import {
 } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 
-const Footer = () => {
-    const [config, setConfig] = React.useState({
-        brand: {
-            description: "Fine, hand-picked dry fruits from around the globe. Quality that nourishes."
+import { useWebsiteContent } from '../../../hooks/useContent';
+
+const DEFAULT_FOOTER_CONFIG = {
+    brand: {
+        description: "Fine, hand-picked dry fruits from around the globe. Quality that nourishes."
+    },
+    socials: {
+        facebook: '#',
+        instagram: '#',
+        twitter: '#'
+    },
+    columns: [
+        {
+            id: 'col1',
+            title: 'Quick Shop',
+            links: [
+                { label: 'Daily Health', url: '/shop' },
+                { label: 'Family Packs', url: '/shop?category=packs' },
+                { label: 'Energy & Fitness', url: '/shop?tag=energy' },
+                { label: 'Festival', url: '/shop?tag=festival' },
+                { label: 'Gifting', url: '/shop?tag=gifting' }
+            ]
         },
-        socials: {
-            facebook: '#',
-            instagram: '#',
-            twitter: '#'
-        },
-        columns: [
-            {
-                id: 'col1',
-                title: 'Quick Shop',
-                links: [
-                    { label: 'Daily Health', url: '/shop' },
-                    { label: 'Family Packs', url: '/shop?category=packs' },
-                    { label: 'Energy & Fitness', url: '/shop?tag=energy' },
-                    { label: 'Festival', url: '/shop?tag=festival' },
-                    { label: 'Gifting', url: '/shop?tag=gifting' }
-                ]
-            },
-            {
-                id: 'col2',
-                title: 'Information',
-                links: [
-                    { label: 'About Us', url: '/about-us' },
-                    { label: 'Track Order', url: '/orders' },
-                    { label: 'Returns', url: '/returns' },
-                    { label: 'Privacy Policy', url: '/privacy-policy' },
-                    { label: 'Terms & Conditions', url: '/terms-conditions' }
-                ]
-            }
-        ],
-        contact: {
-            address: "Office No 501, Princess center, 5th Floor, New Palasia, Indore, 452001",
-            phone: "+91 98765 43210",
-            email: "support@farmlyf.com"
+        {
+            id: 'col2',
+            title: 'Information',
+            links: [
+                { label: 'About Us', url: '/about-us' },
+                { label: 'Track Order', url: '/orders' },
+                { label: 'Returns', url: '/returns' },
+                { label: 'Privacy Policy', url: '/privacy-policy' },
+                { label: 'Terms & Conditions', url: '/terms-conditions' }
+            ]
         }
-    });
+    ],
+    contact: {
+        address: "Office No 501, Princess center, 5th Floor, New Palasia, Indore, 452001",
+        phone: "+91 98765 43210",
+        email: "support@farmlyf.com"
+    }
+};
+
+const Footer = () => {
+    const { data: serverData } = useWebsiteContent('footer-config');
+    const [config, setConfig] = React.useState(DEFAULT_FOOTER_CONFIG);
 
     React.useEffect(() => {
-        const savedConfig = localStorage.getItem('farmlyf_footer_config');
-        if (savedConfig) {
-            try {
-                setConfig(JSON.parse(savedConfig));
-            } catch (e) {
-                console.error("Failed to parse footer config", e);
-            }
+        if (serverData?.content) {
+            setConfig(serverData.content);
         }
-    }, []);
+    }, [serverData]);
 
     return (
         <footer className="bg-footerBg text-white pt-10 md:pt-20 pb-10 px-4 md:px-12 relative overflow-hidden">

@@ -24,8 +24,8 @@ import {
     Heart,
     ThumbsUp
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
 
 const DEFAULT_FOOTER_CONFIG = {
     brand: {
@@ -75,29 +75,31 @@ const DEFAULT_FOOTER_CONFIG = {
 
 const FooterManagerPage = () => {
     const navigate = useNavigate();
+    const { data: serverConfig, isLoading } = useWebsiteContent('footer-config');
+    const updateMutation = useUpdateWebsiteContent('footer-config');
     const [config, setConfig] = useState(DEFAULT_FOOTER_CONFIG);
 
     useEffect(() => {
-        const savedConfig = localStorage.getItem('farmlyf_footer_config');
-        if (savedConfig) {
-            try {
-                setConfig(JSON.parse(savedConfig));
-            } catch (e) {
-                console.error("Failed to parse footer config", e);
-            }
+        if (serverConfig?.content) {
+            setConfig(serverConfig.content);
         }
-    }, []);
+    }, [serverConfig]);
 
-    const handleSave = () => {
-        localStorage.setItem('farmlyf_footer_config', JSON.stringify(config));
-        toast.success("Footer configuration updated successfully!");
+    const handleSave = async () => {
+        try {
+            await updateMutation.mutateAsync({
+                title: 'Footer Configuration',
+                content: config,
+                slug: 'footer-config'
+            });
+        } catch (error) {
+            console.error("Failed to save footer config", error);
+        }
     };
 
     const handleReset = () => {
-        if (confirm("Reset footer to default settings?")) {
+        if (window.confirm("Reset footer to default settings?")) {
             setConfig(DEFAULT_FOOTER_CONFIG);
-            localStorage.setItem('farmlyf_footer_config', JSON.stringify(DEFAULT_FOOTER_CONFIG));
-            toast.success("Footer reset to default.");
         }
     };
 

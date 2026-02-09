@@ -68,15 +68,19 @@ const StaticPageEditor = () => {
     }, [pageId, navigate, pageConfig, pageData, loading]);
 
     const handleSave = async () => {
+        console.log('StaticPageEditor: Starting handleSave', { pageId, title, content, structuredData });
         try {
-            await updateMutation.mutateAsync({
+            const dataToSave = {
                 title: title,
                 content: pageId === 'about-us' ? structuredData : content,
                 slug: pageId
-            });
-            // onSuccess toast is handled in the hook
+            };
+            console.log('StaticPageEditor: Sending data to mutation', dataToSave);
+            
+            await updateMutation.mutateAsync(dataToSave);
+            console.log('StaticPageEditor: Save successful');
         } catch (error) {
-            // onError toast is handled in the hook
+            console.error('StaticPageEditor: Save failed', error);
         }
     };
 
