@@ -37,19 +37,13 @@ const defaultPacks = [
 ];
 
 // import { useShop } from '../../../context/ShopContext'; // Removed
-import { useCategories, useSubCategories } from '../../../hooks/useProducts';
+import { useCategories, useSubCategories, useComboCategories } from '../../../hooks/useProducts';
 import { useQuery } from '@tanstack/react-query';
 
 const ShopByPacks = () => {
     const { data: categories = [] } = useCategories();
-    // Fetch Combo Categories from new dedicated endpoint
-    const { data: comboCategories = [] } = useQuery({
-        queryKey: ['combo-categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
-            return res.json();
-        }
-    });
+    // Fetch Combo Categories from centralized hook
+    const { data: comboCategories = [] } = useComboCategories();
 
     const packs = React.useMemo(() => {
         const activeCombos = comboCategories.filter(c => c.status === 'Active');

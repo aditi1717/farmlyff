@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
-import { useDeleteProduct } from '../../../hooks/useProducts';
+import { useDeleteProduct, useProducts, useCategories } from '../../../hooks/useProducts';
 import toast from 'react-hot-toast';
 
 const ComboProductsPage = () => {
@@ -25,14 +25,7 @@ const ComboProductsPage = () => {
     const deleteProductMutation = useDeleteProduct();
 
     // Fetch all products
-    const { data: allProducts = [] } = useQuery({
-        queryKey: ['products'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/products');
-            if (!res.ok) throw new Error('Failed to fetch products');
-            return res.json();
-        }
-    });
+    const { data: allProducts = [] } = useProducts();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -43,19 +36,12 @@ const ComboProductsPage = () => {
     const itemsPerPage = 8;
 
     // Fetch categories to find combo category
-    const { data: categories = [] } = useQuery({
-        queryKey: ['categories'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/categories');
-            if (!res.ok) throw new Error('Failed to fetch categories');
-            return res.json();
-        }
-    });
+    const { data: categories = [] } = useCategories();
 
     // Find the Combos & Packs category
     const combosCategory = useMemo(() => {
-        return categories.find(cat => 
-            cat.slug === 'combos-packs' || 
+        return categories.find(cat =>
+            cat.slug === 'combos-packs' ||
             cat.name?.toLowerCase().includes('combo') ||
             cat.name?.toLowerCase().includes('pack')
         );
@@ -64,9 +50,9 @@ const ComboProductsPage = () => {
     // Get all COMBOS from database (filter by combos category)
     const combos = useMemo(() => {
         if (!combosCategory) return [];
-        
+
         const combosCategoryId = combosCategory._id || combosCategory.id;
-        
+
         return allProducts.filter(p => {
             const productCategoryId = p.category?._id || p.category;
             return productCategoryId && String(productCategoryId) === String(combosCategoryId);

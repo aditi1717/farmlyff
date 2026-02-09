@@ -57,7 +57,7 @@ const CategoriesPage = () => {
 
     const fetchCategories = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/categories');
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/categories`);
             const data = await res.json();
             if (res.ok) {
                 setCategories(data);
@@ -83,7 +83,7 @@ const CategoriesPage = () => {
     const uploadImage = async (file) => {
         const formData = new FormData();
         formData.append('image', file);
-        const res = await fetch('http://localhost:5000/api/upload', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
             method: 'POST',
             body: formData
         });
@@ -109,8 +109,8 @@ const CategoriesPage = () => {
             itemData.parent = null;
 
             const url = isEdit
-                ? `http://localhost:5000/api/categories/${editingCategory.id}`
-                : 'http://localhost:5000/api/categories';
+                ? `${import.meta.env.VITE_API_URL}/categories/${editingCategory.id}`
+                : `${import.meta.env.VITE_API_URL}/categories`;
 
             const method = isEdit ? 'PUT' : 'POST';
 
@@ -147,7 +147,7 @@ const CategoriesPage = () => {
         const toastId = toast.loading('Deleting...');
 
         try {
-            const res = await fetch(`http://localhost:5000/api/categories/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/categories/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success('Category deleted', { id: toastId });
                 setCategories(categories.filter(c => c.id !== id)); // Optimistic update
@@ -164,7 +164,7 @@ const CategoriesPage = () => {
     const toggleStatus = async (category) => {
         const newStatus = category.status === 'Active' ? 'Hidden' : 'Active';
         try {
-            const res = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/categories/${category.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })

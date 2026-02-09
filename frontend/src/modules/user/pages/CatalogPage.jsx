@@ -15,7 +15,7 @@ import {
     X,
     Check
 } from 'lucide-react';
-import { useProducts, useCategories, useSubCategories } from '../../../hooks/useProducts';
+import { useProducts, useCategories, useSubCategories, useComboCategories } from '../../../hooks/useProducts';
 import ProductCard from '../components/ProductCard';
 
 const FilterSection = ({ title, children, openFilters, toggleAccordion }) => (
@@ -54,6 +54,7 @@ const CatalogPage = () => {
     const { data: products = [] } = useProducts();
     const { data: categories = [] } = useCategories();
     const { data: subCategories = [] } = useSubCategories();
+    const { data: comboCategories = [] } = useComboCategories();
 
     // States for Filters
     const [openFilters, setOpenFilters] = useState([]); // Start closed to prevent mobile clutter
@@ -105,9 +106,8 @@ const CatalogPage = () => {
 
     // Derived Categories Data
     const categoriesData = useMemo(() => {
-        if (!categories || categories.length === 0) return [];
-        const parents = categories.filter(c => c.status === 'Active');
-        return parents.map(p => ({
+        const parents = (categories || []).filter(c => c.status === 'Active');
+        const regularCats = parents.map(p => ({
             id: p.slug,
             _id: p._id,
             name: p.name,
@@ -115,7 +115,21 @@ const CatalogPage = () => {
                 .filter(s => (s.parent === p._id || s.parent?._id === p._id || s.parent === p.id) && s.status === 'Active')
                 .map(s => s.name)
         }));
-    }, [categories, subCategories]);
+
+        // Add virtual Combo Packs category if not present
+        if (!regularCats.some(c => c.id === 'combos-packs')) {
+            regularCats.push({
+                id: 'combos-packs',
+                _id: 'virtual-combos',
+                name: 'Combos & Packs',
+                subcategories: comboCategories
+                    .filter(c => c.status === 'Active')
+                    .map(c => c.name)
+            });
+        }
+
+        return regularCats;
+    }, [categories, subCategories, comboCategories]);
 
     // Unique values for filters
     const filterOptions = useMemo(() => {
@@ -123,7 +137,7 @@ const CatalogPage = () => {
             if (p.variants) return p.variants.map(v => v.weight);
             return [p.weight];
         }).filter(Boolean))];
-        
+
         // Calculate price bounds from variants
         const prices = products.flatMap(p => {
             if (p.variants && p.variants.length > 0) {
@@ -131,12 +145,12 @@ const CatalogPage = () => {
             }
             return [];
         }).filter(p => p > 0);
-        
+
         const minPrice = prices.length > 0 ? Math.floor(Math.min(...prices)) : 0;
         const maxPrice = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 10000;
-        
+
         console.log('Price bounds from variants:', { minPrice, maxPrice, samplePrices: prices.slice(0, 5) });
-        
+
         return { weights, minPrice, maxPrice };
     }, [products]);
 
@@ -208,12 +222,18 @@ const CatalogPage = () => {
         // Category/Subcategory Filter
         if (selectedCategory !== 'all') {
             result = result.filter(p => {
-                const productCatId = p.category?.toLowerCase().replace(/ /g, '-');
-                return productCatId === selectedCategory;
+                const pCat = p.category?.slug || p.category?._id || p.category?.id || p.category || '';
+                const productCatSlug = String(pCat).toLowerCase().replace(/ /g, '-');
+                return productCatSlug === selectedCategory;
             });
         }
         if (selectedSubcategory !== 'all') {
-            result = result.filter(p => p.subcategory === selectedSubcategory);
+            result = result.filter(p => {
+                const pSub = p.subcategory?.name || p.subcategory?._id || p.subcategory?.id || p.subcategory || '';
+                const productSubSlug = String(pSub).toLowerCase().replace(/ /g, '-');
+                const selectedSubSlug = String(selectedSubcategory).toLowerCase().replace(/ /g, '-');
+                return productSubSlug === selectedSubSlug;
+            });
         }
 
         // Price Filter - use prices from variants
@@ -225,10 +245,10 @@ const CatalogPage = () => {
                 const variantPrices = p.variants.map(v => v.price || v.mrp || 0);
                 const minVariantPrice = Math.min(...variantPrices);
                 const maxVariantPrice = Math.max(...variantPrices);
-                
+
                 // Product passes if ANY variant falls within the price range
                 const passes = maxVariantPrice >= priceRange.min && minVariantPrice <= priceRange.max;
-                
+
                 if (!passes) {
                     console.log(`Product ${p.name} excluded:`, {
                         variantPrices,
@@ -270,7 +290,7 @@ const CatalogPage = () => {
                 const mrp = p.mrp || (p.variants?.[0]?.mrp) || p.price;
                 const price = p.price || (p.variants?.[0]?.price) || mrp;
                 const discountPercent = mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
-                
+
                 // Check if product matches any selected discount threshold
                 return selectedDiscounts.some(d => {
                     const threshold = parseInt(d); // e.g., "10% and Above" -> 10
@@ -433,7 +453,7 @@ const CatalogPage = () => {
                                         <span className="text-[10px] font-bold text-[#8E92BC] uppercase block mb-1">MIN</span>
                                         <div className="flex items-center gap-1">
                                             <span className="text-[#E7E9F4] text-lg">₹</span>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 value={localPriceRange.min}
                                                 onChange={(e) => {
@@ -444,14 +464,14 @@ const CatalogPage = () => {
                                             />
                                         </div>
                                     </div>
-                                    
+
                                     <div className="text-gray-300 font-light">—</div>
-                                    
+
                                     <div className="flex-1 border border-gray-200 rounded-xl p-3 bg-white focus-within:border-blue-500 transition-colors">
                                         <span className="text-[10px] font-bold text-[#8E92BC] uppercase block mb-1">MAX</span>
                                         <div className="flex items-center gap-1">
                                             <span className="text-[#E7E9F4] text-lg">₹</span>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 value={localPriceRange.max}
                                                 onChange={(e) => {
@@ -475,11 +495,10 @@ const CatalogPage = () => {
                                         <button
                                             key={preset.label}
                                             onClick={() => setLocalPriceRange({ min: preset.min, max: preset.max })}
-                                            className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all ${
-                                                Number(localPriceRange.min) === preset.min && Number(localPriceRange.max) === preset.max
-                                                    ? 'bg-[#2563EB] border-[#2563EB] text-white shadow-md'
-                                                    : 'bg-white border-gray-200 text-[#4B5563] hover:border-gray-300'
-                                            }`}
+                                            className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all ${Number(localPriceRange.min) === preset.min && Number(localPriceRange.max) === preset.max
+                                                ? 'bg-[#2563EB] border-[#2563EB] text-white shadow-md'
+                                                : 'bg-white border-gray-200 text-[#4B5563] hover:border-gray-300'
+                                                }`}
                                         >
                                             {preset.label}
                                         </button>
@@ -510,14 +529,14 @@ const CatalogPage = () => {
                         <FilterSection title="Discount" openFilters={openFilters} toggleAccordion={toggleFilterAccordion}>
                             {['10% and Above', '20% and Above', '30% and Above', '40% and Above'].map(d => (
                                 <label key={d} className="flex items-center gap-3 cursor-pointer group">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={selectedDiscounts.includes(d)}
                                         onChange={(e) => {
                                             if (e.target.checked) setSelectedDiscounts([...selectedDiscounts, d]);
                                             else setSelectedDiscounts(selectedDiscounts.filter(disc => disc !== d));
                                         }}
-                                        className="w-4 h-4 accent-[#842A35] border-gray-300 rounded cursor-pointer" 
+                                        className="w-4 h-4 accent-[#842A35] border-gray-300 rounded cursor-pointer"
                                     />
                                     <span className="text-sm text-gray-700 font-medium group-hover:text-black transition-colors">{d}</span>
                                 </label>
@@ -605,8 +624,8 @@ const CatalogPage = () => {
                     {/* Toolbar */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 pb-2 md:mb-8 md:pb-4 border-b border-gray-100 gap-2 md:gap-4">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-xl md:text-2xl font-black text-black">
-                                {category ? category.replace(/-/g, ' ').toUpperCase() : 'ALL PRODUCTS'}
+                            <h1 className="text-xl md:text-2xl font-black text-black uppercase">
+                                {selectedSubcategory !== 'all' ? selectedSubcategory : (selectedCategory !== 'all' ? (categoriesData.find(c => c.id === selectedCategory)?.name || selectedCategory.replace(/-/g, ' ')) : 'All Products')}
                             </h1>
                             <span className="text-xs text-gray-400 font-bold bg-gray-50 px-3 py-1 rounded-full">
                                 {filteredProducts.length} ITEMS

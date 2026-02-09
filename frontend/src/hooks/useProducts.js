@@ -70,6 +70,72 @@ export const useSubCategories = () => {
     });
 };
 
+export const useComboCategories = () => {
+    return useQuery({
+        queryKey: ['combo-categories'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/combo-categories`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to fetch combo categories');
+            return res.json();
+        }
+    });
+};
+
+export const useAddComboCategory = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data) => {
+            const res = await fetch(`${API_URL}/combo-categories`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Failed to add combo category');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['combo-categories'] });
+        }
+    });
+};
+
+export const useUpdateComboCategory = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`${API_URL}/combo-categories/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Failed to update combo category');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['combo-categories'] });
+        }
+    });
+};
+
+export const useDeleteComboCategory = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_URL}/combo-categories/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Failed to delete combo category');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['combo-categories'] });
+        }
+    });
+};
+
 // Mutations
 export const useAddProduct = () => {
     const queryClient = useQueryClient();
