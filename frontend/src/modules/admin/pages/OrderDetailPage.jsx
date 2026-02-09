@@ -20,9 +20,13 @@ import {
     X,
     Send,
     User,
-    ChevronRight
+    ChevronRight,
+    XCircle,
+    Ban,
+    RefreshCw,
+    AlertCircle
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
@@ -125,6 +129,48 @@ const OrderDetailPage = () => {
         }
     };
 
+    // Cancel order handler for admin
+    const queryClient = useQueryClient();
+    const [isCancelling, setIsCancelling] = useState(false);
+
+    const handleCancelOrder = async () => {
+        if (!window.confirm('Are you sure you want to cancel this order? This will notify Shiprocket and initiate a refund if applicable.')) {
+            return;
+        }
+
+        setIsCancelling(true);
+        try {
+            const res = await fetch(`http://localhost:5000/api/orders/${order.id}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Cancelled by admin' })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setStatus('Cancelled');
+                queryClient.invalidateQueries({ queryKey: ['order', id] });
+                queryClient.invalidateQueries({ queryKey: ['all-orders'] });
+                const refundMsg = data.refund?.initiated 
+                    ? ` Refund of ₹${data.refund.amount} initiated.` 
+                    : '';
+                toast.success(`Order cancelled successfully!${refundMsg}`);
+            } else {
+                const err = await res.json();
+                toast.error(err.message || 'Failed to cancel order');
+            }
+        } catch (error) {
+            toast.error('Network error cancelling order');
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    // Check if order can be cancelled
+    const cancellableStatuses = ['pending', 'Processing', 'Received', 'Processed'];
+    const canCancel = cancellableStatuses.includes(status) && status !== 'Cancelled';
+    const isCancelledOrder = status === 'Cancelled';
+
     const dummyItems = [
         {
             name: 'Premium California Almonds',
@@ -215,6 +261,66 @@ const OrderDetailPage = () => {
                     <p className="text-xl font-black text-footerBg">₹{derivedTotal.toLocaleString()}</p>
                 </div>
             </div>
+
+            {/* Cancellation Info Card (show when cancelled) */}
+            {isCancelledOrder && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                            <Ban size={20} className="text-red-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-red-800">Order Cancelled</h3>
+                            {order.cancelledAt && (
+                                <p className="text-xs text-red-600">
+                                    Cancelled on {new Date(order.cancelledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {order.cancellationReason && (
+                        <div>
+                            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Reason</p>
+                            <p className="text-sm text-red-700">{order.cancellationReason}</p>
+                        </div>
+                    )}
+
+                    {/* Refund Status */}
+                    <div className="border-t border-red-200 pt-4">
+                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Refund Status</p>
+                        {order.refundStatus === 'pending' && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                                <Clock size={14} className="text-amber-600" />
+                                <span className="text-xs font-bold text-amber-700">Processing</span>
+                                {order.refundAmount && <span className="ml-auto text-sm font-black text-amber-700">₹{order.refundAmount}</span>}
+                            </div>
+                        )}
+                        {order.refundStatus === 'processed' && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+                                <CheckCircle2 size={14} className="text-green-600" />
+                                <span className="text-xs font-bold text-green-700">Completed</span>
+                                {order.refundAmount && <span className="ml-auto text-sm font-black text-green-700">₹{order.refundAmount}</span>}
+                            </div>
+                        )}
+                        {order.refundStatus === 'failed' && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-red-100 border border-red-300 rounded-xl">
+                                <AlertCircle size={14} className="text-red-600" />
+                                <span className="text-xs font-bold text-red-700">Failed - Manual Action Required</span>
+                            </div>
+                        )}
+                        {order.refundStatus === 'not_applicable' && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl">
+                                <CreditCard size={14} className="text-gray-500" />
+                                <span className="text-xs font-bold text-gray-600">No Refund Required (COD)</span>
+                            </div>
+                        )}
+                        {order.refundId && (
+                            <p className="text-[10px] text-gray-400 mt-2 font-mono">Refund ID: {order.refundId}</p>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Items, Price, Notifications */}
@@ -344,6 +450,21 @@ const OrderDetailPage = () => {
                                 </button>
                             </div>
                         </div>
+                    )}
+
+                    {/* Cancel Order Button (for admin) */}
+                    {canCancel && (
+                        <button
+                            onClick={handleCancelOrder}
+                            disabled={isCancelling}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-200 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-all disabled:opacity-50"
+                        >
+                            {isCancelling ? (
+                                <><RefreshCw size={14} className="animate-spin" /> Cancelling...</>
+                            ) : (
+                                <><XCircle size={16} /> Cancel Order</>
+                            )}
+                        </button>
                     )}
 
                     {/* 2. Customer & Delivery Details */}

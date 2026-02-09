@@ -9,7 +9,7 @@ const reviewSchema = new mongoose.Schema({
   title: { type: String },
   comment: { type: String, required: true },
   images: [String],
-  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' }
+  status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Active', 'Inactive'], default: 'Pending' }
 }, { timestamps: true });
 
 export default mongoose.model('Review', reviewSchema);

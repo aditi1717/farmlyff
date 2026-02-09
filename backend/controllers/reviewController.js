@@ -182,11 +182,28 @@ export const deleteReview = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-// @desc    Get all admin reviews (Testimonials for homepage)
-// @route   GET /api/reviews/admin/testimonials
+// @desc    Get all admin reviews (Testimonials for homepage) - Public
+// @route   GET /api/reviews/testimonials
 // @access  Public
 export const getAdminReviews = async (req, res) => {
     try {
+        // Public only sees Active or Approved
+        const reviews = await Review.find({ 
+            product: null, 
+            status: { $in: ['Active', 'Approved'] } 
+        }).sort({ createdAt: -1 });
+        res.json(reviews);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all testimonials (Admin)
+// @route   GET /api/reviews/admin/testimonials
+// @access  Private/Admin
+export const getAdminTestimonials = async (req, res) => {
+    try {
+        // Admin sees everything
         const reviews = await Review.find({ product: null }).sort({ createdAt: -1 });
         res.json(reviews);
     } catch (error) {
@@ -207,7 +224,7 @@ export const createAdminReview = async (req, res) => {
             comment,
             image,
             rating: rating || 5,
-            status: status || 'Approved'
+            status: status || 'Active'
         });
 
         await review.save();

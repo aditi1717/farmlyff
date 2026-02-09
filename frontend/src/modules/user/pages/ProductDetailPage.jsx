@@ -271,241 +271,14 @@ const ProductDetailPage = () => {
     const discountPercentage = Math.round(((currentMrp - currentPrice) / currentMrp) * 100);
     const saveAmount = currentMrp - currentPrice;
 
+    const currentStock = (isGroupProduct && selectedVariant) ? (selectedVariant.stock || 0) : (product.stock?.quantity || 0);
+    const isOutOfStock = currentStock <= 0;
+
     const tabs = ['Description', 'Benefits', 'Specifications', 'Reviews', 'FAQ', 'Nutrition Info'];
 
     const isCombo = product.category === 'combos-packs' || product.category === 'Combos';
 
-    if (isCombo) {
-        return (
-            <div className="bg-white min-h-screen font-['Inter'] pb-8">
-                {/* Breadcrumb - Compact */}
-                <div className="container mx-auto px-4 md:px-12 py-3 flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors shrink-0">
-                        <ArrowLeft size={18} />
-                    </button>
-                    <div className="flex items-center text-[10px] md:text-[12px] font-medium text-gray-400 gap-1.5 overflow-hidden">
-                        <Link to="/" className="text-primary hover:underline transition-colors shrink-0">Home</Link>
-                        <ChevronRight size={12} className="shrink-0" />
-                        <span className="text-gray-400 shrink-0">Combos</span>
-                        <ChevronRight size={12} className="shrink-0" />
-                        <span className="text-black font-bold truncate">{product.name}</span>
-                    </div>
-                </div>
 
-                <div className="container mx-auto px-4 md:px-12 space-y-6 mt-1">
-
-                    {/* SECTION A & B: Header & Images */}
-                    <div className="">
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-[#2A2A2A]">
-                            {/* Left: Images */}
-                            <div className="lg:col-span-5 space-y-3">
-                                <div className="bg-white rounded-xl border border-gray-100 p-3 relative group overflow-hidden shadow-sm h-[320px] md:h-[400px] flex items-center justify-center">
-                                    <motion.img
-                                        key={selectedImage || product.image}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        src={selectedImage || product.image}
-                                        alt={product.name}
-                                        className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                    {product.tag && (
-                                        <span className="absolute top-0 left-0 bg-[#A35D33] text-white text-[8px] md:text-[10px] font-bold uppercase px-3 py-1.5 rounded-br-lg shadow-sm z-10">
-                                            {product.tag}
-                                        </span>
-                                    )}
-                                    <button
-                                        onClick={() => toggleWishlist(user.id, product.id)}
-                                        className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all group"
-                                    >
-                                        <Heart size={18} className="group-hover:fill-current" fill={user && isInWishlist(user.id, product.id) ? "currentColor" : "none"} />
-                                    </button>
-                                </div>
-                                {/* Thumbnails for Combos */}
-                                {product.images && product.images.length > 0 && (
-                                    <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none justify-center">
-                                        {[product.image, ...product.images].map((img, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setSelectedImage(img)}
-                                                className={`shrink-0 w-12 h-12 md:w-16 md:h-16 bg-white border-2 ${(selectedImage || product.image) === img ? 'border-primary' : 'border-gray-50'} rounded-lg p-1 hover:border-primary transition-all`}
-                                            >
-                                                <img src={img} alt="" className="w-full h-full object-contain mix-blend-multiply" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Right: Info & Actions */}
-                            <div className="lg:col-span-7 flex flex-col justify-center">
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="bg-primary/10 text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded">
-                                            {product.brand || 'FARMLYF COMBOS'}
-                                        </span>
-                                        <div className="flex items-center gap-1 text-primary text-[10px] md:text-xs font-bold">
-                                            <span>{product.rating || 4.8}</span>
-                                            <Star size={10} fill="currentColor" />
-                                        </div>
-                                    </div>
-                                    <h1 className="text-2xl md:text-3xl font-black text-black mb-2 leading-tight">
-                                        {product.name}
-                                    </h1>
-                                    <p className="text-gray-400 font-medium text-[11px] md:text-xs leading-relaxed max-w-xl">
-                                        {product.shortDescription || product.description?.substring(0, 120) + '...'}
-                                    </p>
-                                </div>
-
-                                {/* Pricing Card */}
-                                <div className="bg-[#F8F9FA] rounded-xl p-4 md:p-5 border border-gray-100 mb-6 max-w-sm">
-                                    <div className="flex items-end gap-2.5 mb-1.5">
-                                        <span className="text-3xl font-black text-black">₹{product.price}</span>
-                                        {product.individualTotal && (
-                                            <span className="text-base text-gray-300 line-through font-bold mb-0.5">₹{product.individualTotal}</span>
-                                        )}
-                                        {product.discountPercentage > 0 && (
-                                            <span className="bg-[#E63946] text-white text-[10px] font-bold px-1.5 py-0.5 rounded mb-1.5 lowercase">
-                                                {product.discountPercentage}% off
-                                            </span>
-                                        )}
-                                    </div>
-                                    {product.savings > 0 && (
-                                        <p className="text-[11px] font-bold text-primary flex items-center gap-1">
-                                            Save ₹{product.savings} instantly
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex flex-col sm:flex-row gap-3 max-w-sm">
-                                    <button
-                                        onClick={() => {
-                                            addToCart(user?.id, product.id, 1);
-                                        }}
-                                        className="flex-1 bg-primaryDeep text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-primaryHover transition-all shadow-lg shadow-primaryDeep/20 flex items-center justify-center gap-2"
-                                    >
-                                        <ShoppingBag size={16} /> CART
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            addToCart(user?.id, product.id, 1);
-                                            navigate('/checkout');
-                                        }}
-                                        className="flex-1 bg-primary text-white py-3.5 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-primaryHover transition-all shadow-lg shadow-primary/20"
-                                    >
-                                        BUY NOW
-                                    </button>
-                                </div>
-                                <div className="mt-4 flex items-center gap-4 text-[9px] font-bold text-gray-300 uppercase tracking-widest">
-                                    <span className="flex items-center gap-1.5"><Truck size={12} /> Free Delivery</span>
-                                    <span className="flex items-center gap-1.5"><RotateCcw size={12} /> Easy Returns</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SECTION C: What's Inside (Most Important) */}
-                    <div className="space-y-6">
-                        <h3 className="text-2xl font-black text-black uppercase tracking-tight flex items-center gap-3">
-                            <Package className="text-primary" strokeWidth={2.5} />
-                            What's Inside This Pack?
-                        </h3>
-                        <div className="space-y-3">
-                            {product.contents?.map((item, idx) => {
-                                const itemProduct = allProducts.find(p => p.id === item.productId);
-                                const itemImage = itemProduct?.image || product.image;
-
-                                return (
-                                    <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center p-1 shrink-0">
-                                            <img src={itemImage} alt={item.productName} className="w-full h-full object-contain mix-blend-multiply" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-black">{item.productName || item.name}</h4>
-                                            <p className="text-[10px] text-gray-500 font-medium mt-0.5">Quantity: <span className="text-gray-800">{item.quantity}</span></p>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-primary bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
-                                            {item.variant || 'Standard'}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* SECTION D & E: Comparison & Benefits */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                        {/* Price Transparency */}
-                        <div className="md:col-span-7 bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm">
-                            <h3 className="text-lg font-black text-black uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Activity size={18} className="text-gray-400" /> Price Transparency
-                            </h3>
-                            <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                                <div className="flex justify-between items-center text-sm font-medium text-gray-500 pb-4 border-b border-gray-200">
-                                    <span>Individual Items Total Cost</span>
-                                    <span className="line-through">₹{product.individualTotal || (product.mrp || product.price * 1.2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-lg font-black text-black">
-                                    <span>Combo Deal Price</span>
-                                    <span className="text-primary">₹{product.price}</span>
-                                </div>
-                                <div className="flex justify-between items-center bg-green-50 p-3 rounded-xl text-green-700 text-sm font-bold">
-                                    <span>Your Total Savings</span>
-                                    <span>₹{product.savings || (product.mrp - product.price)}</span>
-                                </div>
-                            </div>
-                            <p className="text-[10px] text-gray-400 font-medium mt-4 text-center">
-                                * Buying this combo is {Math.round((product.savings / product.individualTotal) * 100)}% cheaper than buying items individually.
-                            </p>
-                        </div>
-
-                        {/* Benefits */}
-                        <div className="md:col-span-5 bg-footerBg text-white rounded-[32px] p-8 shadow-sm relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-fullblur-3xl -mr-10 -mt-10"></div>
-                            <h3 className="text-lg font-black uppercase tracking-widest mb-6 flex items-center gap-2 relative z-10">
-                                <Gift size={18} className="text-primary" /> Why Choose This?
-                            </h3>
-                            <ul className="space-y-4 relative z-10">
-                                {(product.benefits || ['Perfect for Gifting', 'Premium Quality', 'Value for Money']).map((benefit, idx) => (
-                                    <li key={idx} className="flex items-start gap-3">
-                                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
-                                            <CheckCircle2 size={12} className="text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-300">{benefit}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-
-                    {/* SECTION F: Description */}
-                    <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm">
-                        <h3 className="text-lg font-black text-black uppercase tracking-widest mb-4">Description</h3>
-                        <p className="text-gray-600 leading-relaxed text-sm">
-                            {product.description}
-                        </p>
-                    </div>
-
-                    <div className="pt-8">
-                        <h3 className="text-xl font-black text-black uppercase tracking-tight mb-6 flex items-center gap-2">
-                            <Package size={20} className="text-primary" /> You Might Also Like
-                        </h3>
-                        <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
-                            {allProducts
-                                .filter(p => (p.category === 'combos-packs' || p.category === 'Combos') && p.id !== product.id)
-                                .slice(0, 5)
-                                .map(item => (
-                                    <div key={item.id} className="min-w-[280px]">
-                                        <ProductCard product={item} />
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
 
     return (
@@ -522,8 +295,17 @@ const ProductDetailPage = () => {
                 <div className="flex items-center text-[10px] md:text-[12px] font-medium text-gray-400 gap-1.5 overflow-hidden">
                     <Link to="/" className="text-primary hover:underline transition-colors shrink-0">Home</Link>
                     <ChevronRight size={12} className="shrink-0" />
-                    <Link to="/catalog" className="hover:text-primary transition-colors shrink-0">Shop</Link>
-                    <ChevronRight size={12} className="shrink-0" />
+                    {isCombo ? (
+                        <>
+                            <span className="text-gray-400 shrink-0">Combos</span>
+                            <ChevronRight size={12} className="shrink-0" />
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/catalog" className="hover:text-primary transition-colors shrink-0">Shop</Link>
+                            <ChevronRight size={12} className="shrink-0" />
+                        </>
+                    )}
                     <span className="text-black font-semibold truncate">{product.name}</span>
                 </div>
             </div>
@@ -625,7 +407,7 @@ const ProductDetailPage = () => {
                         </div>
 
                         {/* Benefits Icons Row - Styled to match screenshot */}
-                        <div className="grid grid-cols-4 items-center py-6 border-t border-b border-gray-100 mt-8">
+                        <div className={`grid grid-cols-4 items-center py-6 border-t ${isCombo ? '' : 'border-b'} border-gray-100 mt-8`}>
                             {[
                                 { label: 'Heart-Healthy', icon: HeartHandshake },
                                 { label: 'Gluten Free', icon: WheatOff },
@@ -642,6 +424,32 @@ const ProductDetailPage = () => {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Combo Contents for Mobile/Side view if needed, but we'll put it in main flow */}
+                        {isCombo && product.contents?.length > 0 && (
+                            <div className="py-6 border-t border-b border-gray-100 space-y-4">
+                                <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <Package size={14} className="text-primary" /> What's Inside This Pack?
+                                </h3>
+                                <div className="space-y-2">
+                                    {product.contents.map((item, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-lg border border-gray-50">
+                                            <div className="w-8 h-8 bg-white rounded flex items-center justify-center p-1 shrink-0 border border-gray-100">
+                                                <img 
+                                                    src={allProducts.find(p => p.id === item.productId)?.image || product.image} 
+                                                    alt="" 
+                                                    className="w-full h-full object-contain mix-blend-multiply" 
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] font-bold text-black truncate">{item.productName || item.name}</p>
+                                                <p className="text-[9px] text-gray-400 font-medium">{item.quantity} × {item.variant || 'Standard'}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT COLUMN - DETAILS */}
@@ -729,8 +537,32 @@ const ProductDetailPage = () => {
                             <span className="text-sm text-gray-800">({currentUnitPrice || '₹157.20/100g'})</span>
                         </div>
                         {saveAmount > 0 && (
-                            <div className="text-primary text-sm font-bold mb-5 flex items-center gap-1.5">
+                            <div className="text-primary text-sm font-bold mb-4 flex items-center gap-1.5">
                                 Save ₹{saveAmount} instantly
+                            </div>
+                        )}
+
+                        {/* Combo Transparency Card */}
+                        {isCombo && (
+                            <div className="bg-[#fcfdfd] border border-primary/10 rounded-xl p-4 mb-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                                <h4 className="text-[10px] font-black text-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Activity size={14} className="text-primary animate-pulse" /> Price Transparency
+                                </h4>
+                                <div className="space-y-2 relative z-10">
+                                    <div className="flex justify-between items-center text-[11px] font-medium text-gray-400">
+                                        <span>Sum of Individual Items</span>
+                                        <span className="line-through">₹{product.individualTotal || (product.mrp || Math.round(product.price * 1.2))}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm font-black text-black">
+                                        <span>Combo Deal Price</span>
+                                        <span className="text-primary">₹{product.price}</span>
+                                    </div>
+                                    <div className="mt-2 pt-2 border-t border-dashed border-primary/20 flex justify-between items-center text-[11px] font-bold text-emerald-600">
+                                        <span className="flex items-center gap-1"><Tag size={12} /> Total Savings</span>
+                                        <span>₹{product.savings || (product.individualTotal - product.price) || (saveAmount)}</span>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -795,9 +627,13 @@ const ProductDetailPage = () => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
                                     addToCart(user?.id, skuId, quantity);
                                 }}
-                                className="flex-[1.2] bg-primary text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-primaryHover transition-colors shadow-sm flex items-center justify-center gap-2"
+                                disabled={isOutOfStock}
+                                className={`flex-[1.2] py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 
+                                    ${isOutOfStock 
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
+                                        : 'bg-primary text-white hover:bg-primaryHover'}`}
                             >
-                                <ShoppingBag size={18} /> CART
+                                <ShoppingBag size={18} /> {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
                             </button>
                             <button
                                 onClick={() => {
@@ -805,9 +641,13 @@ const ProductDetailPage = () => {
                                     addToCart(user?.id, skuId, quantity);
                                     navigate('/checkout');
                                 }}
-                                className="flex-1 bg-[#111827] text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-black transition-colors"
+                                disabled={isOutOfStock}
+                                className={`flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors 
+                                    ${isOutOfStock 
+                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100' 
+                                        : 'bg-[#111827] text-white hover:bg-black'}`}
                             >
-                                BUY NOW
+                                {isOutOfStock ? 'OUT OF STOCK' : 'BUY NOW'}
                             </button>
                         </div>
 
@@ -1142,9 +982,13 @@ const ProductDetailPage = () => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
                                     addToCart(user.id, skuId, quantity);
                                 }}
-                                className="bg-[#6B242E] text-white px-6 py-2.5 rounded font-bold text-sm"
+                                disabled={isOutOfStock}
+                                className={`px-6 py-2.5 rounded font-bold text-sm transition-all
+                                    ${isOutOfStock 
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-[#6B242E] text-white active:scale-95'}`}
                             >
-                                Add to Cart
+                                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                             </button>
                         </div>
                     </motion.div>

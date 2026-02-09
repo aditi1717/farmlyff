@@ -33,7 +33,7 @@ const AdminReviewsPage = () => {
         comment: '',
         image: '',
         rating: 5,
-        status: 'Approved'
+        status: activeTab === 'user' ? 'Approved' : 'Active'
     });
     const [preview, setPreview] = useState(null);
 
@@ -101,7 +101,14 @@ const AdminReviewsPage = () => {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', title: '', comment: '', image: '', rating: 5, status: 'Approved' });
+        setFormData({ 
+            name: '', 
+            title: '', 
+            comment: '', 
+            image: '', 
+            rating: 5, 
+            status: activeTab === 'user' ? 'Approved' : 'Active' 
+        });
         setPreview(null);
     };
 

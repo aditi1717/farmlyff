@@ -139,3 +139,33 @@ export const useUpdateOrderStatus = () => {
         }
     });
 };
+
+export const useCancelOrder = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ orderId, reason }) => {
+            const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason }),
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to cancel order');
+            }
+            return res.json();
+        },
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['all-orders'] });
+            const refundMsg = data.refund?.initiated 
+                ? ` Refund of ₹${data.refund.amount} initiated.` 
+                : '';
+            toast.success(`Order cancelled successfully!${refundMsg}`);
+        },
+        onError: (error) => {
+            toast.error(error.message || 'Failed to cancel order');
+        }
+    });
+};

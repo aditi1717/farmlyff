@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ArrowLeft,
     Printer,
@@ -114,60 +114,75 @@ const ReplacementDetailPage = () => {
         }
     };
 
-    // Initialize local data from ID or default
-    const [currentData, setCurrentData] = useState(null);
-
-    useEffect(() => {
-        const data = DUMMY_CASES[id] || DUMMY_CASES['202'];
-        setCurrentData(data);
-    }, [id]);
-
-    const updateStatusMutation = useMutation({
-        mutationFn: async ({ status, comment, mode, type }) => {
-            // Simulate API call
-            await new Promise(r => setTimeout(r, 600));
-            return { status, comment, mode, type };
-        },
-        onSuccess: ({ status, comment, type }) => {
-            if (status === 'Approved') {
-                // Simulate Approval -> Pickup Generation
-                setCurrentData(prev => ({
-                    ...prev,
-                    status: 'Pickup Scheduled',
-                    logs: [...prev.logs, { action: 'Approved', comment: comment || 'Approved by Admin', user: 'Admin', date: new Date().toLocaleDateString() }],
-                    timeline: [...prev.timeline, { status: 'Approved', date: new Date().toLocaleDateString(), done: true }, { status: 'Pickup Scheduled', date: new Date().toLocaleDateString(), done: true }],
-                    pickup: {
-                        partner: 'Delhivery',
-                        awb: 'PICK-' + Math.floor(Math.random() * 10000),
-                        date: new Date(Date.now() + 86400000).toLocaleDateString(),
-                        status: 'Scheduled'
-                    }
-                }));
-                toast.success('Approved! Pickup Scheduled.');
-            } else if (status === 'Rejected') {
-                setCurrentData(prev => ({
-                    ...prev,
-                    status: 'Rejected',
-                    logs: [...prev.logs, { action: 'Rejected', comment: comment || 'Rejected by Admin', user: 'Admin', date: new Date().toLocaleDateString() }],
-                    timeline: [...prev.timeline, { status: 'Rejected', date: new Date().toLocaleDateString(), done: true }]
-                }));
-                toast.error('Replacement Rejected.');
-            } else if (status === 'Replacement Shipped') {
-                setCurrentData(prev => ({
-                    ...prev,
-                    status: 'Replacement Shipped',
-                    logs: [...prev.logs, { action: 'Processed', comment: 'Item Verified & Shipped', user: 'Admin', date: new Date().toLocaleDateString() }],
-                    timeline: [...prev.timeline, { status: 'Replacement Shipped', date: new Date().toLocaleDateString(), done: true }],
-                    shipment: {
-                        partner: 'BlueDart',
-                        awb: 'SHIP-' + Math.floor(Math.random() * 10000),
-                        status: 'Shipped',
-                        trackingLink: '#'
-                    }
-                }));
-                toast.success('Replacement Processed & Shipped!');
-            }
+    // Fetch Replacement Details
+    const queryClient = useQueryClient();
+    const { data: currentData, isLoading, isError } = useQuery({
+        queryKey: ['replacement', id],
+        queryFn: async () => {
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}`);
+            if (!res.ok) throw new Error('Failed to fetch replacement');
+            return res.json();
         }
+    });
+
+    // Approve Mutation
+    const approveMutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}/approve`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to approve');
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['replacement', id]);
+            queryClient.invalidateQueries(['replacements']);
+            toast.success(`Approved! ${data.replacement?.pickupAwbCode ? `AWB: ${data.replacement.pickupAwbCode}` : 'Pickup scheduled.'}`);
+        },
+        onError: (err) => toast.error(err.message || 'Failed to approve')
+    });
+
+    // Reject Mutation
+    const rejectMutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Rejected' })
+            });
+            if (!res.ok) throw new Error('Failed to reject');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['replacement', id]);
+            queryClient.invalidateQueries(['replacements']);
+            toast.error('Replacement Rejected.');
+        }
+    });
+
+    // Ship Replacement Mutation
+    const shipMutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}/ship`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to ship');
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['replacement', id]);
+            queryClient.invalidateQueries(['replacements']);
+            toast.success(`Shipped! ${data.replacement?.shipmentAwbCode ? `AWB: ${data.replacement.shipmentAwbCode}` : ''}`);
+        },
+        onError: (err) => toast.error(err.message || 'Failed to ship replacement')
     });
 
     const getStatusColor = (status) => {
@@ -183,7 +198,8 @@ const ReplacementDetailPage = () => {
         }
     };
 
-    if (!currentData) return <div className="p-10 text-center">Loading...</div>;
+    if (isLoading) return <div className="p-10 text-center">Loading...</div>;
+    if (isError || !currentData) return <div className="p-10 text-center text-red-500">Replacement not found</div>;
 
     return (
         <div className="space-y-6 pb-20 text-left font-['Inter']">
@@ -206,7 +222,7 @@ const ReplacementDetailPage = () => {
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Replacement ID</p>
-                    <p className="text-lg font-black text-footerBg select-all">REP-{currentData.id}</p>
+                    <p className="text-lg font-black text-footerBg select-all">{currentData.id || `REP-${currentData._id?.slice(-6)}`}</p>
                 </div>
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Original Order</p>
@@ -214,7 +230,7 @@ const ReplacementDetailPage = () => {
                 </div>
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Request Date</p>
-                    <p className="text-sm font-bold text-gray-600">{currentData.requestDate}</p>
+                    <p className="text-sm font-bold text-gray-600">{currentData.requestDate ? new Date(currentData.requestDate).toLocaleDateString('en-GB') : '-'}</p>
                 </div>
                 <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
@@ -396,7 +412,7 @@ const ReplacementDetailPage = () => {
                                 </div>
 
                                 <textarea
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-none"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-none text-gray-800"
                                     placeholder="Add internal comment..."
                                     value={adminComment}
                                     onChange={(e) => setAdminComment(e.target.value)}
@@ -404,19 +420,87 @@ const ReplacementDetailPage = () => {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
-                                        onClick={() => updateStatusMutation.mutate({ status: 'Approved', comment: adminComment, mode: replacementMode })}
-                                        disabled={updateStatusMutation.isPending}
+                                        onClick={() => approveMutation.mutate()}
+                                        disabled={approveMutation.isPending}
                                         className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50"
                                     >
-                                        {updateStatusMutation.isPending ? 'Processing...' : <><CheckCircle2 size={16} /> Approve</>}
+                                        {approveMutation.isPending ? 'Processing...' : <><CheckCircle2 size={16} /> Approve</>}
                                     </button>
                                     <button
-                                        onClick={() => updateStatusMutation.mutate({ status: 'Rejected', comment: adminComment })}
-                                        disabled={updateStatusMutation.isPending}
+                                        onClick={() => rejectMutation.mutate()}
+                                        disabled={rejectMutation.isPending}
                                         className="flex items-center justify-center gap-2 bg-white text-red-500 border border-red-100 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-50"
                                     >
-                                        {updateStatusMutation.isPending ? 'Processing...' : 'Reject'}
+                                        {rejectMutation.isPending ? 'Processing...' : 'Reject'}
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Shiprocket Pickup Tracking */}
+                    {(currentData.shiprocketPickupId || currentData.pickupAwbCode) && (
+                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-purple-500">
+                            <h3 className="text-xs font-black text-footerBg uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Truck size={16} className="text-purple-500" /> Shiprocket Pickup
+                            </h3>
+                            <div className="space-y-3">
+                                {currentData.shiprocketPickupId && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-500">Shiprocket ID</span>
+                                        <span className="font-mono font-bold text-footerBg">{currentData.shiprocketPickupId}</span>
+                                    </div>
+                                )}
+                                {currentData.pickupAwbCode && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-500">AWB Code</span>
+                                        <span className="font-mono font-bold text-purple-600 select-all">{currentData.pickupAwbCode}</span>
+                                    </div>
+                                )}
+                                {currentData.pickupCourierName && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-500">Courier</span>
+                                        <span className="font-bold text-footerBg">{currentData.pickupCourierName}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Pickup Status</span>
+                                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+                                        currentData.pickupStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-600' :
+                                        currentData.pickupStatus === 'Scheduled' ? 'bg-purple-50 text-purple-600' :
+                                        'bg-gray-50 text-gray-500'
+                                    }`}>{currentData.pickupStatus || 'Not Scheduled'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Shiprocket Shipment Tracking */}
+                    {(currentData.shiprocketShipmentId || currentData.shipmentAwbCode) && (
+                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-green-500">
+                            <h3 className="text-xs font-black text-footerBg uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Package size={16} className="text-green-500" /> Replacement Shipment
+                            </h3>
+                            <div className="space-y-3">
+                                {currentData.shipmentAwbCode && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-500">AWB Code</span>
+                                        <span className="font-mono font-bold text-green-600 select-all">{currentData.shipmentAwbCode}</span>
+                                    </div>
+                                )}
+                                {currentData.shipmentCourierName && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-500">Courier</span>
+                                        <span className="font-bold text-footerBg">{currentData.shipmentCourierName}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Shipment Status</span>
+                                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+                                        currentData.shipmentStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-600' :
+                                        currentData.shipmentStatus === 'Shipped' ? 'bg-green-50 text-green-600' :
+                                        'bg-gray-50 text-gray-500'
+                                    }`}>{currentData.shipmentStatus || 'Not Shipped'}</span>
                                 </div>
                             </div>
                         </div>
@@ -466,11 +550,11 @@ const ReplacementDetailPage = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => updateStatusMutation.mutate({ status: 'Replacement Shipped', condition: itemCondition, stock: stockAction })}
-                                    disabled={updateStatusMutation.isPending}
+                                    onClick={() => shipMutation.mutate()}
+                                    disabled={shipMutation.isPending}
                                     className="w-full bg-footerBg text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200 flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    {updateStatusMutation.isPending ? 'Processing...' : <><Package size={16} /> Process & Ship New Item</>}
+                                    {shipMutation.isPending ? 'Processing...' : <><Package size={16} /> Process & Ship New Item</>}
                                 </button>
                             </div>
                         </div>

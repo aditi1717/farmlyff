@@ -47,7 +47,13 @@ const orderSchema = new mongoose.Schema({
   },
   appliedCoupon: String, // Coupon or Referral code
   discount: { type: Number, default: 0 }, // Discount amount
-  statusHistory: [statusHistorySchema]
+  statusHistory: [statusHistorySchema],
+  // Cancellation and refund fields
+  refundId: String,
+  refundStatus: { type: String, enum: ['pending', 'processed', 'failed', 'not_applicable'], default: 'not_applicable' },
+  refundAmount: Number,
+  cancelledAt: Date,
+  cancellationReason: String
 }, { timestamps: true });
 
 

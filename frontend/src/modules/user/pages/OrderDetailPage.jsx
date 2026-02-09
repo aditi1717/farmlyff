@@ -5,10 +5,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import {
     ArrowLeft, Package, MapPin, Phone, CreditCard,
-    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink
+    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink, XCircle, Ban
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useOrders, useReturns, useUpdateOrderStatus } from '../../../hooks/useOrders';
+import { useOrders, useReturns, useUpdateOrderStatus, useCancelOrder } from '../../../hooks/useOrders';
 import { useProducts } from '../../../hooks/useProducts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -23,12 +23,15 @@ const OrderDetailPage = () => {
     const { data: returns = [] } = useReturns(user?.id);
 
     const { mutate: updateStatus } = useUpdateOrderStatus();
+    const { mutate: cancelOrderMutation, isPending: isCancelling } = useCancelOrder();
     const { data: products = [] } = useProducts();
     
     const [order, setOrder] = useState(null);
     const [availableItemsCount, setAvailableItemsCount] = useState(0);
     const [liveTracking, setLiveTracking] = useState(null);
     const [trackingLoading, setTrackingLoading] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
 
     useEffect(() => {
         if (orders.length > 0 && orderId) {
@@ -128,6 +131,65 @@ const OrderDetailPage = () => {
     };
 
     const canReturn = isDelivered && isWithinReturnWindow() && availableItemsCount > 0;
+
+    // Check if order can be cancelled
+    const cancellableStatuses = ['pending', 'Processing', 'Received', 'Processed'];
+    const canCancel = cancellableStatuses.includes(order.status) && order.status !== 'Cancelled';
+    const isCancelled = order.status === 'Cancelled';
+
+    // Handle cancel order
+    const handleCancelOrder = () => {
+        cancelOrderMutation(
+            { orderId: order.id, reason: cancelReason || 'Customer requested cancellation' },
+            {
+                onSuccess: () => {
+                    setShowCancelConfirm(false);
+                    setCancelReason('');
+                    navigate('/orders');
+                }
+            }
+        );
+    };
+
+    // Get refund status display
+    const getRefundStatusBadge = () => {
+        if (!isCancelled) return null;
+        
+        switch (order.refundStatus) {
+            case 'pending':
+                return (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                        <Clock size={14} className="text-amber-600" />
+                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Refund Processing</span>
+                    </div>
+                );
+            case 'processed':
+                return (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+                        <CheckCircle size={14} className="text-green-600" />
+                        <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">Refund Completed</span>
+                    </div>
+                );
+            case 'failed':
+                return (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
+                        <AlertCircle size={14} className="text-red-600" />
+                        <span className="text-[10px] font-black text-red-700 uppercase tracking-widest">Refund Failed - Contact Support</span>
+                    </div>
+                );
+            case 'not_applicable':
+            default:
+                if (order.paymentMethod === 'cod') {
+                    return (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl">
+                            <CreditCard size={14} className="text-gray-500" />
+                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">COD - No Refund Required</span>
+                        </div>
+                    );
+                }
+                return null;
+        }
+    };
 
     // Timeline steps for UI
     const steps = [
@@ -353,6 +415,39 @@ const OrderDetailPage = () => {
                             </div>
                         </div>
 
+                        {/* Cancellation Status Display */}
+                        {isCancelled && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 px-3 py-3 bg-red-50 border border-red-200 rounded-xl">
+                                    <Ban size={16} className="text-red-600" />
+                                    <div>
+                                        <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Order Cancelled</p>
+                                        {order.cancelledAt && (
+                                            <p className="text-[9px] text-red-500 mt-0.5">
+                                                {new Date(order.cancelledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                {getRefundStatusBadge()}
+                                {order.refundAmount && (
+                                    <p className="text-xs text-gray-500 text-center">Refund amount: ₹{order.refundAmount}</p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Cancel Order Action */}
+                        {canCancel && (
+                            <button
+                                onClick={() => setShowCancelConfirm(true)}
+                                disabled={isCancelling}
+                                className="w-full bg-red-50 text-red-600 border border-red-200 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-red-100 disabled:opacity-50"
+                            >
+                                <XCircle size={14} strokeWidth={3} />
+                                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
+                            </button>
+                        )}
+
                         {/* Return Action (High Contrast) */}
                         {isDelivered && canReturn && (
                             <button
@@ -381,6 +476,70 @@ const OrderDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Cancel Confirmation Modal */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                <XCircle size={24} className="text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-footerBg">Cancel Order?</h3>
+                                <p className="text-xs text-gray-500">This action cannot be undone</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Reason (Optional)
+                            </label>
+                            <textarea
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                placeholder="Tell us why you're cancelling..."
+                                className="w-full p-3 border border-gray-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                rows={3}
+                            />
+                        </div>
+
+                        {order.paymentMethod !== 'cod' && order.paymentStatus === 'paid' && (
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+                                <p className="text-xs font-bold text-green-700 flex items-center gap-2">
+                                    <CheckCircle size={14} />
+                                    Refund of ₹{order.amount} will be initiated
+                                </p>
+                                <p className="text-[10px] text-green-600 mt-1">Typically processed within 5-7 business days</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                                Keep Order
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={isCancelling}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isCancelling ? (
+                                    <><RefreshCw size={14} className="animate-spin" /> Cancelling...</>
+                                ) : (
+                                    'Yes, Cancel'
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 };

@@ -216,6 +216,91 @@ class ShiprocketService {
       throw new Error('Failed to track shipment');
     }
   }
+
+  /**
+   * Cancel order in Shiprocket
+   * @param {Number} shiprocketOrderId - Shiprocket order ID
+   * @returns {Object} Cancellation response
+   */
+  async cancelOrder(shiprocketOrderId) {
+    try {
+      const headers = await this.getHeaders();
+
+      const response = await axios.post(
+        `${SHIPROCKET_BASE_URL}/orders/cancel`,
+        { ids: [shiprocketOrderId] },
+        { headers }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Shiprocket Order Cancellation Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to cancel order in Shiprocket');
+    }
+  }
+
+  /**
+   * Create a return order in Shiprocket for reverse pickup
+   * @param {Object} returnData - Return request details
+   * @param {Object} originalOrder - Original order with shipping address
+   * @returns {Object} Shiprocket return order response
+   */
+  async createReturnOrder(returnData, originalOrder) {
+    try {
+      const headers = await this.getHeaders();
+
+      // Transform to Shiprocket return order format
+      const shiprocketReturnOrder = {
+        order_id: returnData.id, // Our return ID
+        order_date: new Date(returnData.requestDate || Date.now()).toISOString().split('T')[0],
+        channel_id: '',
+        pickup_customer_name: originalOrder.shippingAddress?.fullName || originalOrder.userName,
+        pickup_last_name: '',
+        pickup_address: originalOrder.shippingAddress?.address,
+        pickup_city: originalOrder.shippingAddress?.city,
+        pickup_state: originalOrder.shippingAddress?.state,
+        pickup_country: 'India',
+        pickup_pincode: originalOrder.shippingAddress?.pincode,
+        pickup_email: originalOrder.userEmail || 'customer@farmlyf.com',
+        pickup_phone: originalOrder.shippingAddress?.phone,
+        pickup_isd_code: '91',
+        shipping_customer_name: process.env.SHIPROCKET_SELLER_NAME || 'FarmlyF',
+        shipping_last_name: '',
+        shipping_address: process.env.SHIPROCKET_SELLER_ADDRESS || 'Warehouse Address',
+        shipping_city: process.env.SHIPROCKET_SELLER_CITY || 'Mumbai',
+        shipping_state: process.env.SHIPROCKET_SELLER_STATE || 'Maharashtra',
+        shipping_country: 'India',
+        shipping_pincode: process.env.SHIPROCKET_SELLER_PINCODE || '400001',
+        shipping_email: process.env.SHIPROCKET_SELLER_EMAIL || 'returns@farmlyf.com',
+        shipping_phone: process.env.SHIPROCKET_SELLER_PHONE || '9999999999',
+        order_items: returnData.items.map(item => ({
+          name: item.name,
+          sku: item.id || item.productId,
+          units: item.qty,
+          selling_price: item.price,
+          discount: 0,
+          qc_enable: true, // Enable quality check for returns
+        })),
+        payment_method: 'Prepaid', // Returns are always prepaid
+        sub_total: returnData.refundAmount || returnData.items.reduce((sum, i) => sum + (i.price * i.qty), 0),
+        length: 10,
+        breadth: 10,
+        height: 10,
+        weight: 0.5,
+      };
+
+      const response = await axios.post(
+        `${SHIPROCKET_BASE_URL}/orders/create/return`,
+        shiprocketReturnOrder,
+        { headers }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Shiprocket Return Order Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to create return order in Shiprocket');
+    }
+  }
 }
 
 // Export singleton instance

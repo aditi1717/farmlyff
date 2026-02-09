@@ -92,19 +92,42 @@ const ReturnRequestsPage = () => {
     });
 
     // Update Status Mutation
+    const queryClient = useQueryClient();
     const updateReturnStatus = useMutation({
         mutationFn: async ({ id, status }) => {
-            // Simulate API call for dummy data
-            await new Promise(resolve => setTimeout(resolve, 500));
-            // In a real scenario, this would put to the backend
-            // const res = await fetch(`http://localhost:5000/api/returns/${id}`, { ... });
-            return { id, status };
+            const res = await fetch(`http://localhost:5000/api/returns/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            if (!res.ok) throw new Error('Failed to update status');
+            return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['returns']);
             toast.success('Return status updated');
         },
         onError: () => toast.error('Failed to update status')
+    });
+
+    // Approve Return Mutation
+    const approveReturn = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`http://localhost:5000/api/returns/${id}/approve`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to approve');
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['returns']);
+            toast.success(`Return approved! ${data.return?.awbCode ? `AWB: ${data.return.awbCode}` : ''}`);
+        },
+        onError: (err) => toast.error(err.message || 'Failed to approve return')
     });
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -154,8 +177,21 @@ const ReturnRequestsPage = () => {
     const stats = [
         { label: 'Total Requests', value: allReturns.length, icon: RefreshCw, color: 'bg-indigo-50 text-indigo-500' },
         { label: 'Pending', value: allReturns.filter(r => r.status === 'Pending').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
+        { label: 'Approved', value: allReturns.filter(r => r.status === 'Approved').length, icon: CheckCircle2, color: 'bg-blue-50 text-blue-500' },
         { label: 'Refunded', value: allReturns.filter(r => r.status === 'Refunded').length, icon: IndianRupee, color: 'bg-emerald-50 text-emerald-500' }
     ];
+
+    // Pickup status badge colors
+    const getPickupStatusStyles = (status) => {
+        switch (status) {
+            case 'Picked Up':
+            case 'Delivered': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'In Transit': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'Scheduled': return 'bg-purple-50 text-purple-600 border-purple-100';
+            case 'Not Scheduled':
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
 
     return (
         <div className="space-y-8 text-left">
@@ -222,32 +258,28 @@ const ReturnRequestsPage = () => {
                     <AdminTableHeader>
                         <AdminTableHead className="min-w-[120px] px-6 py-4">Return ID</AdminTableHead>
                         <AdminTableHead className="min-w-[120px] px-6 py-4">Order ID</AdminTableHead>
-                        <AdminTableHead className="min-w-[160px] px-6 py-4">Customer</AdminTableHead>
-
-                        <AdminTableHead className="min-w-[160px] px-6 py-4">Reason</AdminTableHead>
-                        <AdminTableHead className="min-w-[140px] px-6 py-4">Request Date</AdminTableHead>
-                        <AdminTableHead className="min-w-[120px] px-6 py-4">Amount</AdminTableHead>
-                        <AdminTableHead className="min-w-[140px] px-6 py-4">Status</AdminTableHead>
-                        <AdminTableHead className="text-right min-w-[100px] px-6 py-4">Action</AdminTableHead>
+                        <AdminTableHead className="min-w-[140px] px-6 py-4">Customer</AdminTableHead>
+                        <AdminTableHead className="min-w-[120px] px-6 py-4">Reason</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">Amount</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">Status</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">AWB</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">Pickup</AdminTableHead>
+                        <AdminTableHead className="text-right min-w-[140px] px-6 py-4">Action</AdminTableHead>
                     </AdminTableHeader>
                     <AdminTableBody>
                         {paginatedReturns.map((ret) => (
-                            <AdminTableRow key={ret.id}>
+                            <AdminTableRow key={ret._id || ret.id}>
                                 <AdminTableCell className="font-bold text-xs text-footerBg select-all px-6 py-4">
-                                    RTN-{ret.id?.toString().slice(-4).toUpperCase()}
+                                    {ret.id || `RTN-${ret._id?.toString().slice(-4).toUpperCase()}`}
                                 </AdminTableCell>
                                 <AdminTableCell className="font-bold text-xs text-gray-500 select-all px-6 py-4">
-                                    ORD-{ret.orderId?.toString().slice(-4).toUpperCase()}
+                                    {ret.orderId || '-'}
                                 </AdminTableCell>
                                 <AdminTableCell className="px-6 py-4">
-                                    <span className="font-bold text-footerBg text-sm">{ret.userName}</span>
+                                    <span className="font-bold text-footerBg text-sm">{ret.userName || '-'}</span>
                                 </AdminTableCell>
-
-                                <AdminTableCell className="text-xs text-gray-600 font-medium truncate max-w-[150px] px-6 py-4">
-                                    {ret.reason}
-                                </AdminTableCell>
-                                <AdminTableCell className="text-xs font-bold text-gray-500 px-6 py-4">
-                                    {(new Date(ret.requestDate)).toLocaleDateString('en-GB')}
+                                <AdminTableCell className="text-xs text-gray-600 font-medium truncate max-w-[120px] px-6 py-4">
+                                    {ret.reason || '-'}
                                 </AdminTableCell>
                                 <AdminTableCell className="font-black text-footerBg text-sm px-6 py-4">
                                     ₹{(ret.refundAmount || ret.amount || 0).toLocaleString()}
@@ -258,13 +290,32 @@ const ReturnRequestsPage = () => {
                                         <span className="text-[10px] font-black uppercase tracking-widest">{ret.status}</span>
                                     </div>
                                 </AdminTableCell>
+                                <AdminTableCell className="font-mono text-xs text-gray-600 px-6 py-4">
+                                    {ret.awbCode || '-'}
+                                </AdminTableCell>
+                                <AdminTableCell className="px-6 py-4">
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${getPickupStatusStyles(ret.pickupStatus || 'Not Scheduled')}`}>
+                                        <span className="text-[9px] font-bold uppercase">{ret.pickupStatus || 'Not Scheduled'}</span>
+                                    </div>
+                                </AdminTableCell>
                                 <AdminTableCell className="text-right px-6 py-4">
-                                    <button
-                                        onClick={() => navigate(`/admin/returns/${ret.id}`)}
-                                        className="px-3 py-1.5 bg-footerBg text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-md shadow-footerBg/10"
-                                    >
-                                        View
-                                    </button>
+                                    <div className="flex items-center justify-end gap-2">
+                                        {ret.status === 'Pending' && (
+                                            <button
+                                                onClick={() => approveReturn.mutate(ret._id)}
+                                                disabled={approveReturn.isPending}
+                                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50"
+                                            >
+                                                {approveReturn.isPending ? '...' : 'Approve'}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => navigate(`/admin/returns/${ret._id}`)}
+                                            className="px-3 py-1.5 bg-footerBg text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-md shadow-footerBg/10"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
                                 </AdminTableCell>
                             </AdminTableRow>
                         ))}

@@ -386,31 +386,56 @@ const ReturnDetailPage = () => {
 
 const currentDummyData = DUMMY_CASES[id] || DUMMY_CASES['101'];
 
-// Fetch Return Details (with fallback to dummy data)
-const { data: ret = currentDummyData, isLoading } = useQuery({
+// Fetch Return Details
+const { data: ret, isLoading } = useQuery({
     queryKey: ['return', id],
     queryFn: async () => {
-        try {
-            const res = await fetch(`http://localhost:5000/api/returns/${id}`);
-            if (!res.ok) throw new Error('Failed');
-            const data = await res.json();
-            return data || (DUMMY_CASES[id] || DUMMY_CASES['101']);
-        } catch (err) {
-            console.log("Using Dummy Data for ID:", id);
-            return DUMMY_CASES[id] || DUMMY_CASES['101'];
-        }
+        const res = await fetch(`http://localhost:5000/api/returns`);
+        if (!res.ok) throw new Error('Failed');
+        const allReturns = await res.json();
+        // Find by _id
+        const found = allReturns.find(r => r._id === id || r.id === id);
+        if (found) return found;
+        throw new Error('Return not found');
     }
+});
+
+// Approve Return Mutation
+const approveMutation = useMutation({
+    mutationFn: async () => {
+        const res = await fetch(`http://localhost:5000/api/returns/${id}/approve`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Failed to approve');
+        }
+        return res.json();
+    },
+    onSuccess: (data) => {
+        queryClient.invalidateQueries(['return', id]);
+        queryClient.invalidateQueries(['returns']);
+        toast.success(`Return approved! ${data.return?.awbCode ? `AWB: ${data.return.awbCode}` : ''}`);
+    },
+    onError: (err) => toast.error(err.message || 'Failed to approve')
 });
 
 // Update Status Mutation
 const updateStatusMutation = useMutation({
-    mutationFn: async ({ status, comment }) => {
-        await new Promise(r => setTimeout(r, 600)); // Simulate API
-        return { ...ret, status, adminComment: comment };
+    mutationFn: async ({ status }) => {
+        const res = await fetch(`http://localhost:5000/api/returns/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        if (!res.ok) throw new Error('Failed');
+        return res.json();
     },
     onSuccess: () => {
         queryClient.invalidateQueries(['return', id]);
-        toast.success('Return status updated (Mock)');
+        queryClient.invalidateQueries(['returns']);
+        toast.success('Return status updated');
     },
     onError: () => toast.error('Failed to update status')
 });
@@ -418,8 +443,9 @@ const updateStatusMutation = useMutation({
 const [adminComment, setAdminComment] = useState('');
 
 if (isLoading) return <div className="p-20 text-center">Loading Return Details...</div>;
+if (!ret) return <div className="p-20 text-center text-red-500">Return not found</div>;
 
-const isReplacement = ret.type === 'Replacement';
+const isReplacement = ret.type === 'replace' || ret.type === 'Replacement';
 
 const getStatusColor = (st) => {
     switch (st) {
@@ -589,29 +615,69 @@ return (
             {/* Right Column: Customer, Timeline, Actions */}
             <div className="space-y-6">
 
-                {/* 6. Admin Actions (For New Requests) */}
+                {/* 6. Admin Actions (For Pending Requests) */}
                 {ret.status === 'Pending' && (
                     <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Admin Actions</h3>
                         <textarea
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-none mb-2"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-none mb-2 text-gray-800"
                             placeholder="Add internal comment..."
                             value={adminComment}
                             onChange={(e) => setAdminComment(e.target.value)}
                         ></textarea>
                         <div className="grid grid-cols-2 gap-3">
                             <button
-                                onClick={() => updateStatusMutation.mutate({ status: 'Approved', comment: adminComment })}
-                                className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                                onClick={() => approveMutation.mutate()}
+                                disabled={approveMutation.isPending}
+                                className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50"
                             >
-                                <Check size={16} /> Approve
+                                <Check size={16} /> {approveMutation.isPending ? 'Approving...' : 'Approve'}
                             </button>
                             <button
-                                onClick={() => updateStatusMutation.mutate({ status: 'Rejected', comment: adminComment })}
-                                className="flex items-center justify-center gap-2 bg-white text-red-500 border border-red-100 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-all"
+                                onClick={() => updateStatusMutation.mutate({ status: 'Rejected' })}
+                                disabled={updateStatusMutation.isPending}
+                                className="flex items-center justify-center gap-2 bg-white text-red-500 border border-red-100 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-50"
                             >
                                 <X size={16} /> Reject
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Shiprocket Tracking Card (If approved/has AWB) */}
+                {(ret.shiprocketReturnId || ret.awbCode) && (
+                    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-purple-500">
+                        <h3 className="text-xs font-black text-footerBg uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Truck size={16} className="text-purple-500" /> Shiprocket Tracking
+                        </h3>
+                        <div className="space-y-3">
+                            {ret.shiprocketReturnId && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Shiprocket Return ID</span>
+                                    <span className="font-mono font-bold text-footerBg select-all">{ret.shiprocketReturnId}</span>
+                                </div>
+                            )}
+                            {ret.awbCode && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">AWB Code</span>
+                                    <span className="font-mono font-bold text-purple-600 select-all">{ret.awbCode}</span>
+                                </div>
+                            )}
+                            {ret.courierName && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">Courier</span>
+                                    <span className="font-bold text-footerBg">{ret.courierName}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Pickup Status</span>
+                                <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+                                    ret.pickupStatus === 'Picked Up' || ret.pickupStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-600' :
+                                    ret.pickupStatus === 'Scheduled' ? 'bg-purple-50 text-purple-600' :
+                                    ret.pickupStatus === 'In Transit' ? 'bg-blue-50 text-blue-600' :
+                                    'bg-gray-50 text-gray-500'
+                                }`}>{ret.pickupStatus || 'Not Scheduled'}</span>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -694,8 +760,8 @@ return (
                     </div>
                 </div>
 
-                {/* 8. Logistics Info (If Approved) */}
-                {(ret.status === 'Approved' || ret.status === 'Completed' || ret.status === 'Refunded') && (
+                {/* 8. Logistics Info (If Approved) - Legacy support */}
+                {(ret.courier) && (
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-blue-500">
                         <h3 className="text-xs font-black text-footerBg uppercase tracking-widest mb-4 flex items-center gap-2">
                             <Truck size={16} /> Return Pickup Details
@@ -717,9 +783,29 @@ return (
                                 <span className="text-gray-500">Pickup Status</span>
                                 <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">{ret.courier?.status}</span>
                             </div>
-                            <button className="w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-colors">
-                                Track Status
-                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Status History Timeline from Shiprocket */}
+                {ret.pickupStatusHistory && ret.pickupStatusHistory.length > 0 && (
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                        <h3 className="text-xs font-black text-footerBg uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Clock size={16} /> Status History
+                        </h3>
+                        <div className="space-y-3">
+                            {ret.pickupStatusHistory.slice().reverse().map((entry, idx) => (
+                                <div key={idx} className="flex items-start gap-3 text-xs">
+                                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"></div>
+                                    <div>
+                                        <p className="font-bold text-footerBg">{entry.status}</p>
+                                        <p className="text-gray-400 text-[10px]">{entry.info}</p>
+                                        <p className="text-gray-400 text-[9px] mt-0.5">
+                                            {new Date(entry.timestamp).toLocaleString('en-IN')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

@@ -30,6 +30,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
+import replacementRoutes from './routes/replacementRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -102,6 +103,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/replacements', replacementRoutes);
 
 // 404 Handler
 app.use((req, res) => {

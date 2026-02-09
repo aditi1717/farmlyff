@@ -54,28 +54,49 @@ const ReplacementRequestsPage = () => {
     ];
 
     // Fetch Replacements
-    const { data: replacementsData = DUMMY_REPLACEMENTS } = useQuery({
+    const queryClient = useQueryClient();
+    const { data: replacementsData = [] } = useQuery({
         queryKey: ['replacements'],
         queryFn: async () => {
-            try {
-                const res = await fetch('http://localhost:5000/api/replacements');
-                if (!res.ok) throw new Error('Failed to fetch replacements');
-                const data = await res.json();
-                return data.length > 0 ? data : DUMMY_REPLACEMENTS;
-            } catch (error) {
-                console.error("Fetch failed, using dummy data", error);
-                return DUMMY_REPLACEMENTS;
-            }
+            const res = await fetch('http://localhost:5000/api/replacements');
+            if (!res.ok) throw new Error('Failed to fetch replacements');
+            return res.json();
         }
     });
 
-    // Update Status Mutation (Mock)
-    const updateReturnStatus = useMutation({
+    // Approve Replacement Mutation
+    const approveReplacement = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}/approve`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to approve');
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['replacements']);
+            toast.success(`Replacement approved! ${data.replacement?.pickupAwbCode ? `AWB: ${data.replacement.pickupAwbCode}` : ''}`);
+        },
+        onError: (err) => toast.error(err.message || 'Failed to approve replacement')
+    });
+
+    // Update Status Mutation
+    const updateStatus = useMutation({
         mutationFn: async ({ id, status }) => {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return { id, status };
+            const res = await fetch(`http://localhost:5000/api/replacements/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            if (!res.ok) throw new Error('Failed to update status');
+            return res.json();
         },
         onSuccess: () => {
+            queryClient.invalidateQueries(['replacements']);
             toast.success('Replacement status updated');
         },
         onError: () => toast.error('Failed to update status')
@@ -128,8 +149,21 @@ const ReplacementRequestsPage = () => {
     const stats = [
         { label: 'Total Replacements', value: allReplacements.length, icon: ArrowLeftRight, color: 'bg-indigo-50 text-indigo-500' },
         { label: 'Pending', value: allReplacements.filter(r => r.status === 'Pending').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
-        { label: 'Completed', value: allReplacements.filter(r => r.status === 'Completed').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-500' }
+        { label: 'Approved', value: allReplacements.filter(r => ['Approved', 'Pickup Scheduled'].includes(r.status)).length, icon: CheckCircle2, color: 'bg-blue-50 text-blue-500' },
+        { label: 'Shipped', value: allReplacements.filter(r => r.status === 'Replacement Shipped').length, icon: Truck, color: 'bg-emerald-50 text-emerald-500' }
     ];
+
+    // Pickup status badge colors
+    const getPickupStatusStyles = (status) => {
+        switch (status) {
+            case 'Picked Up':
+            case 'Delivered': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'In Transit': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'Scheduled': return 'bg-purple-50 text-purple-600 border-purple-100';
+            case 'Not Scheduled':
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
 
     return (
         <div className="space-y-8 text-left">
@@ -194,31 +228,29 @@ const ReplacementRequestsPage = () => {
             <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
                 <AdminTable>
                     <AdminTableHeader>
-                        <AdminTableHead className="min-w-[140px] px-6 py-4">Replacement ID</AdminTableHead>
-                        <AdminTableHead className="min-w-[120px] px-6 py-4">Order ID</AdminTableHead>
-                        <AdminTableHead className="min-w-[160px] px-6 py-4">Customer</AdminTableHead>
-                        <AdminTableHead className="min-w-[160px] px-6 py-4">Reason</AdminTableHead>
-                        <AdminTableHead className="min-w-[140px] px-6 py-4">Request Date</AdminTableHead>
-                        <AdminTableHead className="min-w-[140px] px-6 py-4">Status</AdminTableHead>
-                        <AdminTableHead className="text-right min-w-[100px] px-6 py-4">Action</AdminTableHead>
+                        <AdminTableHead className="min-w-[120px] px-6 py-4">ID</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">Order ID</AdminTableHead>
+                        <AdminTableHead className="min-w-[130px] px-6 py-4">Customer</AdminTableHead>
+                        <AdminTableHead className="min-w-[100px] px-6 py-4">Reason</AdminTableHead>
+                        <AdminTableHead className="min-w-[90px] px-6 py-4">Status</AdminTableHead>
+                        <AdminTableHead className="min-w-[90px] px-6 py-4">AWB</AdminTableHead>
+                        <AdminTableHead className="min-w-[90px] px-6 py-4">Pickup</AdminTableHead>
+                        <AdminTableHead className="text-right min-w-[140px] px-6 py-4">Action</AdminTableHead>
                     </AdminTableHeader>
                     <AdminTableBody>
                         {paginatedReplacements.map((ret) => (
-                            <AdminTableRow key={ret.id}>
+                            <AdminTableRow key={ret._id || ret.id}>
                                 <AdminTableCell className="font-bold text-xs text-footerBg select-all px-6 py-4">
-                                    RPL-{ret.id?.toString().slice(-4).toUpperCase()}
+                                    {ret.id || `RPL-${ret._id?.toString().slice(-4).toUpperCase()}`}
                                 </AdminTableCell>
                                 <AdminTableCell className="font-bold text-xs text-gray-500 select-all px-6 py-4">
-                                    ORD-{ret.orderId?.toString().slice(-4).toUpperCase()}
+                                    {ret.orderId || '-'}
                                 </AdminTableCell>
                                 <AdminTableCell className="px-6 py-4">
-                                    <span className="font-bold text-footerBg text-sm">{ret.userName}</span>
+                                    <span className="font-bold text-footerBg text-sm">{ret.userName || '-'}</span>
                                 </AdminTableCell>
-                                <AdminTableCell className="text-xs text-gray-600 font-medium truncate max-w-[150px] px-6 py-4">
-                                    {ret.reason}
-                                </AdminTableCell>
-                                <AdminTableCell className="text-xs font-bold text-gray-500 px-6 py-4">
-                                    {(new Date(ret.requestDate)).toLocaleDateString('en-GB')}
+                                <AdminTableCell className="text-xs text-gray-600 font-medium truncate max-w-[100px] px-6 py-4">
+                                    {ret.reason || ret.evidence?.reason || '-'}
                                 </AdminTableCell>
                                 <AdminTableCell className="px-6 py-4">
                                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${getStatusStyles(ret.status)}`}>
@@ -226,19 +258,38 @@ const ReplacementRequestsPage = () => {
                                         <span className="text-[10px] font-black uppercase tracking-widest">{ret.status}</span>
                                     </div>
                                 </AdminTableCell>
+                                <AdminTableCell className="font-mono text-xs text-gray-600 px-6 py-4">
+                                    {ret.pickupAwbCode || '-'}
+                                </AdminTableCell>
+                                <AdminTableCell className="px-6 py-4">
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${getPickupStatusStyles(ret.pickupStatus || 'Not Scheduled')}`}>
+                                        <span className="text-[9px] font-bold uppercase">{ret.pickupStatus || 'Not Scheduled'}</span>
+                                    </div>
+                                </AdminTableCell>
                                 <AdminTableCell className="text-right px-6 py-4">
-                                    <button
-                                        onClick={() => navigate(`/admin/replacements/${ret.id}`)}
-                                        className="px-3 py-1.5 bg-footerBg text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-md shadow-footerBg/10"
-                                    >
-                                        View
-                                    </button>
+                                    <div className="flex items-center justify-end gap-2">
+                                        {ret.status === 'Pending' && (
+                                            <button
+                                                onClick={() => approveReplacement.mutate(ret._id)}
+                                                disabled={approveReplacement.isPending}
+                                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50"
+                                            >
+                                                {approveReplacement.isPending ? '...' : 'Approve'}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => navigate(`/admin/replacements/${ret._id}`)}
+                                            className="px-3 py-1.5 bg-footerBg text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-md shadow-footerBg/10"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
                                 </AdminTableCell>
                             </AdminTableRow>
                         ))}
                         {paginatedReplacements.length === 0 && (
                             <AdminTableRow>
-                                <AdminTableCell colSpan="7" className="px-6 py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-xs opacity-50">
+                                <AdminTableCell colSpan="8" className="px-6 py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-xs opacity-50">
                                     No replacement requests found
                                 </AdminTableCell>
                             </AdminTableRow>

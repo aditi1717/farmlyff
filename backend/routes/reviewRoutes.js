@@ -7,7 +7,8 @@ import {
     deleteReview,
     createAdminReview,
     getAdminReviews,
-    updateAdminReview
+    updateAdminReview,
+    getAdminTestimonials
 } from '../controllers/reviewController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -18,7 +19,7 @@ router.get('/testimonials', getAdminReviews); // Public access
 router.post('/', protect, createReview);
 router.get('/', protect, admin, getAllReviewsAdmin);
 router.get('/admin', protect, admin, getAllReviewsAdmin);
-router.get('/admin/testimonials', protect, admin, getAdminReviews);
+router.get('/admin/testimonials', protect, admin, getAdminTestimonials);
 router.post('/admin', protect, admin, createAdminReview);
 router.put('/admin/:id', protect, admin, updateAdminReview);
 router.put('/:id/status', protect, admin, updateReviewStatus);
