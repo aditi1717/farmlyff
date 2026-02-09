@@ -221,6 +221,9 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem('farmlyf_current_user');
         localStorage.removeItem('farmlyf_token');
+        localStorage.removeItem('farmlyf_wishlist');
+        localStorage.removeItem('farmlyf_recently_viewed');
+        localStorage.removeItem('farmlyf_save_for_later');
     };
 
     return (

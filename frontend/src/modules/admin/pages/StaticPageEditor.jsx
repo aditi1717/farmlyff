@@ -10,8 +10,16 @@ import { useUploadImage } from '../../../hooks/useProducts';
 import { PAGES_CONFIG } from '../../../config/pagesConfig';
 
 // Register Quill Modules only if not already registered
+if (typeof window !== 'undefined') {
+    window.Quill = Quill;
+}
+
 if (!Quill.imports['modules/imageResize']) {
-    Quill.register('modules/imageResize', ImageResize);
+    try {
+        Quill.register('modules/imageResize', ImageResize);
+    } catch (error) {
+        console.error('Error registering ImageResize:', error);
+    }
 }
 
 const StaticPageEditor = () => {

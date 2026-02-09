@@ -34,10 +34,11 @@ export const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error('Token verification failed:', error.message);
+      console.error('Token verification failed:', error.message, '| Token:', token.substring(0, 20) + '...');
       res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } else {
+    console.warn('Auth failed: No token provided in cookies or headers');
     res.status(401).json({ message: 'Not authorized, no token' });
   }
 };

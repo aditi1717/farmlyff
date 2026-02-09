@@ -40,6 +40,7 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://127.0.0.1:5173',
   'https://farmlyff-o2pq.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -48,14 +49,17 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
-    // Check if origin is local or a vercel deployment
+    // Check if origin is allowed explicitly
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1;
+    
+    // Check if origin is a vercel deployment or local
     const isVercel = origin.endsWith('.vercel.app');
-    const isLocal = origin.startsWith('http://localhost');
+    const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
 
-    if (isLocal || isVercel || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    if (isAllowed || isLocal || isVercel || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
-      callback(null, true); // Fallback to allow all in prod if check fails
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,

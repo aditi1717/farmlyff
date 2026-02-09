@@ -21,8 +21,16 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+if (typeof window !== 'undefined') {
+    window.Quill = Quill;
+}
+
 if (!Quill.imports['modules/imageResize']) {
-    Quill.register('modules/imageResize', ImageResize);
+    try {
+        Quill.register('modules/imageResize', ImageResize);
+    } catch (error) {
+        console.error('Error registering ImageResize:', error);
+    }
 }
 
 // Predefined Options

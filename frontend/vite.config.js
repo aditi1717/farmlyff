@@ -5,4 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    global: 'window',
+  },
+  optimizeDeps: {
+    include: ['quill-image-resize-module-react', 'react-quill-new'],
+  },
 })
