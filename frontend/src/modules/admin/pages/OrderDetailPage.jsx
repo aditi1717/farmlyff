@@ -13,9 +13,6 @@ import {
     Mail,
     Building2,
     FileText,
-    Download,
-    Share2,
-    Trash2,
     Check,
     X,
     Send,
@@ -231,9 +228,6 @@ const OrderDetailPage = () => {
                             </button>
                         }
                     />
-                    <button className="flex items-center gap-2 px-4 py-2 bg-footerBg text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-footerBg/20">
-                        <Download size={14} /> Download Slip
-                    </button>
                 </div>
             </div>
 

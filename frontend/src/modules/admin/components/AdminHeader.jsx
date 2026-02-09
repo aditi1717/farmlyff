@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User, ChevronDown, Package, RotateCcw } from 'lucide-react';
+import { Search, Bell, User, ChevronDown, Package, RotateCcw, XCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { useOrders } from '../../../hooks/useOrders';
-import { useReturns } from '../../../hooks/useReturns';
+import { useAllOrders, useAllReturns } from '../../../hooks/useOrders';
+import { useProducts } from '../../../hooks/useProducts';
 import { Link } from 'react-router-dom';
 
 const AdminHeader = () => {
     const { user } = useAuth();
-    // Using React Query Hooks directly
-    const { data: orders = [] } = useOrders(); 
-    const { data: returns = [] } = useReturns();
+    // Using All Data Hooks for Admin
+    const { data: orders = [] } = useAllOrders(); 
+    const { data: returns = [] } = useAllReturns();
+    const { data: products = [] } = useProducts();
     
     const [showNotifications, setShowNotifications] = useState(false);
     const dropdownRef = useRef(null);
+    const prevCountRef = useRef(0);
 
     // Close on click outside
     useEffect(() => {
@@ -28,35 +30,59 @@ const AdminHeader = () => {
     // Aggregate Notifications
     const allNotifications = [];
 
-    // 1. Pending Orders
-    // Note: API returns array of orders directly, not map by userId
-    const orderList = Array.isArray(orders) ? orders : Object.values(orders).flat();
-    
-    orderList.forEach(order => {
-        if (order && order.status === 'Processing') {
+    // 1. New & Cancelled Orders
+    orders.forEach(order => {
+        if (order.status === 'Processing') {
             allNotifications.push({
                 type: 'order',
-                id: order.id,
+                id: order.id || order._id,
                 title: 'New Order Received',
-                message: `Order #${order.id} is waiting for processing.`,
-                time: order.date,
-                link: `/admin/orders/${order.id}`
+                message: `Order #${order.displayId || order.id || order._id} is waiting for processing.`,
+                time: order.date || order.createdAt,
+                link: `/admin/orders/${order.id || order._id}`,
+                color: 'blue'
+            });
+        } else if (order.status === 'Cancelled') {
+             allNotifications.push({
+                type: 'cancel',
+                id: order.id || order._id,
+                title: 'Order Cancelled',
+                message: `Order #${order.displayId || order.id || order._id} was cancelled by user.`,
+                time: order.updatedAt || order.date,
+                link: `/admin/orders/${order.id || order._id}`,
+                color: 'red'
             });
         }
     });
 
     // 2. Pending Returns
-    const returnList = Array.isArray(returns) ? returns : Object.values(returns).flat();
-
-    returnList.forEach(ret => {
-        if (ret && ret.status === 'Pending') {
+    returns.forEach(ret => {
+        if (ret.status === 'Pending') {
             allNotifications.push({
                 type: 'return',
-                id: ret.id,
+                id: ret.id || ret._id,
                 title: 'New Return Request',
-                message: `Return #${ret.id} needs approval.`,
-                time: ret.requestDate,
-                link: `/admin/returns`
+                message: `Return #${ret.id || ret._id} needs approval.`,
+                time: ret.requestDate || ret.createdAt,
+                link: `/admin/returns`,
+                color: 'orange'
+            });
+        }
+    });
+
+    // 3. Low Stock Alerts
+    products.forEach(p => {
+        const stock = p.stock?.quantity || 0;
+        const threshold = p.lowStockThreshold || 10;
+        if (stock <= threshold) {
+            allNotifications.push({
+                type: 'stock',
+                id: p._id,
+                title: 'Low Stock Alert',
+                message: `${p.name} is running low (#${stock} left).`,
+                time: new Date(), // Real-time alert
+                link: `/admin/inventory/alerts`,
+                color: 'red'
             });
         }
     });
@@ -65,11 +91,17 @@ const AdminHeader = () => {
     allNotifications.sort((a, b) => new Date(b.time) - new Date(a.time));
     const unreadCount = allNotifications.length;
 
+    // Bell Sound Logic
+    useEffect(() => {
+        if (unreadCount > prevCountRef.current) {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.log('Audio play blocked:', e));
+        }
+        prevCountRef.current = unreadCount;
+    }, [unreadCount]);
+
     return (
         <header className="h-20 bg-footerBg border-b border-white/5 flex items-center justify-end sticky top-0 z-40 text-left">
-
-
-            {/* Right Actions with Dark Background */}
             <div className="h-full bg-white/5 px-8 flex items-center gap-6 border-l border-white/5" ref={dropdownRef}>
                 <div className="relative">
                     <button 
@@ -82,46 +114,64 @@ const AdminHeader = () => {
                         )}
                     </button>
 
-                    {/* Notification Dropdown */}
                     {showNotifications && (
                         <div className="absolute right-0 mt-3 w-80 bg-[#1e293b] border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50">
                             <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-white">Notifications</h3>
-                                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">{unreadCount} New</span>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Alerts Center</h3>
+                                <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-tighter">{unreadCount} Active</span>
                             </div>
                             
                             <div className="max-h-96 overflow-y-auto custom-scrollbar">
                                 {allNotifications.length > 0 ? (
-                                    allNotifications.map((notif, idx) => (
-                                        <Link 
-                                            key={idx} 
-                                            to={notif.link} 
-                                            className="block p-4 border-b border-white/5 hover:bg-white/5 transition-colors group"
-                                            onClick={() => setShowNotifications(false)}
-                                        >
-                                            <div className="flex gap-3">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.type === 'order' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                                    {notif.type === 'order' ? <Package size={18} /> : <RotateCcw size={18} />}
+                                    allNotifications.map((notif, idx) => {
+                                        const getColorClasses = () => {
+                                            if (notif.color === 'blue') return 'bg-blue-500/10 text-blue-400';
+                                            if (notif.color === 'red') return 'bg-red-500/10 text-red-400';
+                                            if (notif.color === 'orange') return 'bg-orange-500/10 text-orange-400';
+                                            return 'bg-gray-500/10 text-gray-400';
+                                        };
+
+                                        const getIcon = () => {
+                                            if (notif.type === 'order') return <Package size={16} />;
+                                            if (notif.type === 'cancel') return <XCircle size={16} />;
+                                            if (notif.type === 'return') return <RotateCcw size={16} />;
+                                            if (notif.type === 'stock') return <AlertTriangle size={16} />;
+                                            return <Bell size={16} />;
+                                        };
+
+                                        return (
+                                            <Link 
+                                                key={idx} 
+                                                to={notif.link} 
+                                                className="block p-4 border-b border-white/5 hover:bg-white/5 transition-all group"
+                                                onClick={() => setShowNotifications(false)}
+                                            >
+                                                <div className="flex gap-3">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${getColorClasses()}`}>
+                                                        {getIcon()}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs font-bold text-gray-200 group-hover:text-white transition-colors uppercase tracking-tight">{notif.title}</p>
+                                                        <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                                                        <p className="text-[9px] font-bold text-gray-600 mt-2 uppercase tracking-widest">{new Date(notif.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(notif.time).toLocaleDateString()}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">{notif.title}</p>
-                                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{notif.message}</p>
-                                                    <p className="text-[10px] text-gray-500 mt-2">{new Date(notif.time).toLocaleString()}</p>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))
+                                            </Link>
+                                        );
+                                    })
                                 ) : (
-                                    <div className="p-8 text-center text-gray-500">
-                                        <Bell size={24} className="mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">No new notifications</p>
+                                    <div className="p-12 text-center">
+                                        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                                            <Bell size={20} className="text-gray-600" />
+                                        </div>
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No Alerts Found</p>
                                     </div>
                                 )}
                             </div>
                             
                             {allNotifications.length > 0 && (
                                 <div className="p-3 border-t border-white/10 bg-white/5 text-center">
-                                    <Link to="/admin/orders" className="text-xs font-semibold text-primary hover:text-primaryHover" onClick={() => setShowNotifications(false)}>View All Activity</Link>
+                                    <Link to="/admin/orders" className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors" onClick={() => setShowNotifications(false)}>View Operational Log</Link>
                                 </div>
                             )}
                         </div>
