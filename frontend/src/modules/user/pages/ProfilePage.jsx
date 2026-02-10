@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 // import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, Link, useParams } from 'react-router-dom';
@@ -38,6 +38,7 @@ const ProfilePage = () => {
         accountType: 'Individual',
         gstNumber: ''
     });
+    const profileSeedRef = useRef('');
     const [updateSuccess, setUpdateSuccess] = useState(false);
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState(null);
@@ -56,17 +57,29 @@ const ProfilePage = () => {
 
 
     useEffect(() => {
-        if (userData) {
-            setEditForm({
-                name: userData.name || '',
-                email: userData.email || '',
-                phone: userData.phone || '',
-                gender: userData.gender || 'Male',
-                birthDate: userData.birthDate || '',
-                accountType: userData.accountType || 'Individual',
-                gstNumber: userData.gstNumber || ''
-            });
-        }
+        if (!userData) return;
+        const nextSeed = [
+            userData._id || userData.id || '',
+            userData.updatedAt || '',
+            userData.name || '',
+            userData.email || '',
+            userData.phone || '',
+            userData.gender || '',
+            userData.birthDate || '',
+            userData.accountType || '',
+            userData.gstNumber || ''
+        ].join('|');
+        if (profileSeedRef.current === nextSeed) return;
+        profileSeedRef.current = nextSeed;
+        setEditForm({
+            name: userData.name || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            gender: userData.gender || 'Male',
+            birthDate: userData.birthDate || '',
+            accountType: userData.accountType || 'Individual',
+            gstNumber: userData.gstNumber || ''
+        });
     }, [userData]);
 
     const handleLogout = () => {
@@ -725,7 +738,7 @@ const ProfilePage = () => {
                             <div className="space-y-2 text-left">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
                                 <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
-                                    {['Male', 'Female'].map((g) => (
+                                    {['Male', 'Female', 'Other'].map((g) => (
                                         <button
                                             key={g}
                                             type="button"
@@ -738,7 +751,7 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                             <div className="space-y-2 text-left">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Birth Date</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date of Birth (DOB)</label>
                                 <input
                                     type="date"
                                     value={editForm.birthDate}
@@ -937,7 +950,7 @@ const ProfilePage = () => {
                                             <label className="text-[9px] font-bold text-white/50 uppercase tracking-widest ml-1">Gender</label>
                                             {isEditing ? (
                                                 <div className="flex bg-white/5 rounded-xl md:rounded-2xl p-1 border border-white/10">
-                                                    {['Male', 'Female'].map((g) => (
+                                                    {['Male', 'Female', 'Other'].map((g) => (
                                                         <button
                                                             key={g}
                                                             type="button"
@@ -955,7 +968,7 @@ const ProfilePage = () => {
                                             )}
                                         </div>
                                         <div className="space-y-1.5 text-left">
-                                            <label className="text-[9px] font-bold text-white/50 uppercase tracking-widest ml-1">Birth Date</label>
+                                            <label className="text-[9px] font-bold text-white/50 uppercase tracking-widest ml-1">Date of Birth (DOB)</label>
                                             {isEditing ? (
                                                 <div className="relative group">
                                                     <input
@@ -972,6 +985,20 @@ const ProfilePage = () => {
                                             )}
                                         </div>
                                     </div>
+                                    {isEditing && (
+                                        <div className="pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    handleUpdateProfile(e);
+                                                    setIsEditing(false);
+                                                }}
+                                                className="w-full bg-primary text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primaryDeep transition-all shadow-lg shadow-primary/20"
+                                            >
+                                                Save Details
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
