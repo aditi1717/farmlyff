@@ -45,7 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const calculatePer100g = (price, quantity, unit, weightStr) => {
     let q = parseFloat(quantity);
     let u = unit ? unit.toLowerCase().trim() : '';
-    
+
     // Known valid units for manual check
     const validUnits = ['g', 'gm', 'gms', 'kg', 'kgs'];
     const hasValidStructuredData = q && validUnits.includes(u);
@@ -728,46 +728,47 @@ const ProductDetailPage = () => {
                             {activeTab === 'Description' && (
                                 <div className="space-y-6">
                                     <h3 className="text-xl font-bold text-black font-semibold">Product Description</h3>
-                                    <div
-                                        className="text-sm md:text-base text-gray-600 leading-relaxed text-justify px-2 prose prose-sm max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: product.description || `Nutraj brings a premium assortment of walnut kernels to your plate in the form of ${product.name}. As the name says, these Anmol walnut kernels are nothing short of precious treats as they come from 1% of the Rarest Crop, grown worldwide. Since the crop is handpicked from the best, these walnut kernels are jumbo-sized, extra crunchier in taste, and contain exceptional nutritional value.` }}
-                                    />
-                                    <div className="flex justify-center">
-                                        <img src={product.image} className="w-40 md:w-60 h-auto object-contain rounded-xl opacity-90 mix-blend-multiply" alt="" />
-                                    </div>
+                                    {product.description ? (
+                                        <div
+                                            className="text-sm md:text-base text-gray-600 leading-relaxed text-justify px-2 prose prose-sm max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: product.description }}
+                                        />
+                                    ) : (
+                                        <p className="text-gray-500 italic">No description available.</p>
+                                    )}
                                 </div>
                             )}
 
                             {activeTab === 'Benefits' && (
                                 <div className="text-left space-y-4">
                                     <h3 className="text-xl font-bold text-black font-semibold">Health Benefits</h3>
-                                    <ul className="list-disc pl-5 space-y-4 text-sm md:text-base text-gray-600 leading-relaxed">
-                                        {(product.benefits?.length ? product.benefits : [
-                                            { title: 'Rich in Antioxidants', description: 'Almonds are a fantastic source of antioxidants.' },
-                                            { title: 'High in Vitamin E', description: 'Linked to numerous health benefits.' },
-                                            { title: 'Blood Sugar Control', description: 'Low in carbs but high in healthy fats.' }
-                                        ]).map((b, i) => (
-                                            <li key={i} className="pl-2">
-                                                <span className="font-bold text-primary">{b.title}:</span>
-                                                {' '}{b.description}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {product.benefits && product.benefits.length > 0 ? (
+                                        <ul className="list-disc pl-5 space-y-4 text-sm md:text-base text-gray-600 leading-relaxed">
+                                            {product.benefits.map((b, i) => (
+                                                <li key={i} className="pl-2">
+                                                    <span className="font-bold text-primary">{b.title}:</span>
+                                                    {' '}{b.description}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-gray-500 italic">No health benefits listed.</p>
+                                    )}
                                 </div>
                             )}
 
                             {activeTab === 'Specifications' && (
                                 <div className="text-left border border-gray-200 rounded-lg overflow-hidden">
-                                    {(product.specifications?.length ? product.specifications : [
-                                        { label: 'Brand Name', value: product.brand || 'Nutraj' },
-                                        { label: 'Shelf Life', value: '6 Months' },
-                                        { label: 'Container Type', value: 'Pouch' }
-                                    ]).map((spec, idx, arr) => (
-                                        <div key={idx} className={`grid grid-cols-1 md:grid-cols-2 p-4 text-sm ${idx !== (arr.length - 1) ? 'border-b border-gray-200' : ''}`}>
-                                            <div className="font-bold text-black font-semibold">{spec.label}</div>
-                                            <div className="text-gray-600">{spec.value}</div>
-                                        </div>
-                                    ))}
+                                    {product.specifications && product.specifications.length > 0 ? (
+                                        product.specifications.map((spec, idx, arr) => (
+                                            <div key={idx} className={`grid grid-cols-1 md:grid-cols-2 p-4 text-sm ${idx !== (arr.length - 1) ? 'border-b border-gray-200' : ''}`}>
+                                                <div className="font-bold text-black font-semibold">{spec.label}</div>
+                                                <div className="text-gray-600">{spec.value}</div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-4 text-gray-500 italic">No specifications available.</div>
+                                    )}
                                 </div>
                             )}
 

@@ -142,20 +142,20 @@ const OTPPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="w-full max-w-[450px] bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10 p-8 md:p-10 text-center"
+                className="w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10 p-6 text-center"
             >
-                <div className="w-20 h-20 bg-[#2c5336]/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-[#2c5336]/20">
-                    <ShieldCheck size={40} className="text-[#2c5336]" />
+                <div className="w-16 h-16 bg-[#2c5336]/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-[#2c5336]/20">
+                    <ShieldCheck size={32} className="text-[#2c5336]" />
                 </div>
 
-                <h1 className="text-2xl font-black text-gray-900 font-['Poppins'] mb-3 uppercase tracking-tight">Two-Step Verification</h1>
-                <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                <h1 className="text-xl font-black text-gray-900 font-['Poppins'] mb-2 uppercase tracking-tight">Two-Step Verification</h1>
+                <p className="text-gray-500 text-xs leading-relaxed mb-6">
                     We've sent a 4-digit verification code to <br />
                     <span className="font-bold text-[#2c5336]">+91 {phone}</span>
                 </p>
 
-                <form onSubmit={handleVerify} className="space-y-6">
-                    <div className="flex justify-center gap-3 md:gap-4 mb-4" onPaste={handlePaste}>
+                <form onSubmit={handleVerify} className="space-y-4">
+                    <div className="flex justify-center gap-3 mb-2" onPaste={handlePaste}>
                         {otp.map((digit, index) => (
                             <input
                                 key={index}
@@ -165,7 +165,7 @@ const OTPPage = () => {
                                 value={digit}
                                 onChange={(e) => handleChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
-                                className="w-14 h-16 text-center text-xl font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
+                                className="w-12 h-12 text-center text-lg font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
                                 autoFocus={index === 0}
                             />
                         ))}
@@ -175,55 +175,55 @@ const OTPPage = () => {
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="space-y-4 pt-4 border-t border-gray-100"
+                            className="space-y-3 pt-3 border-t border-gray-100"
                         >
-                            <p className="text-xs font-bold text-[#2c5336] uppercase tracking-widest text-left mb-2">Complete Profile</p>
+                            <p className="text-[10px] font-bold text-[#2c5336] uppercase tracking-widest text-left mb-1">Complete Profile</p>
                             <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Full Name</label>
+                                <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Full Name</label>
                                 <div className="relative">
-                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                                     <input
                                         type="text"
                                         required
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs font-medium text-gray-900 outline-none focus:border-primary transition-all"
                                         placeholder="John Doe"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Email Address</label>
+                                <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Email Address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                                     <input
                                         type="email"
                                         required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs font-medium text-gray-900 outline-none focus:border-primary transition-all"
                                         placeholder="john@example.com"
                                     />
                                 </div>
                             </div>
-                             <div className="space-y-1 text-left">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Account Type</label>
-                                <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1 text-left">
+                                <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Account Type</label>
+                                <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setAccountType('Individual')}
-                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${accountType === 'Individual' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
+                                        className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${accountType === 'Individual' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
                                     >
-                                        <User size={16} />
-                                        <span className="text-xs font-bold uppercase">Individual</span>
+                                        <User size={14} />
+                                        <span className="text-[10px] font-bold uppercase">Individual</span>
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setAccountType('Business')}
-                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 transition-all ${accountType === 'Business' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
+                                        className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${accountType === 'Business' ? 'border-[#2c5336] bg-[#2c5336]/5 text-[#2c5336]' : 'border-gray-100 text-gray-400'}`}
                                     >
-                                        <Briefcase size={16} />
-                                        <span className="text-xs font-bold uppercase">Business</span>
+                                        <Briefcase size={14} />
+                                        <span className="text-[10px] font-bold uppercase">Business</span>
                                     </button>
                                 </div>
                             </div>
@@ -233,12 +233,12 @@ const OTPPage = () => {
                                     animate={{ opacity: 1, height: 'auto' }}
                                     className="space-y-1 text-left"
                                 >
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">GST Number (Optional)</label>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">GST Number (Optional)</label>
                                     <input
                                         type="text"
                                         value={gstNumber}
                                         onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-4 text-sm font-medium text-gray-900 outline-none focus:border-primary transition-all uppercase"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-xs font-medium text-gray-900 outline-none focus:border-primary transition-all uppercase"
                                         placeholder="22AAAAA0000A1Z5"
                                         maxLength={15}
                                     />
@@ -251,22 +251,22 @@ const OTPPage = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-[#2c5336] text-white font-black text-sm py-4 rounded-xl hover:bg-[#1f3b26] transition-all shadow-xl shadow-[#2c5336]/20 flex items-center justify-center gap-2 uppercase tracking-widest active:scale-95 disabled:opacity-70"
+                        className="w-full bg-[#2c5336] text-white font-black text-xs py-3.5 rounded-xl hover:bg-[#1f3b26] transition-all shadow-lg shadow-[#2c5336]/20 flex items-center justify-center gap-2 uppercase tracking-widest active:scale-95 disabled:opacity-70"
                     >
                         {isLoading ? (
-                            <RefreshCw className="animate-spin" size={18} />
+                            <RefreshCw className="animate-spin" size={16} />
                         ) : (
                             isNewUser ? 'Complete Registration' : 'Verify & Proceed'
                         )}
                     </button>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-gray-100 italic">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">Didn't receive the code?</p>
+                <div className="mt-5 pt-4 border-t border-gray-100 italic">
+                    <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-2">Didn't receive the code?</p>
                     <button
                         onClick={handleResend}
                         disabled={timer > 0 || isNewUser}
-                        className={`flex items-center gap-2 mx-auto font-black text-xs uppercase tracking-tighter ${timer > 0 || isNewUser ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
+                        className={`flex items-center gap-2 mx-auto font-black text-[10px] uppercase tracking-tighter ${timer > 0 || isNewUser ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
                     >
                         {timer > 0 ? `Resend available in ${timer}s` : 'Resend New Code'}
                     </button>

@@ -15,12 +15,18 @@ import {
     Search,
     Star
 } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
+import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import BlotFormatter from 'quill-blot-formatter';
 import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+
+// Register BlotFormatter
+if (typeof window !== 'undefined' && Quill) {
+    Quill.register('modules/blotFormatter', BlotFormatter);
+}
 
 const API_URL = API_BASE_URL;
 
@@ -192,7 +198,7 @@ const ProductFormPage = () => {
         }));
     };
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
 
         // Basic Validation
@@ -215,18 +221,16 @@ const ProductFormPage = () => {
             updatedAt: Date.now()
         };
 
-        if (isEdit) {
-            updateProductMutation.mutate({ id, data: finalData }, {
-                onSuccess: () => {
-                    navigate('/admin/products');
-                }
-            });
-        } else {
-            addProductMutation.mutate(finalData, {
-                onSuccess: () => {
-                    navigate('/admin/products');
-                }
-            });
+        try {
+            if (isEdit) {
+                await updateProductMutation.mutateAsync({ id, data: finalData });
+            } else {
+                await addProductMutation.mutateAsync(finalData);
+            }
+            navigate('/admin/products');
+        } catch (error) {
+            console.error('Failed to save product:', error);
+            // Error toast is handled by the hook
         }
     };
 
@@ -360,7 +364,8 @@ const ProductFormPage = () => {
                                                 ['bold', 'italic', 'underline', 'strike'],
                                                 [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                                                 ['link', 'image', 'clean']
-                                            ]
+                                            ],
+                                            blotFormatter: {}
                                         }}
                                     />
                                 </div>

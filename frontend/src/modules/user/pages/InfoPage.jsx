@@ -101,29 +101,40 @@ const InfoPage = ({ type }) => {
     const displaySubtitle = pageData?.subtitle || config.subtitle;
     // content can be a string (HTML from Quill) or fallback JSX
     const displayContent = pageData?.content ? (
-        <div 
+        <div
             className="prose prose-sm md:prose-base max-w-none text-gray-600 leading-relaxed quill-content"
             dangerouslySetInnerHTML={{ __html: pageData.content }}
         />
     ) : config.content;
 
     return (
-        <div className="bg-[#fcfcfc] min-h-screen py-8 px-6 lg:px-20">
+        <div className="min-h-screen bg-white py-4 md:py-8 px-4 lg:px-8">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-7xl mx-auto md:px-0"
             >
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl lg:text-5xl font-black text-footerBg uppercase tracking-tighter mb-2">{displayTitle}</h1>
-                    <p className="text-primary font-black tracking-[0.2em] uppercase text-xs">{displaySubtitle}</p>
+                <div className="text-center mb-6 md:mb-8">
+                    <h1 className="text-2xl md:text-3xl lg:text-5xl font-black text-footerBg uppercase tracking-tighter mb-2">{displayTitle}</h1>
+                    {displaySubtitle && <p className="text-primary font-black tracking-[0.2em] uppercase text-[10px] md:text-xs">{displaySubtitle}</p>}
                 </div>
 
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-gray-100">
+                <div className="px-1 md:px-0">
                     {displayContent}
                 </div>
             </motion.div>
-        </div>
+
+            <style>{`
+                .quill-content img {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 1rem;
+                }
+                .quill-content iframe {
+                    max-width: 100%;
+                }
+            `}</style>
+        </div >
     );
 };
 export default InfoPage;
