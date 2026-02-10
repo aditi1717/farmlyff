@@ -223,25 +223,25 @@ Task:
                 pushMessage('assistant', 'What is your name?');
                 break;
             case 2:
-                pushMessage('assistant', `Hii ${form.name || 'there'}, welcome to Farmlyf! What is your gender? (male/female/other)`);
+                pushMessage('assistant', 'What is your gender? (male / female / other)');
                 break;
             case 3:
                 pushMessage('assistant', 'How old are you?');
                 break;
             case 4:
-                pushMessage('assistant', 'Your height in cm?');
+                pushMessage('assistant', 'Your height in cm? Pick one or type your own:');
                 break;
             case 5:
-                pushMessage('assistant', 'Your weight in kg?');
+                pushMessage('assistant', 'Your weight in kg? Pick one or type your own:');
                 break;
             case 6:
-                pushMessage('assistant', 'Activity level? (low/moderate/high)');
+                pushMessage('assistant', 'What\'s your activity level?');
                 break;
             case 7:
-                pushMessage('assistant', 'Goal? (lose/maintain/gain)');
+                pushMessage('assistant', 'What\'s your goal?');
                 break;
             case 8:
-                pushMessage('assistant', 'Any allergies? (e.g. peanuts, none)');
+                pushMessage('assistant', 'Any allergies? Pick one or type your own:');
                 break;
             default:
                 break;
@@ -268,11 +268,12 @@ Task:
             askForStep(1);
             return;
         }
-        pushMessage('assistant', `Hii ${name}, welcome to Farmlyf!`);
         if (!gender) {
-            askForStep(2);
+            pushMessage('assistant', `Hii ${name}, welcome to Farmlyf! What is your gender? (male / female / other)`);
+            setStep(2);
             return;
         }
+        pushMessage('assistant', `Hii ${name}, welcome to Farmlyf!`);
         askForStep(3);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, user]);
@@ -283,36 +284,85 @@ Task:
         chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }, [messages, isOpen, recommendations]);
 
-    const handleUserSubmit = (e) => {
-        e.preventDefault();
-        if (!chatInput.trim() || loading) return;
-        const input = chatInput.trim();
-        setChatInput('');
-        pushMessage('user', input);
+    /* ── quick-reply option config ── */
+    const quickOptions = useMemo(() => {
+        switch (step) {
+            case 2:
+                return ['Male', 'Female', 'Other'];
+            case 4:
+                return ['150 cm', '155 cm', '160 cm', '165 cm', '170 cm', '175 cm', '180 cm'];
+            case 5:
+                return ['45 kg', '50 kg', '55 kg', '60 kg', '65 kg', '70 kg', '75 kg', '80 kg'];
+            case 6:
+                return ['Low', 'Moderate', 'High'];
+            case 7:
+                return ['Lose', 'Maintain', 'Gain'];
+            case 8:
+                return ['None', 'Peanuts', 'Dairy', 'Gluten'];
+            default:
+                return [];
+        }
+    }, [step]);
 
+    const handleQuickReply = (value) => {
+        if (loading) return;
+        const clean = value.replace(/\s*(cm|kg)$/i, '').trim();
+        pushMessage('user', value);
+        processInput(clean);
+    };
+
+    const processInput = (input) => {
         switch (step) {
             case 1:
                 setForm((prev) => ({ ...prev, name: input }));
                 askForStep(2);
                 break;
-            case 2:
+            case 2: {
+                const g = input.toLowerCase();
+                if (!g.includes('male') && !g.includes('female') && !g.includes('other') && !g.includes('m') && !g.includes('f') && !g.includes('o')) {
+                    pushMessage('assistant', 'Sorry, I couldn\'t understand that. Please select your gender below or type it.');
+                    return;
+                }
                 setForm((prev) => ({ ...prev, gender: normalizeGender(input) }));
                 askForStep(3);
                 break;
-            case 3:
+            }
+            case 3: {
+                const age = Number(input);
+                if (!age || age < 1 || age > 150 || !Number.isInteger(age)) {
+                    pushMessage('assistant', 'Oops! That doesn\'t look like a valid age. Please enter a number (e.g. 25).');
+                    return;
+                }
                 setForm((prev) => ({ ...prev, age: input }));
                 askForStep(4);
                 break;
-            case 4:
-                setForm((prev) => ({ ...prev, heightCm: input }));
+            }
+            case 4: {
+                const height = Number(input);
+                if (!height || height < 50 || height > 300) {
+                    pushMessage('assistant', 'Hmm, that doesn\'t seem right. Please pick a height below or type in cm (e.g. 170).');
+                    return;
+                }
+                setForm((prev) => ({ ...prev, heightCm: String(height) }));
                 askForStep(5);
                 break;
-            case 5:
-                setForm((prev) => ({ ...prev, weightKg: input }));
+            }
+            case 5: {
+                const weight = Number(input);
+                if (!weight || weight < 10 || weight > 500) {
+                    pushMessage('assistant', 'That doesn\'t look like a valid weight. Pick below or type in kg (e.g. 65).');
+                    return;
+                }
+                setForm((prev) => ({ ...prev, weightKg: String(weight) }));
                 askForStep(6);
                 break;
+            }
             case 6: {
                 const val = input.toLowerCase();
+                if (!val.includes('low') && !val.includes('moderate') && !val.includes('high')) {
+                    pushMessage('assistant', 'Sorry, I couldn\'t get you. Please select an option below.');
+                    return;
+                }
                 const activity = val.includes('low') ? 'low' : val.includes('high') ? 'high' : 'moderate';
                 setForm((prev) => ({ ...prev, activity }));
                 askForStep(7);
@@ -320,6 +370,10 @@ Task:
             }
             case 7: {
                 const val = input.toLowerCase();
+                if (!val.includes('lose') && !val.includes('maintain') && !val.includes('gain')) {
+                    pushMessage('assistant', 'Sorry, I didn\'t catch that. Please select a goal below.');
+                    return;
+                }
                 const goal = val.includes('lose') ? 'lose' : val.includes('gain') ? 'gain' : 'maintain';
                 setForm((prev) => ({ ...prev, goal }));
                 askForStep(8);
@@ -332,8 +386,18 @@ Task:
                 handleGenerate();
                 break;
             default:
+                pushMessage('assistant', 'Sorry, I couldn\'t get you. 😅 Please click "Reset" to start a new conversation!');
                 break;
         }
+    };
+
+    const handleUserSubmit = (e) => {
+        e.preventDefault();
+        if (!chatInput.trim() || loading) return;
+        const input = chatInput.trim();
+        setChatInput('');
+        pushMessage('user', input);
+        processInput(input);
     };
 
     return (
@@ -426,6 +490,22 @@ Task:
                         )}
                         <div ref={messagesEndRef} />
                     </div>
+
+                    {/* Quick-reply option buttons */}
+                    {quickOptions.length > 0 && !loading && step < 9 && (
+                        <div className="px-3 py-2 border-t border-gray-50 flex flex-wrap gap-1.5">
+                            {quickOptions.map((opt) => (
+                                <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleQuickReply(opt)}
+                                    className="px-3 py-1.5 bg-footerBg/10 text-footerBg text-[11px] font-bold rounded-full border border-footerBg/20 hover:bg-footerBg hover:text-white transition-all duration-200 active:scale-95"
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <form onSubmit={handleUserSubmit} className="border-t border-gray-100 p-3 flex gap-2 items-center">
                         <input
