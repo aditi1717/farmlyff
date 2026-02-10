@@ -39,7 +39,7 @@ const PushNotificationPage = () => {
                 },
                 credentials: 'include'
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setHistory(data);
@@ -93,7 +93,7 @@ const PushNotificationPage = () => {
         try {
             const notificationId = notification._id;
             setResendingIds(prev => new Set(prev).add(notificationId));
-            
+
             const response = await fetch(`${API_URL}/notifications/send`, {
                 method: 'POST',
                 headers: {
@@ -161,23 +161,8 @@ const PushNotificationPage = () => {
                     <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">Engage with your mobile users</p>
                 </div>
 
-                {/* Permission Status */}
-                <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${
-                        notificationPermission === 'granted' ? 'bg-green-500' :
-                        notificationPermission === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
-                    }`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">
-                        Status: {notificationPermission}
-                    </span>
-                    {notificationPermission !== 'granted' && (
-                        <button 
-                            onClick={initNotifications}
-                            className="bg-black text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
-                        >
-                            Enable Now
-                        </button>
-                    )}
+                <div className="flex items-center gap-3">
+                    {/* Add New Button if needed, or leave empty if not requested, but I'll leave the header clean */}
                 </div>
             </div>
 
@@ -200,8 +185,8 @@ const PushNotificationPage = () => {
                                     <div key={n._id || i} className="flex items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-all">
                                         <div className="flex-1">
                                             <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{n.heading}</p>
-                                            <p className="text-[10px] text-gray-400 font-bold mt-1 truncate max-w-[300px]">{n.message}</p>
-                                            <p className="text-[9px] text-gray-300 font-bold mt-1">
+                                            <p className="text-[10px] text-gray-700 font-bold mt-1 truncate max-w-[300px]">{n.message}</p>
+                                            <p className="text-[9px] text-gray-400 font-bold mt-1">
                                                 Target: {getTargetLabel(n.target)} • {n.successCount}/{n.sentCount} delivered
                                             </p>
                                         </div>
@@ -215,14 +200,7 @@ const PushNotificationPage = () => {
                                                 <RefreshCw size={14} className={`text-gray-600 ${resendingIds.has(n._id) ? 'animate-spin' : ''}`} />
                                             </button>
                                             <div className="text-right">
-                                                <span className={`block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider mb-1 ${
-                                                    n.status === 'sent' ? 'bg-green-100 text-green-600' :
-                                                    n.status === 'failed' ? 'bg-red-100 text-red-600' :
-                                                    'bg-yellow-100 text-yellow-600'
-                                                }`}>
-                                                    {n.status}
-                                                </span>
-                                                <span className="text-[9px] font-bold text-gray-300 uppercase">{formatDate(n.createdAt)}</span>
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">{formatDate(n.createdAt)}</span>
                                             </div>
                                         </div>
                                     </div>
