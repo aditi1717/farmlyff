@@ -10,11 +10,14 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
-  },
-  define: {
-    global: 'window',
+    dedupe: ['react', 'react-dom', 'framer-motion'],
   },
   optimizeDeps: {
     include: ['quill-image-resize-module-react', 'react-quill-new'],
+  },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
   },
 })
