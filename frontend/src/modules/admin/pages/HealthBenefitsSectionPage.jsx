@@ -149,7 +149,7 @@ const HealthBenefitsSectionPage = () => {
                     </button>
                     <div>
                         <h1 className="text-xl font-black text-[#1a1a1a] uppercase tracking-tight">Health Benefits Section</h1>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage benefits cards (5 Items)</p>
+                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage benefit cards</p>
                     </div>
                 </div>
 
@@ -267,7 +267,7 @@ const HealthBenefitsSectionPage = () => {
                     <p className="text-gray-500 text-sm max-w-xl mx-auto">{formData.subtitle}</p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap md:flex-nowrap justify-center gap-4 md:gap-6 overflow-x-auto no-scrollbar pb-8 px-4">
                     {formData.benefits.map((benefit, index) => {
                         const IconComponent = LucideIcons[benefit.icon] || HelpCircle;
                         const itemKey = `preview-${benefit._id || benefit.id || index}`;

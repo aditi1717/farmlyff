@@ -1,4 +1,5 @@
 import React from 'react';
+import { useProducts } from '../../../hooks/useProducts';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
@@ -39,8 +40,8 @@ const calculatePer100g = (price, quantity, unit, weightStr) => {
 const ProductCard = ({ product }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { addToCart, getCart } = useCartStore();
     // const { addToCart, toggleWishlist, isInWishlist } = useShop(); // Removed
-    const addToCart = useCartStore(state => state.addToCart);
     const toggleWishlist = useUserStore(state => state.toggleWishlist);
     const wishlistMap = useUserStore(state => state.wishlist);
     const userWishlist = user ? (wishlistMap[user.id] || []) : [];
@@ -156,19 +157,35 @@ const ProductCard = ({ product }) => {
                                 e.stopPropagation();
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
                                 const stockAvailable = hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0);
+
                                 if (stockAvailable <= 0) {
                                     toast.error("Item is currently out of stock");
                                     return;
                                 }
+
+                                const cartItems = getCart(user?.id);
+                                const isInCart = cartItems.some(item => String(item.packId) === String(itemId));
+
+                                if (isInCart) {
+                                    navigate('/cart');
+                                    return;
+                                }
+
                                 addToCart(user?.id, itemId, 1);
                             }}
                             disabled={(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0}
                             className={`w-full py-2 md:py-2.5 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md
                                 ${(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                                    : 'bg-footerBg hover:bg-primary text-white'}`}
+                                    : getCart(user?.id).some(item => String(item.packId) === String(hasVariants ? product.variants[0].id : product.id))
+                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        : 'bg-footerBg hover:bg-primary text-white'}`}
                         >
-                            {(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                            {(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0
+                                ? 'Out of Stock'
+                                : getCart(user?.id).some(item => String(item.packId) === String(hasVariants ? product.variants[0].id : product.id))
+                                    ? 'Go to Cart'
+                                    : 'Add to Cart'}
                         </button>
                     </div>
                 </div>

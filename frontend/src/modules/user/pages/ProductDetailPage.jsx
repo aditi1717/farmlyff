@@ -78,7 +78,7 @@ const ProductDetailPage = () => {
     const { user } = useAuth();
 
     // Hooks
-    const { addToCart } = useCartStore();
+    const { addToCart, getCart } = useCartStore();
     const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist, getRecentlyViewed } = useUserStore();
     const { data: product, isLoading: isProductLoading, isError: isProductError } = useProduct(slug);
     const { data: allProducts = [] } = useProducts();
@@ -602,6 +602,12 @@ const ProductDetailPage = () => {
                                         Only {currentStock} Left!
                                     </span>
                                 )}
+                                {getCart(user?.id).some(item => String(item.packId) === String((isGroupProduct && selectedVariant) ? selectedVariant.id : product.id)) && (
+                                    <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                                        <CheckCircle2 size={12} />
+                                        <span className="text-[10px] font-bold uppercase tracking-tight italic">Item already in your bag</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Divider Line (Visible on larger screens if needed, otherwise gap handles it) */}
@@ -637,6 +643,14 @@ const ProductDetailPage = () => {
                             <button
                                 onClick={() => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
+                                    const cartItems = getCart(user?.id);
+                                    const isInCart = cartItems.some(item => String(item.packId) === String(skuId));
+
+                                    if (isInCart) {
+                                        navigate('/cart');
+                                        return;
+                                    }
+
                                     if (quantity > currentStock) {
                                         toast.error(`Requested quantity exceeds available stock (${currentStock})`);
                                         return;
@@ -647,9 +661,16 @@ const ProductDetailPage = () => {
                                 className={`flex-[1.2] py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2 
                                     ${isOutOfStock
                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                                        : 'bg-primary text-white hover:bg-primaryHover'}`}
+                                        : getCart(user?.id).some(item => String(item.packId) === String((isGroupProduct && selectedVariant) ? selectedVariant.id : product.id))
+                                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                            : 'bg-primary text-white hover:bg-primaryHover'}`}
                             >
-                                <ShoppingBag size={18} /> {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+                                <ShoppingBag size={18} /> 
+                                {isOutOfStock 
+                                    ? 'OUT OF STOCK' 
+                                    : getCart(user?.id).some(item => String(item.packId) === String((isGroupProduct && selectedVariant) ? selectedVariant.id : product.id))
+                                        ? 'GO TO BAG'
+                                        : 'ADD TO CART'}
                             </button>
                             <button
                                 onClick={() => {

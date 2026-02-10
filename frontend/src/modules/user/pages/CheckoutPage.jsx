@@ -85,7 +85,7 @@ const CheckoutPage = () => {
     const directBuyItem = location.state?.directBuyItem;
     const cartItems = directBuyItem
         ? [directBuyItem]
-        : (user ? getCart(user.id) : []);
+        : getCart(user?.id);
 
     const enrichedCart = cartItems.map(item => {
         // Try to get variant first
@@ -108,7 +108,11 @@ const CheckoutPage = () => {
         // Fallback to legacy pack
         const pack = getPackById(item.packId);
         if (pack) {
-            return { ...item, ...pack };
+            return { 
+                ...item, 
+                ...pack,
+                stock: pack.stock?.quantity || pack.stock || 0
+            };
         }
         return null;
     }).filter(Boolean);

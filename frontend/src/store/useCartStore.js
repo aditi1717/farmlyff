@@ -53,6 +53,30 @@ const useCartStore = create(
                 }
             },
 
+            mergeGuestCartIntoUser: (userId) => {
+                if (!userId) return;
+                const cart = { ...get().cartItems };
+                const guestCart = cart['guest'] || [];
+                if (guestCart.length === 0) return;
+
+                const userCart = [...(cart[userId] || [])];
+
+                guestCart.forEach(guestItem => {
+                    const existingIndex = userCart.findIndex(i => String(i.packId) === String(guestItem.packId));
+                    if (existingIndex > -1) {
+                        userCart[existingIndex].qty += guestItem.qty;
+                    } else {
+                        userCart.push({ ...guestItem });
+                    }
+                });
+
+                // Clear guest cart and update user cart
+                cart['guest'] = [];
+                cart[userId] = userCart;
+                set({ cartItems: cart });
+                toast.success("Guest items added to your cart");
+            },
+
             clearCart: (userId) => {
                 const effectiveId = userId || 'guest';
                 const cart = get().cartItems;

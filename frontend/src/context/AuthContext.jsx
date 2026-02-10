@@ -90,6 +90,14 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+                
+                // Merge Guest Cart
+                try {
+                    useCartStore.getState().mergeGuestCartIntoUser(userObj.id);
+                } catch (err) {
+                    console.error("Cart merge failed:", err);
+                }
+
                 toast.success('Logged in successfully!');
                 return { success: true };
             } else {
@@ -152,6 +160,14 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+
+                // Merge Guest Cart
+                try {
+                    useCartStore.getState().mergeGuestCartIntoUser(userObj.id);
+                } catch (err) {
+                    console.error("Cart merge failed:", err);
+                }
+
                 toast.success('Logged in successfully!');
                 return { success: true };
             } else {
@@ -186,6 +202,14 @@ export const AuthProvider = ({ children }) => {
                 }
 
                 localStorage.setItem('farmlyf_current_user', JSON.stringify(userObj));
+
+                // Merge Guest Cart
+                try {
+                    useCartStore.getState().mergeGuestCartIntoUser(userObj.id);
+                } catch (err) {
+                    console.error("Cart merge failed:", err);
+                }
+
                 toast.success('Account created successfully!');
                 return { success: true };
             } else {

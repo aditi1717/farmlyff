@@ -61,9 +61,9 @@ const HealthBenefitsSection = ({ data }) => {
                     </motion.p>
                 </div>
 
-                {/* Static Grid/Flex Container - No Scroll, 5 Items */}
-                <div className="grid grid-cols-2 md:flex md:flex-wrap justify-center gap-3 md:gap-6 pb-4">
-                    {sectionData.benefits.slice(0, 5).map((benefit, index) => (
+                {/* Horizontal Scroll on Mobile, Flex on Desktop for constant one-line display */}
+                <div className="flex overflow-x-auto md:overflow-x-visible pb-12 gap-4 md:gap-6 snap-x snap-mandatory no-scrollbar justify-start md:justify-center">
+                    {sectionData.benefits.map((benefit, index) => (
                         <motion.div
                             key={benefit.title || index}
                             initial={{ opacity: 0, y: 20 }}
@@ -72,7 +72,7 @@ const HealthBenefitsSection = ({ data }) => {
                             transition={{ delay: index * 0.1 }}
                             onHoverStart={() => setHoveredIndex(index)}
                             onHoverEnd={() => setHoveredIndex(null)}
-                            className="w-full md:flex-1 md:min-w-[240px] cursor-pointer pt-10 md:pt-20"
+                            className="flex-shrink-0 w-36 md:w-auto md:flex-1 md:min-w-[200px] max-w-[300px] snap-center cursor-pointer pt-10 md:pt-20"
                         >
                             <div className="relative">
                                 {/* White Circle Icon Container - Hides on hover */}
@@ -84,7 +84,6 @@ const HealthBenefitsSection = ({ data }) => {
                                             transition={{ duration: 0.4, ease: "easeInOut" }}
                                             className="absolute -top-10 md:-top-16 left-1/2 -translate-x-1/2 z-20"
                                         >
-                                            {/* Single clean ring matching bg color */}
                                             <div 
                                                 style={benefit.borderStyle}
                                                 className={`relative bg-white rounded-full w-20 h-20 md:w-32 md:h-32 flex items-center justify-center shadow-lg border-2`}
@@ -106,13 +105,12 @@ const HealthBenefitsSection = ({ data }) => {
                                     className={`
                                         relative h-36 md:h-64 rounded-[20px] md:rounded-[32px] 
                                         backdrop-blur-xl border
-                                        shadow-lg hover:shadow-2xl
+                                        shadow-xl hover:shadow-2xl
                                         transition-all duration-500
                                         overflow-hidden
                                         flex flex-col items-center justify-center
                                         p-2 md:p-4
                                     `}>
-                                    {/* Content - Title hidden on hover, only description shows centered */}
                                     <AnimatePresence mode="wait">
                                         {hoveredIndex !== index ? (
                                             <motion.div
@@ -120,10 +118,9 @@ const HealthBenefitsSection = ({ data }) => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -20 }}
-                                                transition={{ duration: 0.3 }}
                                                 className="flex items-center justify-center h-full w-full text-center pt-6"
                                             >
-                                                <h3 style={benefit.textStyle} className={`font-bold text-sm md:text-xl px-2 leading-tight`}>
+                                                <h3 style={benefit.textStyle} className={`font-bold text-[10px] md:text-lg px-1 uppercase tracking-tight`}>
                                                     {benefit.title}
                                                 </h3>
                                             </motion.div>
@@ -133,10 +130,9 @@ const HealthBenefitsSection = ({ data }) => {
                                                 initial={{ opacity: 0, scale: 0.9 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.4, delay: 0.2 }}
                                                 className="flex items-center justify-center h-full w-full"
                                             >
-                                                <p style={benefit.textStyle} className={`text-[10px] md:text-sm leading-relaxed font-semibold px-2 md:px-4 text-center`}>
+                                                <p style={benefit.textStyle} className={`text-[8px] md:text-xs leading-relaxed font-bold px-2 text-center italic`}>
                                                     {benefit.description}
                                                 </p>
                                             </motion.div>
