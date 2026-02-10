@@ -38,7 +38,7 @@ const OrdersPage = () => {
                 <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
                     {orders.map((order, index) => (
                         <motion.div
-                            key={order.id}
+                            key={order._id || order.id || index}
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.05 }}

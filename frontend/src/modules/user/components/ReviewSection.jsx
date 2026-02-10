@@ -66,9 +66,9 @@ const ReviewSection = () => {
                             ref={scrollRef}
                             className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth px-4 py-4"
                         >
-                            {reviews.map((review) => (
+                            {reviews.map((review, index) => (
                                 <motion.div
-                                    key={review._id}
+                                    key={review._id || review.id || index}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     whileInView={{ opacity: 1, scale: 1 }}
                                     viewport={{ once: true }}

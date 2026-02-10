@@ -51,7 +51,7 @@ const TopSellingProducts = () => {
                     >
                         {topProducts.map((product, index) => (
                             <motion.div
-                                key={product._id || product.id}
+                                key={product._id || product.id || index}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: index * 0.05 }}

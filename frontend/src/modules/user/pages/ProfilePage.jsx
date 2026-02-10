@@ -6,15 +6,10 @@ import toast from 'react-hot-toast';
 
 // Context & Stores
 import { useAuth } from '../../../context/AuthContext';
-import useUserStore from '../../../store/useUserStore';
 
 // Hooks
 import { useUserProfile, useUpdateProfile } from '../../../hooks/useUser';
-import { useOrders, useReturns } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
-import { useProducts } from '../../../hooks/useProducts';
-
-import logo from '../../../assets/logo.png';
 
 
 const ProfilePage = () => {
@@ -22,13 +17,9 @@ const ProfilePage = () => {
     const { user, loading: authLoading, logout } = useAuth();
     const { data: userData, isLoading: profileLoading, isError: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
-    const { data: orders = [] } = useOrders(user?.id);
     const { data: activeCoupons = [], isLoading: couponsLoading } = useActiveCoupons();
     const { tab } = useParams();
     const activeTab = tab ? tab.charAt(0).toUpperCase() + tab.slice(1) : 'Overview';
-    const [copied, setCopied] = useState(false);
-    const [copiedCode, setCopiedCode] = useState('');
-    
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         name: '',
@@ -98,9 +89,7 @@ const ProfilePage = () => {
 
     const handleCopyCode = (code) => {
         navigator.clipboard.writeText(code);
-        setCopiedCode(code);
         toast.success('Coupon code copied!');
-        setTimeout(() => setCopiedCode(''), 3000);
     };
 
     const handleUpdateProfile = async (e) => {
@@ -118,8 +107,8 @@ const ProfilePage = () => {
             setUpdateSuccess(true);
             setTimeout(() => setUpdateSuccess(false), 3000);
             setIsEditing(false);
-        } catch (error) {
-            console.error('Update profile error:', error);
+        } catch (err) {
+            console.error('Update profile error:', err);
         }
     };
 
@@ -228,7 +217,8 @@ const ProfilePage = () => {
                     } else {
                         toast.error('Failed to get address details');
                     }
-                } catch (error) {
+                } catch (err) {
+                    console.error('Location detection error:', err);
                     toast.error('Error fetching location details');
                 } finally {
                     setDetectingLocation(false);
@@ -327,7 +317,7 @@ const ProfilePage = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                         {desktopItems.map((item, idx) => (
                             <button
-                                key={idx}
+                                key={item.id || idx}
                                 onClick={item.action}
                                 className="flex flex-col items-start p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group text-left h-full"
                             >
@@ -409,7 +399,7 @@ const ProfilePage = () => {
                                 className="w-full bg-footerBg border-0 py-2 rounded-lg md:rounded-xl font-black md:font-bold text-[8px] md:text-[9px] text-white hover:bg-primary transition-all flex items-center justify-center gap-1.5 md:gap-2 uppercase tracking-tighter md:tracking-widest active:scale-95"
                             >
                                 <Copy size={10} className="md:w-3 md:h-3" />
-                                {copiedCode === coupon.code ? 'COPIED!' : 'Copy Code'}
+                                Copy Code
                             </button>
                         </div>
                     )) : (
@@ -441,7 +431,7 @@ const ProfilePage = () => {
                         onClick={() => navigate('/profile')}
                         className="p-2 md:p-2.5 bg-slate-50 text-footerBg rounded-lg md:rounded-xl hover:bg-footerBg hover:text-white transition-all group shrink-0"
                     >
-                        <ChevronRight size={14} md:size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+                        <ChevronRight size={14} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div className="min-w-0">
                         <h2 className="text-lg md:text-xl font-black text-footerBg tracking-tighter md:tracking-tight uppercase leading-none">Addresses</h2>
@@ -458,7 +448,7 @@ const ProfilePage = () => {
                             onClick={handleAddAddress}
                             className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-footerBg hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/10 active:scale-95 shrink-0"
                         >
-                            <Plus size={14} md:size={16} />
+                            <Plus size={14} />
                             <span className="hidden md:inline">Add New</span>
                             <span className="md:hidden">Add</span>
                         </button>
@@ -608,20 +598,20 @@ const ProfilePage = () => {
                                 <div key={addr.id} className={`p-3 md:p-8 rounded-2xl md:rounded-[32px] border ${addr.isDefault ? 'border-primary/30 bg-primary/5' : 'border-gray-100 bg-gray-50/30'} relative group hover:shadow-xl transition-all`}>
                                     <div className="flex justify-between items-start mb-4 md:mb-8">
                                         <div className={`w-8 h-8 md:w-14 md:h-14 ${addr.isDefault ? 'bg-primary text-white' : 'bg-white text-primary'} rounded-lg md:rounded-2xl flex items-center justify-center shadow-sm border border-gray-100`}>
-                                            {addr.type === 'Home' ? <Home size={16} md:size={24} /> : <MapPin size={16} md:size={24} />}
+                                            {addr.type === 'Home' ? <Home size={16} /> : <MapPin size={16} />}
                                         </div>
                                         <div className="flex gap-1 md:gap-2">
                                             <button
                                                 onClick={() => handleEditAddress(addr)}
                                                 className="w-7 h-7 md:w-10 md:h-10 bg-white text-gray-400 rounded-lg border border-gray-100 flex items-center justify-center shadow-sm"
                                             >
-                                                <Edit3 size={12} md:size={16} />
+                                                <Edit3 size={12} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteAddress(addr.id)}
                                                 className="w-7 h-7 md:w-10 md:h-10 bg-white text-gray-400 rounded-lg border border-gray-100 flex items-center justify-center shadow-sm"
                                             >
-                                                <Trash2 size={12} md:size={16} />
+                                                <Trash2 size={12} />
                                             </button>
                                         </div>
                                     </div>
@@ -850,8 +840,6 @@ const ProfilePage = () => {
 
     if (!user) return null; // Redirection handled by useEffect
 
-    const ordersData = orders; // getOrders(userData.id);
-
     return (
         <div className="bg-[#f8fafc] lg:min-h-screen pb-4 md:pb-20 font-['Inter'] flex flex-col">
             <div className="w-full flex-1">
@@ -1038,7 +1026,7 @@ const ProfilePage = () => {
                             className="w-full hidden lg:flex items-center bg-[#ef4444] text-white hover:bg-[#dc2626] transition-all group border-0 shrink-0"
                         >
                             <div className="w-16 h-16 md:w-20 md:h-20 bg-black/10 flex items-center justify-center shrink-0 group-hover:bg-black/20 transition-all border-r border-white/10">
-                                <LogOut size={20} md:size={24} />
+                                <LogOut size={20} />
                             </div>
                             <div className="flex-1 px-4 md:px-6 text-left">
                                 <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em]">Logout</p>
