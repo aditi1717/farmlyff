@@ -112,9 +112,28 @@ const ProductCard = ({ product }) => {
                             PREMIUM
                         </span>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="bg-footerBg text-white flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold shrink-0">
+                            <Star size={7} md:size={9} fill="currentColor" />
+                            <span>{product.rating}</span>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!user) {
+                                    return navigate('/login');
+                                }
+                                toggleWishlist(user.id, itemId);
+                            }}
+                            className="text-gray-300 hover:text-red-500 transition-colors p-0.5 active:scale-95"
+                        >
+                            <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
+                        </button>
+                    </div>
                 </div>
 
-                <h3 className="text-[9px] md:text-[12px] font-bold text-[#4A4A4A] leading-tight mb-2 md:mb-3 line-clamp-2 h-7 md:h-8">
+                <h3 className="text-[9px] md:text-[12px] font-bold text-[#4A4A4A] leading-tight mb-0.5 line-clamp-2 h-7 md:h-8">
                     {product.name}
                 </h3>
 
@@ -122,32 +141,12 @@ const ProductCard = ({ product }) => {
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap">
                         <div className="flex items-baseline gap-1">
                             <span className="text-[10px] md:text-sm font-black text-footerBg tracking-tight">₹{displayPrice}</span>
-                            <span className="text-[8px] md:text-[10px] text-gray-300 line-through">₹{displayMrp}</span>
+                            <span className="text-[9px] md:text-[11px] text-gray-600 line-through">₹{displayMrp}</span>
                             {per100gPrice && (
                                 <span className="text-[8px] md:text-[10px] text-gray-500 font-medium whitespace-nowrap">
                                     (₹{per100gPrice}/100g)
                                 </span>
                             )}
-                        </div>
-
-                        <div className="ml-auto flex items-center gap-2">
-                            <div className="bg-footerBg text-white flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold shrink-0">
-                                <Star size={7} md:size={9} fill="currentColor" />
-                                <span>{product.rating}</span>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!user) {
-                                        // Optionally show toast
-                                        return navigate('/login');
-                                    }
-                                    toggleWishlist(user.id, itemId);
-                                }}
-                                className="text-gray-300 hover:text-red-500 transition-colors p-0.5 active:scale-95"
-                            >
-                                <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
-                            </button>
                         </div>
                     </div>
 

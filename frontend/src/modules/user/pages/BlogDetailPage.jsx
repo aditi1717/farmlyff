@@ -56,59 +56,53 @@ const BlogDetailPage = () => {
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Header Content */}
-            <div className="relative h-[40vh] md:h-[60vh] w-full">
+            {/* Image Header */}
+            <div className="relative h-[30vh] md:h-[60vh] w-full">
                 <img
                     src={blog.image}
                     alt={blog.title}
                     className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40" />
-                
-                <div className="absolute inset-0 flex items-end">
-                    <div className="container mx-auto px-4 md:px-12 pb-12 md:pb-20">
-                        <Link 
-                            to="/" 
-                            className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors group"
-                        >
-                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="font-bold text-sm uppercase tracking-widest">Back to Blogs</span>
-                        </Link>
-                        
-                        <div className="max-w-4xl">
-                            <div className="flex flex-wrap items-center gap-4 text-white/90 text-xs md:text-sm font-bold uppercase tracking-widest mb-4">
-                                <span className="flex items-center gap-2">
-                                    <Calendar size={16} />
-                                    {new Date(blog.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                </span>
-                                <span className="flex items-center gap-2">
-                                    <User size={16} />
-                                    {blog.author}
-                                </span>
-                            </div>
-                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
-                                {blog.title}
-                            </h1>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 md:px-12 py-12 md:py-20">
-                <div className="max-w-5xl mx-auto">
+            <div className="container mx-auto px-4 md:px-0 py-5 md:py-12">
+                <div className="max-w-6xl mx-auto">
+                    <Link
+                        to="/"
+                        className="inline-flex items-center gap-2 text-gray-500 hover:text-black mb-4 transition-colors group"
+                    >
+                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="font-bold text-xs uppercase tracking-widest">Back to Blogs</span>
+                    </Link>
+
+                    <div className="flex flex-wrap items-center gap-4 text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-2">
+                        <span className="flex items-center gap-2">
+                            <Calendar size={14} />
+                            {new Date(blog.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <User size={14} />
+                            {blog.author}
+                        </span>
+                    </div>
+
+                    <h1 className="text-xl md:text-4xl font-black text-gray-900 leading-tight mb-4">
+                        {blog.title}
+                    </h1>
+
                     <div className="overflow-hidden">
-                        <div 
-                            className="prose prose-lg max-w-none prose-img:rounded-3xl prose-headings:font-black prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed"
+                        <div
+                            className="prose prose-base md:prose-lg max-w-none prose-img:rounded-3xl prose-headings:font-black prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: blog.content }}
                         />
-                        
+
                         {/* Share & Footer */}
-                        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="mt-6 pt-4 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
                                 <span className="font-bold text-gray-900">Share this article:</span>
                                 <div className="flex gap-2">
-                                    <button 
+                                    <button
                                         onClick={handleShare}
                                         className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-primary hover:text-white transition-all"
                                     >

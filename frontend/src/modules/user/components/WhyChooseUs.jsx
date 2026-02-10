@@ -14,7 +14,7 @@ const WhyChooseUs = () => {
         }
     }, [allFeatures]);
 
-    const features = allFeatures.filter(f => f.isActive !== false).map((f, index) => {
+    const features = allFeatures.slice(0, 4).filter(f => f.isActive !== false).map((f, index) => {
         const IconComponent = LucideIcons[f.icon] || Star;
         return {
             ...f,

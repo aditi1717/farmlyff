@@ -183,11 +183,11 @@ const CartPage = () => {
 
     if (enrichedCart.length === 0) {
         return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center p-4">
-                <ShoppingBag size={80} className="text-gray-200 mb-6" />
-                <h2 className="text-2xl font-bold text-footerBg mb-2">Your Bag is Empty</h2>
-                <p className="text-gray-500 mb-8">Add something to your bag and it will show up here.</p>
-                <Link to="/catalog" className="bg-primary text-white px-8 py-3 rounded-full font-bold hover:bg-opacity-90 transition-all">
+            <div className="min-h-[40vh] md:min-h-[60vh] flex flex-col items-center justify-center p-4">
+                <ShoppingBag className="w-12 h-12 md:w-20 md:h-20 text-gray-200 mb-4 md:mb-6" />
+                <h2 className="text-lg md:text-2xl font-bold text-footerBg mb-2">Your Bag is Empty</h2>
+                <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-8">Add something to your bag and it will show up here.</p>
+                <Link to="/catalog" className="bg-primary text-white px-6 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-base hover:bg-opacity-90 transition-all">
                     Shop Now
                 </Link>
             </div>

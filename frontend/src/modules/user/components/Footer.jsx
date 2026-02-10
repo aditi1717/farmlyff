@@ -77,26 +77,7 @@ const Footer = () => {
     return (
         <footer className="bg-footerBg text-white pt-10 md:pt-20 pb-10 px-4 md:px-12 relative overflow-hidden">
             {/* Newsletter Section */}
-            <div className="container mx-auto mb-12 md:mb-20">
-                <div className="bg-primary/10 rounded-[2rem] md:rounded-[3rem] p-5 md:p-12 border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
-                    <div className="space-y-2 md:space-y-4 text-center md:text-left">
-                        <h3 className="text-xl md:text-3xl font-brand font-bold tracking-tight flex items-center gap-2 justify-center md:justify-start">
-                            Join the <img src={logo} alt="FarmLyf" className="h-5 md:h-8 w-auto object-contain" /> Family!
-                        </h3>
-                        <p className="text-gray-400 text-xs md:text-base max-w-md">Subscribe for exclusive offers and healthy dry fruit recipes.</p>
-                    </div>
-                    <div className="flex w-full md:w-auto gap-2 md:gap-3">
-                        <input
-                            type="email"
-                            placeholder="Email address"
-                            className="bg-white/5 border border-white/10 rounded-full px-4 md:px-6 py-3 md:py-4 flex-grow md:w-80 focus:outline-none focus:border-primary transition-colors text-xs md:text-sm"
-                        />
-                        <button className="bg-primary hover:bg-primaryHover text-white px-5 md:px-8 py-3 md:py-4 rounded-full font-bold text-xs md:text-sm transition-all shadow-lg active:scale-95 whitespace-nowrap">
-                            Join Now
-                        </button>
-                    </div>
-                </div>
-            </div>
+
 
             <div className="container mx-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-8 mb-16 md:mb-20">
                 {/* Brand Column */}

@@ -39,26 +39,13 @@ import { useTrustSignals, useAddTrustSignal, useUpdateTrustSignal, useDeleteTrus
 const WhyChooseUsPage = () => {
     const navigate = useNavigate();
     const { data: features = [], isLoading: loading } = useTrustSignals();
-    const addSignalMutation = useAddTrustSignal();
     const updateSignalMutation = useUpdateTrustSignal();
-    const deleteSignalMutation = useDeleteTrustSignal();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState(null); // { id, icon, topText, bottomText } or null for adding
-
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this feature?')) {
-            deleteSignalMutation.mutate(id);
-        }
-    };
+    const [editForm, setEditForm] = useState(null); // { id, icon, topText, bottomText }
 
     const handleEdit = (feature) => {
         setEditForm({ ...feature });
-        setIsEditing(true);
-    };
-
-    const handleAddNew = () => {
-        setEditForm({ icon: 'Star', topText: '', bottomText: '' });
         setIsEditing(true);
     };
 
@@ -71,20 +58,14 @@ const WhyChooseUsPage = () => {
         try {
             if (editForm._id || editForm.id) {
                 // Edit existing
-                await updateSignalMutation.mutateAsync({ 
-                    id: editForm._id || editForm.id, 
-                    data: editForm 
-                });
-            } else {
-                // Add new
-                await addSignalMutation.mutateAsync({
-                    ...editForm,
-                    order: features.length
+                await updateSignalMutation.mutateAsync({
+                    id: editForm._id || editForm.id,
+                    data: editForm
                 });
             }
             setIsEditing(false);
             setEditForm(null);
-        } catch (error) {}
+        } catch (error) { }
     };
 
     const SelectedIcon = editForm ? ICON_OPTIONS[editForm.icon] : null;
@@ -105,14 +86,6 @@ const WhyChooseUsPage = () => {
                         <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">Manage trust signals on homepage</p>
                     </div>
                 </div>
-
-                <button
-                    onClick={handleAddNew}
-                    className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
-                >
-                    <Plus size={16} />
-                    Add Feature
-                </button>
             </div>
 
             {/* Live Preview Section */}
@@ -125,7 +98,7 @@ const WhyChooseUsPage = () => {
                 {/* The Preview Component replicating the dark blue bar */}
                 <div className="w-full bg-[#0F172A] rounded-2xl p-8 shadow-xl">
                     <div className="flex flex-wrap items-center justify-center divide-x divide-gray-700/50">
-                        {features.map((feature) => {
+                        {features.slice(0, 4).map((feature) => {
                             const IconComponent = ICON_OPTIONS[feature.icon] || Star;
                             return (
                                 <div key={feature.id} className="flex-1 min-w-[200px] px-6 py-4 flex flex-col items-center text-center gap-3 group cursor-default">
@@ -146,7 +119,7 @@ const WhyChooseUsPage = () => {
 
             {/* Editor / List */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {features.map((feature) => {
+                {features.slice(0, 4).map((feature) => {
                     const IconComponent = ICON_OPTIONS[feature.icon] || Star;
                     return (
                         <div key={feature.id} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group relative">
@@ -156,12 +129,6 @@ const WhyChooseUsPage = () => {
                                     className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
                                 >
                                     <Edit2 size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(feature.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                >
-                                    <Trash2 size={16} />
                                 </button>
                             </div>
 
@@ -199,8 +166,8 @@ const WhyChooseUsPage = () => {
                                                 key={iconName}
                                                 onClick={() => setEditForm(prev => ({ ...prev, icon: iconName }))}
                                                 className={`p-3 rounded-xl flex items-center justify-center transition-all ${editForm.icon === iconName
-                                                        ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
-                                                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                                                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                                                     }`}
                                             >
                                                 <Icon size={20} />

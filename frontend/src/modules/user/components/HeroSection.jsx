@@ -11,7 +11,7 @@ import { API_BASE_URL } from '@/lib/apiUrl';
 const HeroSection = () => {
     const navigate = useNavigate();
     const rawBanners = useBannersBySection('hero');
-    
+
     // Flatten banners that have multiple slides
     const banners = React.useMemo(() => {
         return rawBanners.flatMap(b => {
@@ -109,7 +109,7 @@ const HeroSection = () => {
                                     transition={{ duration: 6, ease: "linear" }}
                                     src={currentSlide.image}
                                     alt={currentSlide.title}
-                                    className="w-full h-full object-cover object-center"
+                                    className="w-full h-full object-fill md:object-cover object-center"
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?auto=format&fit=crop&q=80&w=1600';
                                     }}
