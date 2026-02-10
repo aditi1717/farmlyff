@@ -35,6 +35,7 @@ const SubCategoriesPage = () => {
     // UI State
     const [searchTerm, setSearchTerm] = useState('');
     const [parentFilter, setParentFilter] = useState('All');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     // Modal & Form State
     const [showAddModal, setShowAddModal] = useState(false);
@@ -134,6 +135,24 @@ const SubCategoriesPage = () => {
         }
     };
 
+    const toggleSubStatus = async (sub) => {
+        const newStatus = sub.status === 'Active' ? 'Hidden' : 'Active';
+        try {
+            const res = await fetch(`${API_BASE_URL}/subcategories/${sub._id || sub.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...sub, status: newStatus, parent: sub.parent?._id || sub.parent?.id || sub.parent })
+            });
+            if (res.ok) {
+                toast.success(`Status changed to ${newStatus}`);
+                fetchData();
+                refreshGlobalCategories();
+            }
+        } catch (error) {
+            toast.error('Failed to update status');
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this sub-category?')) return;
         try {
@@ -157,8 +176,9 @@ const SubCategoriesPage = () => {
             const matchesSearch = sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (pName && pName.toLowerCase().includes(searchTerm.toLowerCase()));
             const matchesParent = parentFilter === 'All' || pId === parentFilter;
+            const matchesStatus = statusFilter === 'All' || sub.status === statusFilter;
 
-            return matchesSearch && matchesParent;
+            return matchesSearch && matchesParent && matchesStatus;
         });
     }, [subCategories, searchTerm, parentFilter, globalParents]);
 
@@ -240,11 +260,11 @@ const SubCategoriesPage = () => {
                 <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Parent Groups</p>
-                            <p className="text-2xl font-black text-footerBg">{globalParents.length}</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hidden Levels</p>
+                            <p className="text-2xl font-black text-footerBg">{subCategories.filter(s => s.status !== 'Active').length}</p>
                         </div>
                         <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
-                            <Boxes size={22} />
+                            <EyeOff size={22} />
                         </div>
                     </div>
                 </div>
@@ -275,6 +295,17 @@ const SubCategoriesPage = () => {
                                 <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>
+                    </div>
+                    <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                        {['All', 'Active', 'Hidden'].map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setStatusFilter(s)}
+                                className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-white text-[#2c5336] shadow-sm' : 'text-gray-400 hover:text-footerBg'}`}
+                            >
+                                {s}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -333,9 +364,13 @@ const SubCategoriesPage = () => {
                                                             </span>
                                                         </AdminTableCell>
                                                         <AdminTableCell className="py-3">
-                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex w-fit items-center gap-1 ${sub.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+                                                            <button
+                                                                onClick={() => toggleSubStatus(sub)}
+                                                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex w-fit items-center gap-1.5 transition-all ${sub.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+                                                            >
+                                                                {sub.status === 'Active' ? <CheckCircle2 size={10} strokeWidth={3} /> : <EyeOff size={10} strokeWidth={3} />}
                                                                 {sub.status}
-                                                            </span>
+                                                            </button>
                                                         </AdminTableCell>
                                                         <AdminTableCell className="py-3 text-right">
                                                             <div className="flex items-center justify-end gap-1">
@@ -410,15 +445,28 @@ const SubCategoriesPage = () => {
                                 />
                             </div>
 
-                            <label className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={editingSub ? editingSub.showInShopByCategory : newItem.showInShopByCategory}
-                                    onChange={(e) => editingSub ? setEditingSub({ ...editingSub, showInShopByCategory: e.target.checked }) : setNewItem({ ...newItem, showInShopByCategory: e.target.checked })}
-                                    className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
-                                />
-                                <span className="text-[9px] font-black text-footerBg uppercase">Show in Shop Strip</span>
-                            </label>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <div className="space-y-1">
+                                    <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Status</label>
+                                    <select
+                                        value={editingSub ? editingSub.status : newItem.status}
+                                        onChange={(e) => editingSub ? setEditingSub({ ...editingSub, status: e.target.value }) : setNewItem({ ...newItem, status: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-lg px-2 py-2 text-[10px] font-bold text-footerBg outline-none"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Hidden">Hidden</option>
+                                    </select>
+                                </div>
+                                <label className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 cursor-pointer self-end">
+                                    <input
+                                        type="checkbox"
+                                        checked={editingSub ? editingSub.showInShopByCategory : newItem.showInShopByCategory}
+                                        onChange={(e) => editingSub ? setEditingSub({ ...editingSub, showInShopByCategory: e.target.checked }) : setNewItem({ ...newItem, showInShopByCategory: e.target.checked })}
+                                        className="w-3.5 h-3.5 text-[#2c5336] rounded focus:ring-[#2c5336]"
+                                    />
+                                    <span className="text-[9px] font-black text-footerBg uppercase">In Shop Strip</span>
+                                </label>
+                            </div>
 
                             <button type="submit" disabled={submitLoading} className="w-full bg-[#2c5336] text-white py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-[#1f3b26] disabled:opacity-70 flex justify-center items-center gap-2">
                                 {submitLoading && <Loader size={12} className="animate-spin" />}
