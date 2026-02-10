@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '@/lib/apiUrl';
 // import { useShop } from '../../../context/ShopContext';
 import { useBannersBySection } from '../../../hooks/useContent';
 import logo from '../../../assets/logo.png';
@@ -47,7 +48,7 @@ const HeroSection = () => {
 
     useEffect(() => {
         const fetchPromoSettings = async () => {
-            const API_URL = import.meta.env.VITE_API_URL;
+            const API_URL = API_BASE_URL;
             try {
                 const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
                 if (res.ok) {

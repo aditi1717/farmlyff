@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { PACKS, SKUS, PRODUCTS } from '../../mockData/data';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 // Async Thunks
 export const fetchProducts = createAsyncThunk('products/fetchProducts', async (_, { rejectWithValue }) => {

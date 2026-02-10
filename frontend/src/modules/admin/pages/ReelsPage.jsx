@@ -3,8 +3,9 @@ import { Plus, Trash2, Video, ExternalLink, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const ReelsPage = () => {
     const queryClient = useQueryClient();

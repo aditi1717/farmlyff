@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Save,
     Plus,
@@ -21,7 +22,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 if (typeof window !== 'undefined') {
     window.Quill = Quill;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Printer,
     Download,
@@ -26,7 +27,7 @@ import toast from 'react-hot-toast';
 import baadaamImg from '../../../assets/baadaam.png';
 import cashewImg from '../../../assets/cashew.png';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const ReplacementDetailPage = () => {
     const { id } = useParams();

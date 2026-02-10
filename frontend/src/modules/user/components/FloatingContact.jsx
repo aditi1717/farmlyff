@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/lib/apiUrl';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -7,7 +8,7 @@ const FloatingContact = () => {
     const message = "Hi FarmLyf, I have a query about your products!";
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    const API_URL = import.meta.env.VITE_API_URL;
+    const API_URL = API_BASE_URL;
     const { user } = useAuth();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +31,63 @@ const FloatingContact = () => {
         diet: 'balanced',
         allergies: ''
     });
+    const MAX_RECOMMENDATIONS = 5;
+
+    const normalizeText = (value) => (value || '').toString().toLowerCase().trim();
+
+    const getAllergyKeywords = (allergiesInput) => {
+        const text = normalizeText(allergiesInput);
+        if (!text) return [];
+        const keywords = new Set();
+        if (text.includes('peanut')) {
+            ['peanut', 'groundnut'].forEach((k) => keywords.add(k));
+        }
+        if (text.includes('dairy') || text.includes('milk')) {
+            ['dairy', 'milk', 'butter', 'ghee', 'cheese'].forEach((k) => keywords.add(k));
+        }
+        if (text.includes('gluten') || text.includes('wheat')) {
+            ['gluten', 'wheat', 'barley', 'rye'].forEach((k) => keywords.add(k));
+        }
+        if (text.includes('soy')) {
+            ['soy', 'soya'].forEach((k) => keywords.add(k));
+        }
+        if (text.includes('nut')) {
+            ['almond', 'cashew', 'pistachio', 'walnut', 'hazelnut', 'pecan', 'macadamia'].forEach((k) => keywords.add(k));
+        }
+        return Array.from(keywords);
+    };
+
+    const curateProducts = (allProducts) => {
+        if (!Array.isArray(allProducts) || allProducts.length === 0) return [];
+        const allergyKeywords = getAllergyKeywords(form.allergies);
+        const goal = normalizeText(form.goal);
+        const activity = normalizeText(form.activity);
+
+        const scoreKeywords = {
+            lose: ['berries', 'seed', 'almond', 'walnut', 'pistachio', 'roasted'],
+            gain: ['dates', 'raisins', 'fig', 'cashew', 'trail', 'mix', 'energy'],
+            maintain: ['mixed', 'assorted', 'nuts', 'dry fruit', 'snack']
+        };
+        const activityBoost = activity === 'high' ? ['energy', 'protein', 'trail', 'mix'] : [];
+
+        const scored = allProducts
+            .filter((p) => p && p.name)
+            .map((p) => {
+                const text = normalizeText([p.name, p.category, p.subcategory, p.tag].filter(Boolean).join(' '));
+                if (allergyKeywords.some((k) => text.includes(k))) return null;
+                let score = 0;
+                if (p.image || p?.images?.[0] || p?.seoImage) score += 2;
+                if (p.price || p?.variants?.[0]?.price) score += 1;
+                const keywords = scoreKeywords[goal] || scoreKeywords.maintain;
+                if (keywords.some((k) => text.includes(k))) score += 2;
+                if (activityBoost.some((k) => text.includes(k))) score += 1;
+                return { product: p, score, text };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.score - a.score || a.text.localeCompare(b.text));
+
+        return scored.slice(0, 25).map((item) => item.product);
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -86,7 +144,7 @@ const FloatingContact = () => {
         }));
     };
 
-    const buildPrompt = () => {
+    const buildPrompt = (curatedProducts) => {
         const summary = {
             name: form.name,
             age: form.age,
@@ -101,7 +159,7 @@ const FloatingContact = () => {
             allergies: form.allergies
         };
 
-        const productList = products.map((p) => ({
+        const productList = (curatedProducts || []).map((p) => ({
             id: p._id || p.id,
             name: p.name,
             category: p.category,
@@ -118,18 +176,18 @@ Available products: ${JSON.stringify(productList)}
 
 Task:
 1) Explain BMI status in 1-2 sentences.
-2) Recommend 3-5 products from the list, with short reasons (max 1 line each).
+2) Recommend 3-5 products from the list, with short reasons (max 1 line each). Do not recommend products outside the list.
 3) If allergies are listed, avoid those ingredients.
 4) Return JSON with keys: bmiSummary, recommendations (array of {name, reason, slug, image}).`;
     };
 
-    const runGemini = async () => {
+    const runGemini = async (curatedProducts) => {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) {
             pushMessage('assistant', 'Set `VITE_GEMINI_API_KEY` in frontend `.env` to enable AI suggestions.');
             return '';
         }
-        const prompt = buildPrompt();
+        const prompt = buildPrompt(curatedProducts);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const res = await fetch(url, {
@@ -149,8 +207,8 @@ Task:
         return text;
     };
 
-    const fallbackRecommendations = () => {
-        const list = products.slice(0, 6).map((p) => ({
+    const fallbackRecommendations = (curatedProducts) => {
+        const list = (curatedProducts || []).slice(0, MAX_RECOMMENDATIONS).map((p) => ({
             name: p.name,
             reason: 'Nutrient-dense and wholesome.',
             slug: p.slug,
@@ -171,9 +229,11 @@ Task:
     };
 
     const handleGenerate = async () => {
+        const curated = curateProducts(products);
+        const curatedForUse = curated.length ? curated : products.slice(0, 25);
         setLoading(true);
         try {
-            const raw = await runGemini();
+            const raw = await runGemini(curatedForUse);
             let parsed = null;
             if (raw) {
                 try {
@@ -183,8 +243,9 @@ Task:
                     if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
                 }
             }
-            const final = parsed || fallbackRecommendations();
-            const enriched = enrichRecommendations(final.recommendations);
+            const final = parsed || fallbackRecommendations(curatedForUse);
+            const safeRecommendations = (final.recommendations || []).slice(0, MAX_RECOMMENDATIONS);
+            const enriched = enrichRecommendations(safeRecommendations);
             const reply = [
                 final.bmiSummary || `Your BMI is ${bmi} (${bmiCategory}).`,
                 'Recommended products:',
@@ -194,7 +255,7 @@ Task:
             setRecommendations(enriched || []);
             setStep(10);
         } catch (err) {
-            const final = fallbackRecommendations();
+            const final = fallbackRecommendations(curatedForUse);
             const enriched = enrichRecommendations(final.recommendations);
             const reply = [
                 final.bmiSummary || `Your BMI is ${bmi} (${bmiCategory}).`,
@@ -463,6 +524,13 @@ Task:
                                 </div>
                             </div>
                         ))}
+                        {loading && (
+                            <div className="flex justify-start">
+                                <div className="max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-gray-100 text-gray-700 rounded-bl-sm">
+                                    Thinking... Analyzing products for you.
+                                </div>
+                            </div>
+                        )}
                         {recommendations.length > 0 && (
                             <div className="space-y-2">
                                 {recommendations.map((rec) => (

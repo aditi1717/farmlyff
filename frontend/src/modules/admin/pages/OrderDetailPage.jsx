@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Printer,
     Truck,
@@ -28,7 +29,7 @@ import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import InvoiceGenerator from '../components/InvoiceGenerator';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const OrderDetailPage = () => {
     const { id } = useParams();

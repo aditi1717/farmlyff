@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview, useAllUserReviews, useUpdateReviewStatus } from '../../../hooks/useContent';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 const AdminReviewsPage = () => {
     const location = useLocation();
@@ -72,7 +73,7 @@ const AdminReviewsPage = () => {
         uploadData.append('image', file);
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+            const res = await fetch(`${API_BASE_URL}/upload`, {
                 method: 'POST',
                 body: uploadData,
             });

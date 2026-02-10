@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     Search,
     Filter,
     Eye,
@@ -16,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const OrderListPage = () => {
     const navigate = useNavigate();

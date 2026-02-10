@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/apiUrl';
 // import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -11,7 +12,7 @@ import { motion } from 'framer-motion';
 import { useOrders, useReturns, useUpdateOrderStatus, useCancelOrder } from '../../../hooks/useOrders';
 import { useProducts } from '../../../hooks/useProducts';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const OrderDetailPage = () => {
     const { orderId } = useParams();
