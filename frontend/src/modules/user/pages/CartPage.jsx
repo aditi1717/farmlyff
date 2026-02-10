@@ -257,12 +257,24 @@ const CartPage = () => {
                                             </button>
                                             <span className="w-7 md:w-10 text-center font-bold text-[11px] md:text-base">{item.qty}</span>
                                             <button
-                                                onClick={() => updateCartQty(user?.id, item.id, item.qty + 1)}
-                                                className="p-1 md:p-2 hover:bg-white transition-colors"
+                                                onClick={() => {
+                                                    const stockLimit = item.stock || (item.variants?.[0]?.stock) || 0;
+                                                    if (item.qty >= stockLimit) {
+                                                        toast.error(`Only ${stockLimit} items available in stock`);
+                                                        return;
+                                                    }
+                                                    updateCartQty(user?.id, item.id, item.qty + 1);
+                                                }}
+                                                className={`p-1 md:p-2 transition-colors ${item.qty >= (item.stock || 0) ? 'text-gray-200 cursor-not-allowed' : 'hover:bg-white'}`}
                                             >
                                                 <Plus size={10} />
                                             </button>
                                         </div>
+                                        {item.stock > 0 && item.stock < 5 && (
+                                            <div className="text-[9px] md:text-[11px] font-black text-orange-500 uppercase mt-1">
+                                                Only {item.stock} left!
+                                            </div>
+                                        )}
                                         <div className="text-right">
                                             <div className="text-gray-400 text-[9px] md:text-sm line-through">₹{Math.round(item.price * 1.5) * item.qty}</div>
                                             <div className="text-sm md:text-xl font-black text-footerBg">₹{item.price * item.qty}</div>

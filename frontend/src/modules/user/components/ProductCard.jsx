@@ -155,11 +155,20 @@ const ProductCard = ({ product }) => {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
+                                const stockAvailable = hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0);
+                                if (stockAvailable <= 0) {
+                                    toast.error("Item is currently out of stock");
+                                    return;
+                                }
                                 addToCart(user?.id, itemId, 1);
                             }}
-                            className="w-full bg-footerBg hover:bg-primary text-white py-2 md:py-2.5 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md"
+                            disabled={(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0}
+                            className={`w-full py-2 md:py-2.5 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center shadow-md
+                                ${(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                    : 'bg-footerBg hover:bg-primary text-white'}`}
                         >
-                            Add to Cart
+                            {(hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0)) <= 0 ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                     </div>
                 </div>

@@ -585,12 +585,23 @@ const ProductDetailPage = () => {
                                         {quantity}
                                     </div>
                                     <button
-                                        onClick={() => setQuantity(quantity + 1)}
-                                        className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black text-xl transition-colors"
+                                        onClick={() => {
+                                            if (quantity >= currentStock) {
+                                                toast.error(`Only ${currentStock} items available in stock`);
+                                                return;
+                                            }
+                                            setQuantity(quantity + 1);
+                                        }}
+                                        className={`w-10 h-full flex items-center justify-center text-xl transition-colors ${quantity >= currentStock ? 'text-gray-200 cursor-not-allowed' : 'text-gray-500 hover:text-black'}`}
                                     >
                                         +
                                     </button>
                                 </div>
+                                {currentStock > 0 && currentStock <= 5 && (
+                                    <span className="text-[10px] md:text-[12px] font-black text-orange-500 uppercase tracking-tighter">
+                                        Only {currentStock} Left!
+                                    </span>
+                                )}
                             </div>
 
                             {/* Divider Line (Visible on larger screens if needed, otherwise gap handles it) */}
@@ -626,6 +637,10 @@ const ProductDetailPage = () => {
                             <button
                                 onClick={() => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
+                                    if (quantity > currentStock) {
+                                        toast.error(`Requested quantity exceeds available stock (${currentStock})`);
+                                        return;
+                                    }
                                     addToCart(user?.id, skuId, quantity);
                                 }}
                                 disabled={isOutOfStock}
@@ -639,6 +654,10 @@ const ProductDetailPage = () => {
                             <button
                                 onClick={() => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
+                                    if (quantity > currentStock) {
+                                        toast.error(`Requested quantity exceeds available stock (${currentStock})`);
+                                        return;
+                                    }
                                     addToCart(user?.id, skuId, quantity);
                                     navigate('/checkout');
                                 }}
