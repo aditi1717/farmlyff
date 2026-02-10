@@ -38,21 +38,28 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
+const parseOrigins = (value) =>
+  (value || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  'https://farmlyff-o2pq.vercel.app',
-  process.env.FRONTEND_URL
-].filter(Boolean);
+  process.env.FRONTEND_URL,
+  ...parseOrigins(process.env.FRONTEND_URLS)
+].filter(Boolean));
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
-    // Check if origin is allowed explicitly
-    const isAllowed = allowedOrigins.indexOf(origin) !== -1;
-    
-    // Check if origin is a vercel deployment or local
+    if (process.env.CORS_ALLOW_ALL === 'true') {
+      return callback(null, true);
+    }
+
+    const isAllowed = allowedOrigins.has(origin);
     const isVercel = origin.endsWith('.vercel.app');
     const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
 
@@ -63,7 +70,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 app.use(cookieParser());

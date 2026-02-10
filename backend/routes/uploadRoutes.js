@@ -6,6 +6,12 @@ const router = express.Router();
 const upload = multer({ storage });
 
 router.post('/', (req, res) => {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return res.status(500).json({
+      message: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in backend/.env.'
+    });
+  }
+
   upload.single('image')(req, res, (err) => {
     if (err) {
       console.error('Multer/Cloudinary Error:', err);
