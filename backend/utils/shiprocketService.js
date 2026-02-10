@@ -8,6 +8,75 @@ class ShiprocketService {
     this.tokenExpiry = null;
   }
 
+  getDefaultDimensions() {
+    return {
+      length: 10,
+      breadth: 10,
+      height: 10,
+      weight: 0.5,
+    };
+  }
+
+  parseWeightToKg(weight) {
+    if (!weight) return 0;
+
+    const normalized = String(weight).trim().toLowerCase();
+    const match = normalized.match(/([\d.]+)\s*([a-z]+)/);
+
+    if (!match) return 0;
+
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value <= 0) return 0;
+
+    const unit = match[2];
+    if (unit === 'kg' || unit === 'kgs' || unit === 'kilogram' || unit === 'kilograms') {
+      return value;
+    }
+    if (unit === 'g' || unit === 'gm' || unit === 'gms' || unit === 'gram' || unit === 'grams') {
+      return value / 1000;
+    }
+    if (unit === 'mg' || unit === 'milligram' || unit === 'milligrams') {
+      return value / 1000000;
+    }
+
+    return 0;
+  }
+
+  buildOrderItems(items = []) {
+    let totalWeightKg = 0;
+
+    const orderItems = items.map((item, index) => {
+      const nameSuffix = item.weight ? ` (${item.weight})` : '';
+      const name = `${item.name || 'Item'}${nameSuffix}`;
+
+      const skuBase = item.sku || item.id || item.productId;
+      const sku = item.productId && item.id && item.productId !== item.id
+        ? `${item.productId}-${item.id}`
+        : (skuBase || `item-${index + 1}`);
+
+      const units = item.qty || 1;
+      const sellingPrice = Number(item.price) || 0;
+      const discount = Number(item.discount) || 0;
+
+      const itemWeightKg = this.parseWeightToKg(item.weight);
+      if (itemWeightKg > 0) {
+        totalWeightKg += itemWeightKg * units;
+      }
+
+      return {
+        name,
+        sku,
+        units,
+        selling_price: sellingPrice,
+        discount,
+        tax: item.tax,
+        hsn: item.hsn,
+      };
+    });
+
+    return { orderItems, totalWeightKg };
+  }
+
   /**
    * Check if Shiprocket credentials are configured
    */
@@ -76,6 +145,8 @@ class ShiprocketService {
   async createOrder(orderData) {
     try {
       const headers = await this.getHeaders();
+      const defaults = this.getDefaultDimensions();
+      const { orderItems, totalWeightKg } = this.buildOrderItems(orderData.items || []);
 
       // Transform our order data to Shiprocket format
       const shiprocketOrder = {
@@ -94,19 +165,13 @@ class ShiprocketService {
         billing_email: orderData.userEmail || 'customer@farmlyf.com',
         billing_phone: orderData.shippingAddress.phone,
         shipping_is_billing: true,
-        order_items: orderData.items.map(item => ({
-          name: item.name,
-          sku: item.id,
-          units: item.qty,
-          selling_price: item.price,
-          discount: 0,
-        })),
+        order_items: orderItems,
         payment_method: orderData.paymentMethod === 'cod' ? 'COD' : 'Prepaid',
         sub_total: orderData.amount,
-        length: 10, // Default dimensions in cm
-        breadth: 10,
-        height: 10,
-        weight: 0.5, // Default weight in kg
+        length: defaults.length, // Default dimensions in cm
+        breadth: defaults.breadth,
+        height: defaults.height,
+        weight: totalWeightKg > 0 ? Number(totalWeightKg.toFixed(3)) : defaults.weight, // Default weight in kg
       };
 
       const response = await axios.post(
@@ -263,6 +328,8 @@ class ShiprocketService {
   async createReturnOrder(returnData, originalOrder) {
     try {
       const headers = await this.getHeaders();
+      const defaults = this.getDefaultDimensions();
+      const { orderItems, totalWeightKg } = this.buildOrderItems(returnData.items || []);
 
       // Transform to Shiprocket return order format
       const shiprocketReturnOrder = {
@@ -288,20 +355,16 @@ class ShiprocketService {
         shipping_pincode: process.env.SHIPROCKET_SELLER_PINCODE || '400001',
         shipping_email: process.env.SHIPROCKET_SELLER_EMAIL || 'returns@farmlyf.com',
         shipping_phone: process.env.SHIPROCKET_SELLER_PHONE || '9999999999',
-        order_items: returnData.items.map(item => ({
-          name: item.name,
-          sku: item.id || item.productId,
-          units: item.qty,
-          selling_price: item.price,
-          discount: 0,
+        order_items: orderItems.map(item => ({
+          ...item,
           qc_enable: true, // Enable quality check for returns
         })),
         payment_method: 'Prepaid', // Returns are always prepaid
         sub_total: returnData.refundAmount || returnData.items.reduce((sum, i) => sum + (i.price * i.qty), 0),
-        length: 10,
-        breadth: 10,
-        height: 10,
-        weight: 0.5,
+        length: defaults.length,
+        breadth: defaults.breadth,
+        height: defaults.height,
+        weight: totalWeightKg > 0 ? Number(totalWeightKg.toFixed(3)) : defaults.weight,
       };
 
       const response = await axios.post(
