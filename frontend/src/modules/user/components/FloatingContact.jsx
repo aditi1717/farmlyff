@@ -1,7 +1,8 @@
-import { API_BASE_URL } from '@/lib/apiUrl';
+
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 const FloatingContact = () => {
     const phoneNumber = "919000000000"; // Replace with actual number

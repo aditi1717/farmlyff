@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
 import { API_BASE_URL } from '@/lib/apiUrl';
+import {
+
     ArrowLeft,
     Printer,
     Truck,
@@ -215,8 +216,6 @@ const OrderDetailPage = () => {
     ];
 
     const itemsToDisplay = order.items && order.items.length > 0 ? order.items : dummyItems;
-
-
 
     // Calculate derived totals from displayed items
     const derivedSubtotal = itemsToDisplay.reduce((acc, item) => {

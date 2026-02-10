@@ -6,9 +6,9 @@ import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useProducts, useProduct } from '../../../hooks/useProducts';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
-import { API_BASE_URL } from '@/lib/apiUrl';
 
 // import { PACKS } from '../../../mockData/data'; // Removed if unused
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 import {
     Star,
@@ -100,7 +100,6 @@ const ProductDetailPage = () => {
     const [imageZoomPosition, setImageZoomPosition] = useState({ x: 0, y: 0 });
     const [isImageHovered, setIsImageHovered] = useState(false);
     const [showStickyBar, setShowStickyBar] = useState(false);
-
 
     const fetchReviews = async () => {
         if (!product) return;
@@ -275,9 +274,6 @@ const ProductDetailPage = () => {
 
     const isCombo = product.category === 'combos-packs' || product.category === 'Combos';
 
-
-
-
     return (
         <div className="bg-white min-h-screen font-['Inter'] pb-8">
             {/* Breadcrumb - Compact */}
@@ -358,7 +354,6 @@ const ProductDetailPage = () => {
                                 />
 
                                 {/* Tag Badge */}
-
 
                                 {/* Zoom Hint */}
                                 {!isImageHovered && (
@@ -538,7 +533,6 @@ const ProductDetailPage = () => {
                                 Save ₹{saveAmount} instantly
                             </div>
                         )}
-
 
                         <div className="h-px bg-gray-200 w-full mb-6"></div>
 

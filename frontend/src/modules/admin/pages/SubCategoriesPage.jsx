@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
 import { API_BASE_URL } from '@/lib/apiUrl';
+import {
+
     Plus,
     Search,
     Edit2,
@@ -77,8 +78,6 @@ const SubCategoriesPage = () => {
             setLoading(false);
         }
     };
-
-
 
     const handleSubmit = async (e, isEdit = false) => {
         e.preventDefault();
@@ -410,8 +409,6 @@ const SubCategoriesPage = () => {
                                     className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold text-footerBg outline-none focus:border-[#2c5336]"
                                 />
                             </div>
-
-
 
                             <label className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 cursor-pointer">
                                 <input

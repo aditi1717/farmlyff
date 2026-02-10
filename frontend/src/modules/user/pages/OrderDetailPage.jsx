@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/apiUrl';
+
 // import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
+import { API_BASE_URL } from '@/lib/apiUrl';
 import {
     ArrowLeft, Package, MapPin, Phone, CreditCard,
     Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink, XCircle, Ban
@@ -73,8 +73,6 @@ const OrderDetailPage = () => {
 
         return 'https://via.placeholder.com/150?text=No+Image';
     };
-
-
 
     // Fetch live tracking from Shiprocket
     useEffect(() => {

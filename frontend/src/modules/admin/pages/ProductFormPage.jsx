@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
 import { API_BASE_URL } from '@/lib/apiUrl';
+import {
+
     ArrowLeft,
     Save,
     Plus,
@@ -51,7 +52,6 @@ const FAQ_QUESTIONS = [
 const BENEFIT_TITLES = [
     'Rich in Antioxidants', 'Heart Healthy', 'Boosts Immunity', 'High Protein', 'Rich in Fiber', 'Good for Digestion', 'Weight Management', 'Energy Booster', 'Skin Health', 'Bone Health'
 ];
-
 
 const ProductFormPage = () => {
     const { id } = useParams();
@@ -406,12 +406,7 @@ const ProductFormPage = () => {
                                 </div>
                             </div>
 
-
-
                             {/* Pack Contents Section - Moved Inside */}
-
-
-
 
                             {/* FAQ Section - Moved Inside */}
                             <div className="pt-8 border-t border-gray-100 space-y-6">
