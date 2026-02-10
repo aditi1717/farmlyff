@@ -29,7 +29,8 @@ const CheckoutPage = () => {
     const { data: products = [] } = useProducts();
     const { data: activeCoupons = [] } = useActiveCoupons();
     const { data: userData } = useUserProfile();
-    const isProfileComplete = !!(userData?.phone && userData?.addresses && userData?.addresses.length > 0);
+    const hasAddress = userData?.addresses && userData?.addresses.length > 0;
+    const isProfileComplete = !!(hasAddress && (userData?.phone || userData.addresses.some(a => a.phone)));
     const { mutateAsync: validateReferralMutate } = useValidateReferral();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
     const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();

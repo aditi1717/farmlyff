@@ -75,7 +75,7 @@ const ProductDetailPage = () => {
     const scrollRef = useRef(null);
     const { slug } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, getAuthHeaders } = useAuth();
 
     // Hooks
     const { addToCart, getCart } = useCartStore();
@@ -159,7 +159,7 @@ const ProductDetailPage = () => {
             const API_URL = API_BASE_URL;
             const res = await fetch(`${API_URL}/reviews`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                     productId: product.id,
                     rating: newReview.rating,

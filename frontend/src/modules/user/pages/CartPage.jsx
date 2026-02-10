@@ -148,7 +148,8 @@ const CartPage = () => {
                 image: variantData.product.image,
                 category: variantData.product.category,
                 productId: variantData.product.id,
-                slug: variantData.product.slug
+                slug: variantData.product.slug,
+                stock: variantData.stock || 0
             };
         }
 
@@ -174,7 +175,8 @@ const CartPage = () => {
                 image: variantData.product.image,
                 category: variantData.product.category,
                 productId: variantData.product.id,
-                slug: variantData.product.slug
+                slug: variantData.product.slug,
+                stock: variantData.stock || 0
             };
         }
         const pack = getPackById(item.packId);
@@ -258,7 +260,7 @@ const CartPage = () => {
                                             <span className="w-7 md:w-10 text-center font-bold text-[11px] md:text-base">{item.qty}</span>
                                             <button
                                                 onClick={() => {
-                                                    const stockLimit = item.stock || (item.variants?.[0]?.stock) || 0;
+                                                    const stockLimit = item.stock || 0;
                                                     if (item.qty >= stockLimit) {
                                                         toast.error(`Only ${stockLimit} items available in stock`);
                                                         return;
