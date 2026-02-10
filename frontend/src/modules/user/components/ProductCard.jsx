@@ -7,6 +7,35 @@ import { useNavigate } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 
+const calculatePer100g = (price, quantity, unit, weightStr) => {
+    let q = parseFloat(quantity);
+    let u = unit ? unit.toLowerCase().trim() : '';
+
+    // Known valid units for manual check
+    const validUnits = ['g', 'gm', 'gms', 'kg', 'kgs'];
+    const hasValidStructuredData = q && validUnits.includes(u);
+
+    // Fallback parsing from weight string if structured data is effectively missing/invalid
+    if (!hasValidStructuredData && weightStr) {
+        const match = String(weightStr).match(/(\d+(\.\d+)?)\s*([a-zA-Z]+)/);
+        if (match) {
+            q = parseFloat(match[1]);
+            u = match[3].toLowerCase();
+        }
+    }
+
+    if (!q) return null;
+
+    if (['g', 'gm', 'gms'].includes(u)) {
+        return ((price / q) * 100).toFixed(2);
+    }
+    if (['kg', 'kgs'].includes(u)) {
+        return ((price / (q * 1000)) * 100).toFixed(2);
+    }
+
+    return null;
+};
+
 const ProductCard = ({ product }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -36,9 +65,13 @@ const ProductCard = ({ product }) => {
         ? product.variants.find(v => v.price === displayPrice)?.discount || product.variants[0].discount
         : product.discount;
 
-    const displayUnitPrice = hasVariants
-        ? product.variants.find(v => v.price === displayPrice)?.unitPrice || product.variants[0].unitPrice
-        : product.unitPrice;
+    const per100gPrice = (() => {
+        if (hasVariants) {
+            const variant = product.variants.find(v => v.price === displayPrice) || product.variants[0];
+            return calculatePer100g(displayPrice, variant.quantity, variant.unit, variant.weight);
+        }
+        return calculatePer100g(displayPrice, product.quantity, product.unit, product.weight);
+    })();
 
     return (
         <motion.div
@@ -55,10 +88,10 @@ const ProductCard = ({ product }) => {
                         </span>
                     </div>
                 )}
-                {displayDiscount && (
+                {displayMrp > displayPrice && (
                     <div className="absolute top-2 right-2 z-10 md:top-3 md:right-3">
                         <span className="bg-primary text-white text-[7px] md:text-[9px] font-bold px-1 py-0.5 rounded shadow-sm">
-                            {displayDiscount}
+                            {Math.round(((displayMrp - displayPrice) / displayMrp) * 100)}% off
                         </span>
                     </div>
                 )}
@@ -90,9 +123,9 @@ const ProductCard = ({ product }) => {
                         <div className="flex items-baseline gap-1">
                             <span className="text-[10px] md:text-sm font-black text-footerBg tracking-tight">₹{displayPrice}</span>
                             <span className="text-[8px] md:text-[10px] text-gray-300 line-through">₹{displayMrp}</span>
-                            {displayUnitPrice && (
-                                <span className="text-[8px] md:text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                                    (₹{displayUnitPrice}/kg)
+                            {per100gPrice && (
+                                <span className="text-[8px] md:text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                                    (₹{per100gPrice}/100g)
                                 </span>
                             )}
                         </div>

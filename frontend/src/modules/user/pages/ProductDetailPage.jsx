@@ -42,6 +42,35 @@ const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1508061263366-c7bb3cc2
 import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const calculatePer100g = (price, quantity, unit, weightStr) => {
+    let q = parseFloat(quantity);
+    let u = unit ? unit.toLowerCase().trim() : '';
+    
+    // Known valid units for manual check
+    const validUnits = ['g', 'gm', 'gms', 'kg', 'kgs'];
+    const hasValidStructuredData = q && validUnits.includes(u);
+
+    // Fallback parsing from weight string if structured data is effectively missing/invalid
+    if (!hasValidStructuredData && weightStr) {
+        const match = String(weightStr).match(/(\d+(\.\d+)?)\s*([a-zA-Z]+)/);
+        if (match) {
+            q = parseFloat(match[1]);
+            u = match[3].toLowerCase();
+        }
+    }
+
+    if (!q) return null;
+
+    if (['g', 'gm', 'gms'].includes(u)) {
+        return ((price / q) * 100).toFixed(2);
+    }
+    if (['kg', 'kgs'].includes(u)) {
+        return ((price / (q * 1000)) * 100).toFixed(2);
+    }
+
+    return null;
+};
+
 const ProductDetailPage = () => {
     const scrollRef = useRef(null);
     const { slug } = useParams();
@@ -262,7 +291,11 @@ const ProductDetailPage = () => {
     const currentPrice = (isGroupProduct && selectedVariant) ? selectedVariant.price : (product.price || 0);
     const currentMrp = (isGroupProduct && selectedVariant) ? selectedVariant.mrp : (product.mrp || 0);
     const currentDiscount = (isGroupProduct && selectedVariant) ? selectedVariant.discount : product.discount;
-    const currentUnitPrice = (isGroupProduct && selectedVariant) ? selectedVariant.unitPrice : product.unitPrice;
+    const currentVariant = (isGroupProduct && selectedVariant) ? selectedVariant : product;
+
+    // Calculate normalized price
+    const per100g = calculatePer100g(currentPrice, currentVariant.quantity, currentVariant.unit, currentVariant.weight);
+    const currentUnitPrice = per100g ? `₹${per100g}/100g` : (currentVariant.unitPrice || '');
 
     const discountPercentage = Math.round(((currentMrp - currentPrice) / currentMrp) * 100);
     const saveAmount = currentMrp - currentPrice;
@@ -526,7 +559,7 @@ const ProductDetailPage = () => {
                             <span className="bg-[#E63946] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm lowercase">
                                 {discountPercentage}% off
                             </span>
-                            <span className="text-sm text-gray-800">({currentUnitPrice || '₹157.20/100g'})</span>
+                            {currentUnitPrice && <span className="text-sm text-gray-800">({currentUnitPrice})</span>}
                         </div>
                         {saveAmount > 0 && (
                             <div className="text-primary text-sm font-bold mb-4 flex items-center gap-1.5">

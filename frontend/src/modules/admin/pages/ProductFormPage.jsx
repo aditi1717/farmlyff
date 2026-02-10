@@ -53,6 +53,7 @@ const BENEFIT_TITLES = [
     'Rich in Antioxidants', 'Heart Healthy', 'Boosts Immunity', 'High Protein', 'Rich in Fiber', 'Good for Digestion', 'Weight Management', 'Energy Booster', 'Skin Health', 'Bone Health'
 ];
 
+const UNIT_OPTIONS = ['g', 'kg'];
 const ProductFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -66,7 +67,7 @@ const ProductFormPage = () => {
     const uploadImageMutation = useUploadImage();
     const { data: dbCategories = [] } = useCategories();
     const { data: dbSubCategories = [] } = useSubCategories();
-    
+
     // Fetch Combo Categories
     const { data: dbComboCategories = [] } = useQuery({
         queryKey: ['combo-categories'],
@@ -89,7 +90,7 @@ const ProductFormPage = () => {
         description: '',
         rating: 4.5,
         variants: [
-            { id: Date.now(), sku: '', weight: '250g', mrp: '', price: '', stock: 100, unitPrice: '' }
+            { id: Date.now(), sku: '', weight: '', quantity: '', unit: 'g', mrp: '', price: '', stock: 100, unitPrice: '' }
         ],
         benefits: [
             { title: 'Heart-Healthy', description: 'Contains healthy fats good for the heart.' }
@@ -155,16 +156,27 @@ const ProductFormPage = () => {
     const handleVariantChange = (vId, field, value) => {
         setFormData(prev => ({
             ...prev,
-            variants: prev.variants.map(v =>
-                v.id === vId ? { ...v, [field]: value } : v
-            )
+            variants: prev.variants.map(v => {
+                if (v.id !== vId) return v;
+
+                const updatedVariant = { ...v, [field]: value };
+
+                // Auto-update legacy 'weight' string for compatibility
+                if (field === 'quantity' || field === 'unit') {
+                    const q = field === 'quantity' ? value : (v.quantity || '');
+                    const u = field === 'unit' ? value : (v.unit || 'g');
+                    updatedVariant.weight = q && u ? `${q}${u}` : v.weight;
+                }
+
+                return updatedVariant;
+            })
         }));
     };
 
     const addVariant = () => {
         setFormData(prev => ({
             ...prev,
-            variants: [...prev.variants, { id: Date.now(), sku: '', weight: '', mrp: '', price: '', stock: 0, unitPrice: '' }]
+            variants: [...prev.variants, { id: Date.now(), sku: '', weight: '', quantity: '', unit: 'g', mrp: '', price: '', stock: 0, unitPrice: '' }]
         }));
     };
 
@@ -461,12 +473,12 @@ const ProductFormPage = () => {
                         </div>
 
                         {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-4 px-6 mb-2">
-                            <div className="col-span-3">
+                        <div className="grid grid-cols-12 gap-4 px-4 mb-2">
+                            <div className="col-span-2">
                                 <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">SKU Code</label>
                             </div>
-                            <div className="col-span-2">
-                                <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">Weight / Size</label>
+                            <div className="col-span-3">
+                                <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">Quantity / Unit</label>
                             </div>
                             <div className="col-span-2">
                                 <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">MRP (₹)</label>
@@ -483,7 +495,7 @@ const ProductFormPage = () => {
                         <div className="space-y-3">
                             {formData.variants.map((variant, index) => (
                                 <div key={variant.id} className="p-4 rounded-3xl bg-gray-50 border border-gray-100 grid grid-cols-12 gap-4 items-center group">
-                                    <div className="col-span-12 md:col-span-3">
+                                    <div className="col-span-12 md:col-span-2">
                                         <input
                                             type="text"
                                             value={variant.sku}
@@ -492,14 +504,26 @@ const ProductFormPage = () => {
                                             className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
                                         />
                                     </div>
-                                    <div className="col-span-6 md:col-span-2">
-                                        <input
-                                            type="text"
-                                            value={variant.weight}
-                                            onChange={(e) => handleVariantChange(variant.id, 'weight', e.target.value)}
-                                            placeholder="250g"
-                                            className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
-                                        />
+                                    <div className="col-span-12 md:col-span-3">
+                                        <div className="flex items-center bg-white border border-gray-300 rounded-xl focus-within:border-black transition-all">
+                                            <input
+                                                type="number"
+                                                value={variant.quantity || ''}
+                                                onChange={(e) => handleVariantChange(variant.id, 'quantity', e.target.value)}
+                                                placeholder="250"
+                                                className="w-full bg-transparent p-3 text-xs font-bold text-black outline-none"
+                                            />
+                                            <div className="w-px h-6 bg-gray-200"></div>
+                                            <select
+                                                value={variant.unit || 'g'}
+                                                onChange={(e) => handleVariantChange(variant.id, 'unit', e.target.value)}
+                                                className="bg-transparent px-4 py-3 text-xs font-bold text-black outline-none cursor-pointer hover:bg-gray-50 rounded-r-xl"
+                                            >
+                                                {UNIT_OPTIONS.map(unit => (
+                                                    <option key={unit} value={unit}>{unit}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                     <div className="col-span-6 md:col-span-2">
                                         <input
@@ -760,7 +784,7 @@ const ProductFormPage = () => {
                             <Plus size={18} className="text-blue-700" />
                             SEO Settings (Optional)
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div className="flex flex-col gap-2">
                                 <label className="text-[10px] font-black text-black uppercase tracking-widest ml-1 text-left">SEO Title</label>
