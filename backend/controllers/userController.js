@@ -133,12 +133,12 @@ export const getUserProfile = asyncHandler(async (req, res) => {
         _id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone,
-        gender: user.gender,
-        birthDate: user.birthDate,
-        addresses: user.addresses,
-        accountType: user.accountType,
-        gstNumber: user.gstNumber,
+        phone: user.phone || '',
+        gender: user.gender || 'Other',
+        birthDate: user.birthDate || '',
+        addresses: user.addresses || [],
+        accountType: user.accountType || 'Individual',
+        gstNumber: user.gstNumber || '',
         role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
     });
   } else {

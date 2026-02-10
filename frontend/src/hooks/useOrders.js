@@ -1,14 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '@/lib/apiUrl';
 
 const API_URL = API_BASE_URL;
 
 export const useOrders = (userId) => {
+    const { getAuthHeaders } = useAuth();
     return useQuery({
         queryKey: ['orders', userId],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/orders`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/orders`, { 
+                headers: getAuthHeaders()
+            });
             const allOrders = await res.json();
             return allOrders.filter(o => o.userId === userId);
         },
@@ -17,20 +21,26 @@ export const useOrders = (userId) => {
 };
 
 export const useAllOrders = () => {
+    const { getAuthHeaders } = useAuth();
     return useQuery({
         queryKey: ['all-orders'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/orders`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/orders`, { 
+                headers: getAuthHeaders()
+            });
             return res.json();
         }
     });
 };
 
 export const useReturns = (userId) => {
+    const { getAuthHeaders } = useAuth();
     return useQuery({
         queryKey: ['returns', userId],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/returns`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/returns`, { 
+                headers: getAuthHeaders()
+            });
             const allReturns = await res.json();
             return allReturns.filter(r => r.userId === userId);
         },
@@ -39,10 +49,13 @@ export const useReturns = (userId) => {
 };
 
 export const useAllReturns = () => {
+    const { getAuthHeaders } = useAuth();
     return useQuery({
         queryKey: ['all-returns'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/returns`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/returns`, { 
+                headers: getAuthHeaders()
+            });
             return res.json();
         }
     });
@@ -50,13 +63,13 @@ export const useAllReturns = () => {
 
 export const useCreateReturn = () => {
     const queryClient = useQueryClient();
+    const { getAuthHeaders } = useAuth();
     return useMutation({
         mutationFn: async ({ userId, returnData }) => {
             const res = await fetch(`${API_URL}/returns`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(returnData),
-                credentials: 'include'
+                headers: getAuthHeaders(),
+                body: JSON.stringify(returnData)
             });
             if (!res.ok) throw new Error('Failed to create return request');
             return res.json();
@@ -70,14 +83,14 @@ export const useCreateReturn = () => {
 
 export const usePlaceOrder = () => {
     const queryClient = useQueryClient();
+    const { getAuthHeaders } = useAuth();
     return useMutation({
         mutationFn: async ({ userId, orderData }) => {
             const endpoint = orderData.paymentMethod === 'cod' ? '/payments/cod' : '/payments/order';
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, orderData, amount: orderData.amount }),
-                credentials: 'include'
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ userId, orderData, amount: orderData.amount })
             });
             if (!res.ok) {
                 const err = await res.json();
@@ -96,13 +109,13 @@ export const usePlaceOrder = () => {
 
 export const useVerifyPayment = () => {
     const queryClient = useQueryClient();
+    const { getAuthHeaders } = useAuth();
     return useMutation({
         mutationFn: async (paymentData) => {
             const res = await fetch(`${API_URL}/payments/verify`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(paymentData),
-                credentials: 'include'
+                headers: getAuthHeaders(),
+                body: JSON.stringify(paymentData)
             });
             if (!res.ok) {
                 const err = await res.json();
@@ -143,13 +156,13 @@ export const useUpdateOrderStatus = () => {
 
 export const useCancelOrder = () => {
     const queryClient = useQueryClient();
+    const { getAuthHeaders } = useAuth();
     return useMutation({
         mutationFn: async ({ orderId, reason }) => {
             const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason }),
-                credentials: 'include'
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ reason })
             });
             if (!res.ok) {
                 const err = await res.json();

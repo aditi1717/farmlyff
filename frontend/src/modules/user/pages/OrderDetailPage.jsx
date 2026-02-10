@@ -17,7 +17,7 @@ const API_URL = API_BASE_URL;
 const OrderDetailPage = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, getAuthHeaders } = useAuth();
     
     // Hooks
     const { data: orders = [] } = useOrders(user?.id);
@@ -82,10 +82,7 @@ const OrderDetailPage = () => {
             setTrackingLoading(true);
             try {
                 const response = await fetch(`${API_URL}/orders/${order.id}/tracking`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
-                    },
-                    credentials: 'include'
+                    headers: getAuthHeaders()
                 });
                 
                 if (response.ok) {

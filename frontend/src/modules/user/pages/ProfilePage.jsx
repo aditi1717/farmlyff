@@ -1,25 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { ChevronRight, Package, RefreshCw, Heart, Ticket, User, MapPin, Bookmark, Headphones, Mail, Share2, CreditCard, Plus, Home, Edit3, Trash2, Check, Lock, LogOut, Copy, Percent, X, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
-// Stores & Hooks
+// Context & Stores
+import { useAuth } from '../../../context/AuthContext';
 import useUserStore from '../../../store/useUserStore';
+
+// Hooks
 import { useUserProfile, useUpdateProfile } from '../../../hooks/useUser';
 import { useOrders, useReturns } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 import { useProducts } from '../../../hooks/useProducts';
 
 import logo from '../../../assets/logo.png';
-import toast from 'react-hot-toast';
 
 
 const ProfilePage = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
-    const { data: userData, isLoading: profileLoading } = useUserProfile();
+    const { user, loading: authLoading, logout } = useAuth();
+    const { data: userData, isLoading: profileLoading, isError: profileError } = useUserProfile();
     const updateProfileMutation = useUpdateProfile();
     const { data: orders = [] } = useOrders(user?.id);
     const { data: activeCoupons = [], isLoading: couponsLoading } = useActiveCoupons();
@@ -54,6 +55,14 @@ const ProfilePage = () => {
         pincode: '',
         isDefault: false
     });
+
+    // Check for auth and redirect if needed
+    useEffect(() => {
+        if (!authLoading && !user) {
+            navigate('/login', { state: { from: '/profile' } });
+            toast.error('Please login to view your profile');
+        }
+    }, [authLoading, user, navigate]);
 
 
     useEffect(() => {
@@ -735,49 +744,49 @@ const ProfilePage = () => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2 text-left">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
-                                <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
-                                    {['Male', 'Female', 'Other'].map((g) => (
-                                        <button
-                                            key={g}
-                                            type="button"
-                                            onClick={() => setEditForm({ ...editForm, gender: g })}
-                                            className={`flex-1 py-3 px-1 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${editForm.gender === g ? 'bg-footerBg text-white' : 'text-gray-400 hover:text-footerBg'}`}
-                                        >
-                                            {g}
-                                        </button>
-                                    ))}
+                                <div className="space-y-2 text-left">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
+                                    <div className="flex bg-gray-50 rounded-none p-1 border border-gray-100">
+                                        {['Male', 'Female', 'Other'].map((g) => (
+                                            <button
+                                                key={g}
+                                                type="button"
+                                                onClick={() => setEditForm({ ...editForm, gender: g })}
+                                                className={`flex-1 py-3 px-1 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${editForm.gender === g ? 'bg-footerBg text-white' : 'text-gray-400 hover:text-footerBg'}`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2 text-left">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date of Birth (DOB)</label>
+                                    <input
+                                        type="date"
+                                        value={editForm.birthDate}
+                                        onChange={(e) => setEditForm({ ...editForm, birthDate: e.target.value })}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-3 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-xs"
+                                    />
                                 </div>
                             </div>
-                            <div className="space-y-2 text-left">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date of Birth (DOB)</label>
-                                <input
-                                    type="date"
-                                    value={editForm.birthDate}
-                                    onChange={(e) => setEditForm({ ...editForm, birthDate: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-3 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-xs"
-                                />
-                            </div>
+
+                            {editForm.accountType === 'Business' && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">GST Number (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.gstNumber}
+                                        onChange={(e) => setEditForm({ ...editForm, gstNumber: e.target.value.toUpperCase() })}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-4 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all uppercase"
+                                        placeholder="22AAAAA0000A1Z5"
+                                        maxLength={15}
+                                    />
+                                    <p className="text-[9px] text-gray-400 ml-1">Leave blank if you don't have a GST number</p>
+                                </div>
+                            )}
                         </div>
 
-                        {editForm.accountType === 'Business' && (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">GST Number (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={editForm.gstNumber}
-                                    onChange={(e) => setEditForm({ ...editForm, gstNumber: e.target.value.toUpperCase() })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-none px-6 py-4 font-bold text-footerBg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all uppercase"
-                                    placeholder="22AAAAA0000A1Z5"
-                                    maxLength={15}
-                                />
-                                <p className="text-[9px] text-gray-400 ml-1">Leave blank if you don't have a GST number</p>
-                            </div>
-                        )}
-                    </div>
-
-                <div className="pt-4 flex items-center gap-6">
+                    <div className="pt-4 flex items-center gap-6">
                         <button
                             type="submit"
                             className="bg-footerBg text-white px-10 py-4 rounded-none font-black uppercase tracking-widest text-xs hover:bg-primary transition-all shadow-lg shadow-footerBg/10"
@@ -813,19 +822,39 @@ const ProfilePage = () => {
     );
 
 
-    if (profileLoading || !userData) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    // Handle loading and error states
+    if (authLoading || (profileLoading && !!user)) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-slate-500 font-medium">Loading profile...</p>
+            </div>
         </div>
     );
+
+    if (profileError || (!userData && !profileLoading && !!user)) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <X size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-footerBg mb-2">Failed to load profile</h2>
+            <p className="text-slate-500 text-center mb-6">There was an issue fetching your profile data. Please try again.</p>
+            <button 
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-xs"
+            >
+                Retry
+            </button>
+        </div>
+    );
+
+    if (!user) return null; // Redirection handled by useEffect
 
     const ordersData = orders; // getOrders(userData.id);
 
     return (
-        <div className="bg-[#f8fafc] lg:min-h-screen pb-4 md:pb-20 font-['Inter']">
-
-
-            <div className="w-full">
+        <div className="bg-[#f8fafc] lg:min-h-screen pb-4 md:pb-20 font-['Inter'] flex flex-col">
+            <div className="w-full flex-1">
                 <div className="flex flex-col lg:flex-row items-stretch lg:min-h-screen">
 
                     {/* LEFT SIDEBAR - Integrated Profile Info */}
