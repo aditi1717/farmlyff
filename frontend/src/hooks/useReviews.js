@@ -14,12 +14,24 @@ const isAuthenticated = () => {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+const getAuthHeaders = () => {
+    try {
+        const token = localStorage.getItem('farmlyf_token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch {
+        return {};
+    }
+};
+
 // Admin Reviews (Control List)
 export const useAdminReviews = () => {
     return useQuery({
         queryKey: ['admin-reviews'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/reviews/admin`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/reviews/admin`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch admin reviews');
             return res.json();
         },
@@ -34,7 +46,10 @@ export const useUserReviews = () => {
         queryFn: async () => {
             // Assuming endpoint for all reviews filtered by role or similar if needed
             // For now, using same as admin but filtered or a specific "user" endpoint if available
-            const res = await fetch(`${API_URL}/reviews`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/reviews`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch user reviews');
             return res.json();
         },
@@ -48,7 +63,7 @@ export const useUpdateReviewStatus = () => {
         mutationFn: async ({ id, status }) => {
             const res = await fetch(`${API_URL}/reviews/${id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ status }),
                 credentials: 'include'
             });
@@ -69,6 +84,7 @@ export const useDeleteReview = () => {
         mutationFn: async (id) => {
             const res = await fetch(`${API_URL}/reviews/${id}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(),
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to delete review');
@@ -87,7 +103,7 @@ export const useAddAdminReview = () => {
         mutationFn: async (data) => {
             const res = await fetch(`${API_URL}/reviews/admin`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });

@@ -21,6 +21,8 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ReplacementRequestsPage = () => {
     const navigate = useNavigate();
     const DUMMY_REPLACEMENTS = [
@@ -58,7 +60,7 @@ const ReplacementRequestsPage = () => {
     const { data: replacementsData = [] } = useQuery({
         queryKey: ['replacements'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/replacements');
+            const res = await fetch(`${API_URL}/replacements`);
             if (!res.ok) throw new Error('Failed to fetch replacements');
             return res.json();
         }
@@ -67,7 +69,7 @@ const ReplacementRequestsPage = () => {
     // Approve Replacement Mutation
     const approveReplacement = useMutation({
         mutationFn: async (id) => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}/approve`, {
+            const res = await fetch(`${API_URL}/replacements/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -87,7 +89,7 @@ const ReplacementRequestsPage = () => {
     // Update Status Mutation
     const updateStatus = useMutation({
         mutationFn: async ({ id, status }) => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}`, {
+            const res = await fetch(`${API_URL}/replacements/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })

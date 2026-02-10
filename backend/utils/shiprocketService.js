@@ -146,10 +146,19 @@ class ShiprocketService {
         { headers }
       );
 
+      // Log the full response for debugging
+      console.log('Shiprocket AWB Response:', JSON.stringify(response.data, null, 2));
+
+      // Log successful AWB assignment
+      if (response.data?.response?.data?.awb_code) {
+        console.log(`AWB assigned for shipment ${shipmentId}: ${response.data.response.data.awb_code}`);
+      }
+
       return response.data;
     } catch (error) {
-      console.error('Shiprocket AWB Assignment Error:', error.response?.data || error.message);
-      throw new Error('Failed to assign AWB');
+      const errorDetails = error.response?.data || error.message;
+      console.error('Shiprocket AWB Assignment Error:', errorDetails);
+      throw new Error(errorDetails?.message || 'Failed to assign AWB');
     }
   }
 
@@ -168,10 +177,16 @@ class ShiprocketService {
         { headers }
       );
 
+      // Log successful pickup generation
+      if (response.data) {
+        console.log(`Pickup generated for shipment ${shipmentId}`);
+      }
+
       return response.data;
     } catch (error) {
-      console.error('Shiprocket Pickup Generation Error:', error.response?.data || error.message);
-      throw new Error('Failed to generate pickup');
+      const errorDetails = error.response?.data || error.message;
+      console.error('Shiprocket Pickup Generation Error:', errorDetails);
+      throw new Error(errorDetails?.message || 'Failed to generate pickup');
     }
   }
 

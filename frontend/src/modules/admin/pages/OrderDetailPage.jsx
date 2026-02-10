@@ -28,6 +28,8 @@ import toast from 'react-hot-toast';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import InvoiceGenerator from '../components/InvoiceGenerator';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const OrderDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -36,7 +38,7 @@ const OrderDetailPage = () => {
     const { data: order, isLoading } = useQuery({
         queryKey: ['order', id],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/orders');
+            const res = await fetch(`${API_URL}/orders`);
             if (!res.ok) throw new Error('Failed to fetch orders');
             const allOrders = await res.json();
             return allOrders.find(o => o._id === id || o.id === id);
@@ -60,7 +62,7 @@ const OrderDetailPage = () => {
             if (!order?.awbCode) return;
             setTrackingLoading(true);
             try {
-                const res = await fetch(`http://localhost:5000/api/orders/${order._id || order.id}/tracking`);
+                const res = await fetch(`${API_URL}/orders/${order._id || order.id}/tracking`);
                 if (res.ok) {
                     const data = await res.json();
                     setLiveTracking(data);
@@ -78,7 +80,7 @@ const OrderDetailPage = () => {
     const { data: user } = useQuery({
         queryKey: ['order-user', order?.userId],
         queryFn: async () => {
-            const res = await fetch(`http://localhost:5000/api/users/${order.userId}`, {
+            const res = await fetch(`${API_URL}/users/${order.userId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
                 }
@@ -104,7 +106,7 @@ const OrderDetailPage = () => {
 
     const handleUpdateStatus = async (newStatus) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/orders/${order._id || order.id}`, {
+            const res = await fetch(`${API_URL}/orders/${order._id || order.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -153,7 +155,7 @@ const OrderDetailPage = () => {
 
         setIsCancelling(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/orders/${order.id}/cancel`, {
+            const res = await fetch(`${API_URL}/orders/${order.id}/cancel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reason: 'Cancelled by admin' })

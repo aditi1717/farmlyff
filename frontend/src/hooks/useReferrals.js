@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL + '/referrals';
 
 // Helper function to handle fetch calls
 const fetchData = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('farmlyf_token');
     const response = await fetch(url, {
         ...options,
         headers: {

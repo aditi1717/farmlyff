@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { useOrders, useReturns, useUpdateOrderStatus, useCancelOrder } from '../../../hooks/useOrders';
 import { useProducts } from '../../../hooks/useProducts';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const OrderDetailPage = () => {
     const { orderId } = useParams();

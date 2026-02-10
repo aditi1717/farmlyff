@@ -4,7 +4,7 @@ import { Send, Bell, CheckCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNotifications } from '../../../hooks/useNotifications.jsx';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const PushNotificationPage = () => {
     const [searchParams] = useSearchParams();

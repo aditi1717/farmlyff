@@ -21,6 +21,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const CouponFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -31,7 +33,7 @@ const CouponFormPage = () => {
     const { data: products = [] } = useQuery({
         queryKey: ['products'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/products');
+            const res = await fetch(`${API_URL}/products`);
             return res.json();
         }
     });
@@ -39,7 +41,7 @@ const CouponFormPage = () => {
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/categories');
+            const res = await fetch(`${API_URL}/categories`);
             return res.json();
         }
     });
@@ -47,7 +49,7 @@ const CouponFormPage = () => {
     const { data: subCategories = [] } = useQuery({
         queryKey: ['subcategories'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/subcategories');
+            const res = await fetch(`${API_URL}/subcategories`);
             return res.json();
         }
     });
@@ -57,7 +59,7 @@ const CouponFormPage = () => {
         queryKey: ['coupon', id],
         queryFn: async () => {
             if (!isEdit) return null;
-            const res = await fetch(`http://localhost:5000/api/coupons/${id}`);
+            const res = await fetch(`${API_URL}/coupons/${id}`);
             if (!res.ok) throw new Error('Failed to fetch coupon');
             return res.json();
         },
@@ -115,7 +117,7 @@ const CouponFormPage = () => {
 
     const mutation = useMutation({
         mutationFn: async (payload) => {
-            const url = isEdit ? `http://localhost:5000/api/coupons/${id}` : 'http://localhost:5000/api/coupons';
+            const url = isEdit ? `${API_URL}/coupons/${id}` : `${API_URL}/coupons`;
             const method = isEdit ? 'PUT' : 'POST';
             const res = await fetch(url, {
                 method,

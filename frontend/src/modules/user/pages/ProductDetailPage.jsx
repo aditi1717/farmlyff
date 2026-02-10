@@ -170,10 +170,6 @@ const ProductDetailPage = () => {
     }, [product]);
 
     useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [slug]);
-
-    useEffect(() => {
         const handleClickOutside = (e) => {
             if (showShareDropdown && !e.target.closest('.share-dropdown-container')) {
                 setShowShareDropdown(false);

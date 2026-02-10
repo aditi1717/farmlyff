@@ -21,6 +21,8 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 if (typeof window !== 'undefined') {
     window.Quill = Quill;
 }
@@ -68,7 +70,7 @@ const ProductFormPage = () => {
     const { data: dbComboCategories = [] } = useQuery({
         queryKey: ['combo-categories'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
+            const res = await fetch(`${API_URL}/combo-categories`);
             return res.json();
         }
     });

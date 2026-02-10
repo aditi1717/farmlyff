@@ -16,6 +16,8 @@ import { useQuery } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const OrderListPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -28,7 +30,7 @@ const OrderListPage = () => {
     const { data: orders = [] } = useQuery({
         queryKey: ['orders'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/orders');
+            const res = await fetch(`${API_URL}/orders`);
             if (!res.ok) throw new Error('Failed to fetch orders');
             return res.json();
         }

@@ -3,7 +3,7 @@ import bannerMix from '../../assets/banner_mix.jpg';
 import authShowcase from '../../assets/auth_showcase.jpg';
 import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 // Async Thunks for Coupons
 export const fetchCoupons = createAsyncThunk('shop/fetchCoupons', async (_, { rejectWithValue }) => {
