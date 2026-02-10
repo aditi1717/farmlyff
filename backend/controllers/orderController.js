@@ -72,10 +72,11 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   const { reason } = req.body;
 
   try {
-    // Find order by custom ID or MongoDB _id
-    const order = await Order.findOne({ 
-      $or: [{ id: orderId }, { _id: orderId }] 
-    });
+    // Find order by custom ID or MongoDB _id (avoid cast error on non-ObjectId)
+    let order = await Order.findOne({ id: orderId });
+    if (!order && Order.isValidObjectId(orderId)) {
+      order = await Order.findById(orderId);
+    }
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -146,6 +147,9 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     order.refundAmount = refundInitiated ? order.amount : null;
 
     // Add to status history
+    if (!order.statusHistory) {
+      order.statusHistory = [];
+    }
     order.statusHistory.push({
       status: 'Cancelled',
       timestamp: new Date(),

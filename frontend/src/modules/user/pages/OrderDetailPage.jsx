@@ -200,6 +200,8 @@ const OrderDetailPage = () => {
     ];
 
     const currentStepIndex = steps.findIndex(s => s.status === order.deliveryStatus);
+    const trackingActivities = liveTracking?.tracking?.tracking_data?.shipment_track_activities || [];
+    const latestTrackingActivity = trackingActivities[0];
 
     return (
         <div className="bg-[#fcfcfc] min-h-screen py-4 md:py-12">
@@ -318,26 +320,21 @@ const OrderDetailPage = () => {
                                             <RefreshCw size={12} className="animate-spin text-gray-400" />
                                         )}
                                     </div>
-                                    {liveTracking?.tracking?.tracking_data?.shipment_track_activities && (
-                                        <div className="space-y-3 max-h-60 overflow-y-auto">
-                                            {liveTracking.tracking.tracking_data.shipment_track_activities.map((activity, idx) => (
-                                                <div key={idx} className="flex gap-3 items-start">
-                                                    <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-bold text-footerBg">{activity.activity}</p>
-                                                        <p className="text-[10px] text-gray-400">{activity.location}</p>
-                                                        <p className="text-[9px] text-gray-300 mt-0.5">
-                                                            {new Date(activity.date).toLocaleString('en-US', {
-                                                                month: 'short', day: 'numeric', 
-                                                                hour: '2-digit', minute: '2-digit'
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                    {latestTrackingActivity && (
+                                        <div className="flex gap-3 items-start">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-footerBg">{latestTrackingActivity.activity}</p>
+                                                <p className="text-[9px] text-gray-300 mt-0.5">
+                                                    {new Date(latestTrackingActivity.date).toLocaleString('en-US', {
+                                                        month: 'short', day: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
-                                    {!liveTracking?.tracking?.tracking_data?.shipment_track_activities && !trackingLoading && (
+                                    {!latestTrackingActivity && !trackingLoading && (
                                         <p className="text-xs text-gray-400">Tracking activities will appear once shipment is picked up.</p>
                                     )}
                                 </div>
