@@ -20,27 +20,26 @@ import toast, { Toaster } from 'react-hot-toast';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+import { useAuth } from '../../../context/AuthContext';
+import { API_BASE_URL } from '@/lib/apiUrl';
+
 const UsersPage = () => {
     const navigate = useNavigate();
+    const { getAuthHeaders } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [stats, setStats] = useState({
+        totalResidents: 0,
+        activeAccounts: 0,
+        restrictedAccounts: 0
+    });
     const limit = 10;
-
-    // Premium Dummy Data
-    const DUMMY_USERS = [
-        { id: 'u1', name: 'Kabir Singh', email: 'kabir.s@example.com', phone: '+91 98765 43210', isBlocked: false, totalOrders: 12, totalSpend: 45200 },
-        { id: 'u2', name: 'Ananya Sharma', email: 'ananya.sh@gmail.com', phone: '+91 91234 56789', isBlocked: false, totalOrders: 5, totalSpend: 15600 },
-        { id: 'u3', name: 'Rahul Malhotra', email: 'rahul.m@outlook.com', phone: '+91 88888 77777', isBlocked: true, totalOrders: 0, totalSpend: 0 },
-        { id: 'u4', name: 'Priya Verma', email: 'p.verma@example.com', phone: '+91 77776 55555', isBlocked: false, totalOrders: 28, totalSpend: 125400 },
-        { id: 'u5', name: 'Ishaan Gupta', email: 'ishaan.g@gmail.com', phone: '+91 99900 11122', isBlocked: false, totalOrders: 8, totalSpend: 24300 },
-        { id: 'u6', name: 'Meera Rajput', email: 'meera.r@tata.com', phone: '+91 95555 44433', isBlocked: false, totalOrders: 15, totalSpend: 56900 },
-        { id: 'u7', name: 'Aditya Das', email: 'aditya.d@yahoo.com', phone: '+91 82222 33311', isBlocked: false, totalOrders: 3, totalSpend: 8900 },
-        { id: 'u8', name: 'Sanya Mirza', email: 'sanya.m@company.in', phone: '+91 70000 12345', isBlocked: true, totalOrders: 1, totalSpend: 2100 },
-        { id: 'u9', name: 'Vikram Seth', email: 'v.seth@reliance.com', phone: '+91 91111 22233', isBlocked: false, totalOrders: 10, totalSpend: 31200 },
-        { id: 'u10', name: 'Zoya Khan', email: 'zoya.k@gmail.com', phone: '+91 90000 00001', isBlocked: false, totalOrders: 6, totalSpend: 18400 }
-    ];
 
     // Debounce search term
     useEffect(() => {
@@ -51,28 +50,64 @@ const UsersPage = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const usersWithStats = useMemo(() => {
-        return DUMMY_USERS.filter(u => {
-            const matchesSearch = u.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                u.email.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                u.phone.includes(debouncedSearch);
-            const matchesStatus = statusFilter === 'All' ||
-                (statusFilter === 'Active' && !u.isBlocked) ||
-                (statusFilter === 'Blocked' && u.isBlocked);
-            return matchesSearch && matchesStatus;
-        });
-    }, [debouncedSearch, statusFilter]);
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams({
+                page,
+                limit,
+                search: debouncedSearch,
+                status: statusFilter
+            });
 
-    // Paginate dummy data
-    const paginatedUsers = useMemo(() => {
-        const start = (page - 1) * limit;
-        return usersWithStats.slice(start, start + limit);
-    }, [usersWithStats, page]);
+            const response = await fetch(`${API_BASE_URL}/users?${queryParams}`, {
+                headers: getAuthHeaders()
+            });
 
-    const totalPages = Math.ceil(usersWithStats.length / limit);
+            if (response.ok) {
+                const data = await response.json();
+                setUsers(data.users.map(u => ({
+                    ...u,
+                    isBlocked: u.isBanned // Mapping backend isBanned to frontend isBlocked
+                })));
+                setTotalPages(data.pages);
+                setTotalItems(data.total);
+                if (data.stats) {
+                    setStats(data.stats);
+                }
+            } else {
+                toast.error('Failed to fetch users');
+            }
+        } catch (error) {
+            console.error('Fetch users error:', error);
+            toast.error('Network error while fetching users');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleToggleBlock = (userId) => {
-        toast.success('User status updated successfully (Demo Mode)');
+    useEffect(() => {
+        fetchUsers();
+    }, [page, debouncedSearch, statusFilter]);
+
+    const handleToggleBlock = async (userId) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
+                method: 'PUT',
+                headers: getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                toast.success(data.message);
+                fetchUsers(); // Refresh list
+            } else {
+                const data = await response.json();
+                toast.error(data.message || 'Action failed');
+            }
+        } catch (error) {
+            toast.error('Network error');
+        }
     };
 
     return (
@@ -87,7 +122,7 @@ const UsersPage = () => {
                 </div>
                 <div className="bg-[#2c5336]/5 px-4 py-2 rounded-xl border border-[#2c5336]/10 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-[#2c5336] rounded-full animate-pulse"></div>
-                    <span className="text-[10px] font-black text-[#2c5336] uppercase tracking-[0.1em]">Local Database Active</span>
+                    <span className="text-[10px] font-black text-[#2c5336] uppercase tracking-[0.1em]">Cloud Database Active</span>
                 </div>
             </div>
 
@@ -97,7 +132,7 @@ const UsersPage = () => {
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Residents</p>
-                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.length}</p>
+                            <p className="text-2xl font-black text-footerBg">{stats.totalResidents}</p>
                         </div>
                         <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <UsersIcon size={22} />
@@ -108,7 +143,7 @@ const UsersPage = () => {
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Accounts</p>
-                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.filter(u => !u.isBlocked).length}</p>
+                            <p className="text-2xl font-black text-footerBg">{stats.activeAccounts}</p>
                         </div>
                         <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <CheckCircle2 size={22} />
@@ -119,7 +154,7 @@ const UsersPage = () => {
                     <div className="flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Restricted</p>
-                            <p className="text-2xl font-black text-footerBg">{DUMMY_USERS.filter(u => u.isBlocked).length}</p>
+                            <p className="text-2xl font-black text-footerBg">{stats.restrictedAccounts}</p>
                         </div>
                         <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <AlertCircle size={22} />
@@ -165,73 +200,16 @@ const UsersPage = () => {
                         <AdminTableHead className="text-right">Actions</AdminTableHead>
                     </AdminTableHeader>
                     <AdminTableBody>
-                        {paginatedUsers.map((user) => (
-                            <AdminTableRow key={user.id}>
-                                <AdminTableCell>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center font-black text-xs border border-gray-100 uppercase">
-                                            {user.name?.charAt(0) || 'U'}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-footerBg text-sm">{user.name || 'Anonymous User'}</p>
-                                        </div>
-                                    </div>
-                                </AdminTableCell>
-                                <AdminTableCell>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600 lowercase">
-                                            <Mail size={12} className="text-gray-300" />
-                                            {user.email}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                                            <Phone size={12} className="text-gray-300" />
-                                            {user.phone || 'No Contact Number'}
-                                        </div>
-                                    </div>
-                                </AdminTableCell>
-                                <AdminTableCell>
-                                    <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border ${user.isBlocked
-                                        ? 'bg-red-50 text-red-600 border-red-100'
-                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                        }`}>
-                                        {user.isBlocked ? 'Blocked' : 'Verified'}
-                                    </span>
-                                </AdminTableCell>
-                                <AdminTableCell className="text-center">
-                                    <span className="bg-gray-50 px-3 py-1 rounded-lg text-[11px] font-black text-footerBg border border-gray-100">
-                                        {user.totalOrders}
-                                    </span>
-                                </AdminTableCell>
-                                <AdminTableCell>
-                                    <div className="flex items-center gap-1.5 font-black text-footerBg text-sm tracking-tight">
-                                        <Coins size={14} className="text-amber-400" />
-                                        ₹{user.totalSpend.toLocaleString()}
-                                    </div>
-                                </AdminTableCell>
-                                <AdminTableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                        <button
-                                            onClick={() => navigate(`/admin/users/${user.id}`)}
-                                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
-                                            title="View profile"
-                                        >
-                                            <Eye size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleToggleBlock(user.id)}
-                                            className={`p-1.5 rounded-lg transition-all ${user.isBlocked
-                                                ? 'text-emerald-500 hover:bg-emerald-50'
-                                                : 'text-red-400 hover:bg-red-50'
-                                                }`}
-                                            title={user.isBlocked ? 'Unblock user' : 'Block user'}
-                                        >
-                                            {user.isBlocked ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
-                                        </button>
+                        {loading ? (
+                            <AdminTableRow>
+                                <AdminTableCell colSpan={6} className="py-20 text-center">
+                                    <div className="flex flex-col items-center">
+                                        <Loader size={32} className="animate-spin text-primary mb-3" />
+                                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Loading customers...</p>
                                     </div>
                                 </AdminTableCell>
                             </AdminTableRow>
-                        ))}
-                        {paginatedUsers.length === 0 && (
+                        ) : users.length === 0 ? (
                             <AdminTableRow>
                                 <AdminTableCell colSpan={6} className="py-20 text-center">
                                     <div className="flex flex-col items-center">
@@ -240,6 +218,73 @@ const UsersPage = () => {
                                     </div>
                                 </AdminTableCell>
                             </AdminTableRow>
+                        ) : (
+                            users.map((user) => (
+                                <AdminTableRow key={user.id}>
+                                    <AdminTableCell>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 bg-gray-50 text-footerBg rounded-xl flex items-center justify-center font-black text-xs border border-gray-100 uppercase">
+                                                {user.name?.charAt(0) || 'U'}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-footerBg text-sm">{user.name || 'Anonymous User'}</p>
+                                            </div>
+                                        </div>
+                                    </AdminTableCell>
+                                    <AdminTableCell>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600 lowercase">
+                                                <Mail size={12} className="text-gray-300" />
+                                                {user.email}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                <Phone size={12} className="text-gray-300" />
+                                                {user.phone || 'No Contact Number'}
+                                            </div>
+                                        </div>
+                                    </AdminTableCell>
+                                    <AdminTableCell>
+                                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border ${user.isBlocked
+                                            ? 'bg-red-50 text-red-600 border-red-100'
+                                            : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            }`}>
+                                            {user.isBlocked ? 'Blocked' : 'Verified'}
+                                        </span>
+                                    </AdminTableCell>
+                                    <AdminTableCell className="text-center">
+                                        <span className="bg-gray-50 px-3 py-1 rounded-lg text-[11px] font-black text-footerBg border border-gray-100">
+                                            {user.totalOrders}
+                                        </span>
+                                    </AdminTableCell>
+                                    <AdminTableCell>
+                                        <div className="flex items-center gap-1.5 font-black text-footerBg text-sm tracking-tight">
+                                            <Coins size={14} className="text-amber-400" />
+                                            ₹{(user.totalSpend || 0).toLocaleString()}
+                                        </div>
+                                    </AdminTableCell>
+                                    <AdminTableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
+                                                title="View profile"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleToggleBlock(user.id)}
+                                                className={`p-1.5 rounded-lg transition-all ${user.isBlocked
+                                                    ? 'text-emerald-500 hover:bg-emerald-50'
+                                                    : 'text-red-400 hover:bg-red-50'
+                                                    }`}
+                                                title={user.isBlocked ? 'Unblock user' : 'Block user'}
+                                            >
+                                                {user.isBlocked ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
+                                            </button>
+                                        </div>
+                                    </AdminTableCell>
+                                </AdminTableRow>
+                            ))
                         )}
                     </AdminTableBody>
                 </AdminTable>
@@ -252,7 +297,7 @@ const UsersPage = () => {
                     setPage(p);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                totalItems={usersWithStats.length}
+                totalItems={totalItems}
                 itemsPerPage={limit}
             />
         </div>

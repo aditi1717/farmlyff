@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
 import asyncHandler from 'express-async-handler';
@@ -195,14 +196,29 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (admin only)
-// @desc    Get user by ID
-// @route   GET /api/users/:id
-// @access  Private/Admin
 export const getUserById = async (req, res) => {
     try {
-        const user = await User.findOne({ id: req.params.id }); 
+        const user = await User.findOne({ id: req.params.id }).select('-password').lean(); 
         if (user) {
-            res.json(user);
+            // Get stats for this user
+            const orderStats = await mongoose.model('Order').aggregate([
+                { $match: { userId: user.id } },
+                { 
+                    $group: { 
+                        _id: "$userId", 
+                        totalOrders: { $sum: 1 }, 
+                        totalSpend: { $sum: "$amount" } 
+                    } 
+                }
+            ]);
+
+            const stats = orderStats[0] || { totalOrders: 0, totalSpend: 0 };
+            
+            res.json({
+                ...user,
+                totalOrders: stats.totalOrders,
+                totalSpend: stats.totalSpend
+            });
         } else {
             res.status(404).json({ message: 'User not found' });
         }
@@ -214,7 +230,6 @@ export const getUserById = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
-
     const limit = Number(req.query.limit) || 10;
     const search = req.query.search || '';
     const status = req.query.status; // 'Active' or 'Blocked'
@@ -224,27 +239,64 @@ export const getUsers = async (req, res) => {
     if (search) {
         query.$or = [
             { name: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } }
+            { email: { $regex: search, $options: 'i' } },
+            { phone: { $regex: search, $options: 'i' } }
         ];
     }
     
     if (status === 'Active') {
-        query.isBlocked = { $ne: true }; // undefined or false
+        query.isBanned = { $ne: true };
     } else if (status === 'Blocked') {
-        query.isBlocked = true;
+        query.isBanned = true;
     }
 
     const count = await User.countDocuments(query);
     const users = await User.find(query)
+        .select('-password')
         .limit(limit)
         .skip(limit * (page - 1))
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .lean();
+
+    // Get Order Stats for these users
+    const userIds = users.map(u => u.id);
+    const orderStats = await mongoose.model('Order').aggregate([
+        { $match: { userId: { $in: userIds } } },
+        { 
+            $group: { 
+                _id: "$userId", 
+                totalOrders: { $sum: 1 }, 
+                totalSpend: { $sum: "$amount" } 
+            } 
+        }
+    ]);
+
+    const statsMap = orderStats.reduce((acc, stat) => {
+        acc[stat._id] = stat;
+        return acc;
+    }, {});
+
+    const usersWithStats = users.map(user => ({
+        ...user,
+        totalOrders: statsMap[user.id]?.totalOrders || 0,
+        totalSpend: statsMap[user.id]?.totalSpend || 0
+    }));
+
+    // Global Stats for Dashboard
+    const totalResidents = await User.countDocuments({});
+    const activeAccounts = await User.countDocuments({ isBanned: { $ne: true } });
+    const restrictedAccounts = await User.countDocuments({ isBanned: true });
 
     res.json({
-        users,
+        users: usersWithStats,
         page,
         pages: Math.ceil(count / limit),
-        total: count
+        total: count,
+        stats: {
+            totalResidents,
+            activeAccounts,
+            restrictedAccounts
+        }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

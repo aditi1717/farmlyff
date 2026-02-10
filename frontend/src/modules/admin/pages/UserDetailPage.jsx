@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { API_BASE_URL } from '@/lib/apiUrl';
 import {
 
@@ -29,17 +30,15 @@ const API_URL = API_BASE_URL;
 const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getAuthHeaders } = useAuth();
     const [showAllOrders, setShowAllOrders] = useState(false);
 
     // Fetch real user data
     const { data: user, isLoading, error } = useQuery({
         queryKey: ['admin-user', id],
         queryFn: async () => {
-            const token = localStorage.getItem('farmlyf_token');
             const res = await fetch(`${API_URL}/users/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: getAuthHeaders()
             });
             if (!res.ok) throw new Error('Failed to fetch user');
             return res.json();
@@ -50,11 +49,8 @@ const UserDetailPage = () => {
     const { data: orders } = useQuery({
         queryKey: ['admin-user-orders', id],
         queryFn: async () => {
-            const token = localStorage.getItem('farmlyf_token');
             const res = await fetch(`${API_URL}/orders/user/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: getAuthHeaders()
             });
             if (!res.ok) return [];
             return res.json();
@@ -64,6 +60,25 @@ const UserDetailPage = () => {
 
     const orderHistory = useMemo(() => orders || [], [orders]);
     const displayedOrders = showAllOrders ? orderHistory : orderHistory.slice(0, 4);
+
+    const handleToggleBan = async () => {
+        try {
+            const res = await fetch(`${API_URL}/users/${id}/ban`, {
+                method: 'PUT',
+                headers: getAuthHeaders()
+            });
+            if (res.ok) {
+                const data = await res.json();
+                toast.success(data.message);
+                // Invalidate and refetch user data
+                navigate(0); // Simple way to refresh current route state
+            } else {
+                toast.error('Failed to update status');
+            }
+        } catch (error) {
+            toast.error('Network error');
+        }
+    };
 
     if (isLoading) return <div className="p-20 text-center text-xs font-black uppercase tracking-widest text-gray-400">Loading User Details...</div>;
     if (error || !user) return (
@@ -81,24 +96,7 @@ const UserDetailPage = () => {
         </div>
     );
 
-    const totalSpend = orderHistory.reduce((acc, ord) => acc + (ord.totalAmount || ord.amount || 0), 0);
-
-    if (!user) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                    <UserIcon size={40} className="text-gray-300" />
-                </div>
-                <h2 className="text-2xl font-black text-footerBg mb-2 uppercase tracking-tighter">User Not Found</h2>
-                <button
-                    onClick={() => navigate('/admin/users')}
-                    className="flex items-center gap-2 px-6 py-3 bg-footerBg text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-95 uppercase text-xs tracking-widest"
-                >
-                    <ArrowLeft size={18} /> Back to Users
-                </button>
-            </div>
-        );
-    }
+    const totalSpend = user.totalSpend || 0;
 
     return (
         <div className="space-y-6 font-['Inter'] text-footerBg animate-in fade-in duration-500">
@@ -112,11 +110,13 @@ const UserDetailPage = () => {
                     Back to CRM
                 </button>
                 <div className="flex items-center gap-3">
-                    <button className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${user.isBlocked
+                    <button 
+                        onClick={handleToggleBan}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${user.isBanned
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                         : 'bg-red-50 text-red-500 border-red-100'
                         }`}>
-                        {user.isBlocked ? 'Unlock User' : 'Restrict Account'}
+                        {user.isBanned ? 'Unlock User' : 'Restrict Account'}
                     </button>
                 </div>
             </div>
@@ -125,14 +125,14 @@ const UserDetailPage = () => {
             <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm p-5">
                 <div className="flex flex-col md:flex-row items-center gap-6">
                     <div className="w-16 h-16 bg-gray-50 text-footerBg rounded-2xl flex items-center justify-center font-black text-2xl border border-gray-100">
-                        {user.name.charAt(0)}
+                        {user.name?.charAt(0) || 'U'}
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
                             <h1 className="text-2xl font-black text-footerBg tracking-tight">{user.name}</h1>
-                            <span className={`w-fit mx-auto md:mx-0 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.isBlocked ? 'bg-red-100 text-red-600' : 'bg-green-100 text-[#2c5336]'
+                            <span className={`w-fit mx-auto md:mx-0 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.isBanned ? 'bg-red-100 text-red-600' : 'bg-green-100 text-[#2c5336]'
                                 }`}>
-                                {user.isBlocked ? 'Restricted' : 'Verified Resident'}
+                                {user.isBanned ? 'Restricted' : 'Verified Resident'}
                             </span>
                             <span className={`w-fit mx-auto md:mx-0 px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.accountType === 'Business' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
                                 }`}>
