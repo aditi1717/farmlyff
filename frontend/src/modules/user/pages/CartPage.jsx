@@ -68,9 +68,14 @@ const CartPage = () => {
     // We need to implement getRecommendations locally or via new hook if complex
     // For now, simple random or dummy
     const getRecommendations = (userId, limit) => {
-        // Simple recommendation logic using products list
         if (!products.length) return [];
-        return products.slice(0, limit);
+        
+        // Get unique products by ID first to avoid data duplicates
+        const uniqueById = Array.from(new Map(products.map(p => [p._id || p.id, p])).values());
+        
+        // Shuffle the unique products
+        const shuffled = [...uniqueById].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, limit);
     };
 
     // Helper functions for CartPage logic
@@ -346,22 +351,50 @@ const CartPage = () => {
                 )}
 
                 {/* Recommended Section - "You might also like" */}
-                {user && (
-                    <div className="mt-12 md:mt-20 border-t border-gray-100 pt-10 md:pt-16">
-                        <div className="space-y-1 mb-6 md:mb-8 flex items-end justify-between">
-                            <div className="text-center md:text-left w-full md:w-auto">
-                                <h3 className="text-lg md:text-xl font-black text-footerBg uppercase tracking-tight">You Might Also Like</h3>
-                                <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Based on your personality & cart</p>
+                {user && (() => {
+                    const cartItemIds = new Set(enrichedCart.map(item => item.productId || item.id));
+                    const cartItemNames = new Set(enrichedCart.map(item => item.name.toLowerCase()));
+                    
+                    const allRecs = getRecommendations(user.id, products.length); 
+                    
+                    const uniqueRecs = [];
+                    const seenNames = new Set();
+                    const seenIds = new Set();
+
+                    for (const p of allRecs) {
+                        const id = p._id || p.id;
+                        const name = p.name.toLowerCase();
+                        
+                        if (!cartItemIds.has(id) && 
+                            !cartItemNames.has(name) && 
+                            !seenIds.has(id) && 
+                            !seenNames.has(name)) {
+                            uniqueRecs.push(p);
+                            seenNames.add(name);
+                            seenIds.add(id);
+                        }
+                        if (uniqueRecs.length >= 4) break;
+                    }
+                    
+                    const displayItems = uniqueRecs.length > 0 ? uniqueRecs : DUMMY_PRODUCTS.slice(0, 4);
+
+                    return (
+                        <div className="mt-12 md:mt-20 border-t border-gray-100 pt-10 md:pt-16">
+                            <div className="space-y-1 mb-6 md:mb-8 flex items-end justify-between">
+                                <div className="text-center md:text-left w-full md:w-auto">
+                                    <h3 className="text-lg md:text-xl font-black text-footerBg uppercase tracking-tight">You Might Also Like</h3>
+                                    <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Based on your personality & cart</p>
+                                </div>
+                                <button className="hidden md:block text-xs font-bold text-primary hover:underline">View All</button>
                             </div>
-                            <button className="hidden md:block text-xs font-bold text-primary hover:underline">View All</button>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-6">
+                                {displayItems.map((item) => (
+                                    <ProductCard key={item._id || item.id} product={item} />
+                                ))}
+                            </div>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
-                            {(getRecommendations(user.id, 5).length > 0 ? getRecommendations(user.id, 5) : DUMMY_PRODUCTS).map((item) => (
-                                <ProductCard key={item.id} product={item} />
-                            ))}
-                        </div>
-                    </div>
-                )}
+                    );
+                })()}
             </div>
         </div>
     );

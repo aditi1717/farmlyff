@@ -139,34 +139,31 @@ const CatalogPage = () => {
         }).filter(Boolean))];
 
         // Calculate price bounds from variants
-        const prices = products.flatMap(p => {
-            if (p.variants && p.variants.length > 0) {
-                return p.variants.map(v => v.price || v.mrp || 0);
-            }
-            return [];
-        }).filter(p => p > 0);
+        const allPrices = products.flatMap(p => {
+            const vPrices = (p.variants || []).map(v => v.price || v.mrp || 0);
+            if (vPrices.length > 0) return vPrices;
+            return [p.price, p.mrp].filter(pr => pr > 0);
+        }).filter(pr => pr > 0);
 
-        const minPrice = prices.length > 0 ? Math.floor(Math.min(...prices)) : 0;
-        const maxPrice = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 10000;
-
-        console.log('Price bounds from variants:', { minPrice, maxPrice, samplePrices: prices.slice(0, 5) });
+        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 0;
+        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 10000;
 
         return { weights, minPrice, maxPrice };
     }, [products]);
 
-    // Initialize price range when products load
+    const hasInitializedRef = React.useRef(false);
     useEffect(() => {
-        if (filterOptions.minPrice !== undefined && filterOptions.maxPrice !== undefined) {
+        if (products.length > 0 && !hasInitializedRef.current && filterOptions.minPrice !== undefined) {
             setPriceRange({ min: filterOptions.minPrice, max: filterOptions.maxPrice });
             setLocalPriceRange({ min: filterOptions.minPrice, max: filterOptions.maxPrice });
+            hasInitializedRef.current = true;
         }
-    }, [filterOptions.minPrice, filterOptions.maxPrice]);
+    }, [filterOptions.minPrice, filterOptions.maxPrice, products.length]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             const min = localPriceRange.min === '' ? 0 : Number(localPriceRange.min);
             const max = localPriceRange.max === '' ? 1000000 : Number(localPriceRange.max);
-            console.log('Setting priceRange from local (sanitized):', { min, max });
             setPriceRange({ min, max });
         }, 300); // 300ms debounce
         return () => clearTimeout(timer);
@@ -256,38 +253,29 @@ const CatalogPage = () => {
                 const productSubSlug = productSubName.toLowerCase().replace(/ /g, '-');
                 const selectedSubSlug = String(selectedSubcategory).toLowerCase().replace(/ /g, '-');
 
-                return productSubSlug === selectedSubSlug || productSubName === selectedSubcategory;
+                // Lenient check: ID, Name, or Slug match
+                return String(pSubRef) === String(selectedSubcategory) || 
+                       productSubSlug === selectedSubSlug || 
+                       productSubName === selectedSubcategory;
             });
         }
 
-        // Price Filter - use prices from variants
-        console.log('Filtering with priceRange:', priceRange);
-        console.log('First product sample:', products[0]); // Show full product structure
+        // Price Filter - use starting price for filtering
         result = result.filter(p => {
-            // Get all variant prices for this product
+            let startPrice;
+            
             if (p.variants && p.variants.length > 0) {
-                const variantPrices = p.variants.map(v => v.price || v.mrp || 0);
-                const minVariantPrice = Math.min(...variantPrices);
-                const maxVariantPrice = Math.max(...variantPrices);
-
-                // Product passes if ANY variant falls within the price range
-                const passes = maxVariantPrice >= priceRange.min && minVariantPrice <= priceRange.max;
-
-                if (!passes) {
-                    console.log(`Product ${p.name} excluded:`, {
-                        variantPrices,
-                        minVariantPrice,
-                        maxVariantPrice,
-                        range: [priceRange.min, priceRange.max]
-                    });
-                }
-                return passes;
+                const variantPrices = p.variants
+                    .map(v => v.price || p.price || 0)
+                    .filter(pr => pr > 0);
+                startPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : (p.price || 0);
+            } else {
+                startPrice = p.price || 0;
             }
-            // If no variants, exclude the product
-            console.log(`Product ${p.name} excluded: no variants`);
-            return false;
+
+            // Stricter check: Does the starting price fall within the selected range?
+            return startPrice >= priceRange.min && startPrice <= priceRange.max;
         });
-        console.log(`Price filter: ${result.length} products remain`);
 
         // Availability Filter
         if (selectedAvailability.length > 0) {
@@ -324,9 +312,16 @@ const CatalogPage = () => {
         }
 
         // Sorting
+        const getDisplayPrice = (p) => {
+            if (p.variants && p.variants.length > 0) {
+                return Math.min(...p.variants.map(v => v.price || v.mrp || Infinity));
+            }
+            return p.price || 0;
+        };
+
         switch (sortBy) {
-            case 'price-low': result.sort((a, b) => a.price - b.price); break;
-            case 'price-high': result.sort((a, b) => b.price - a.price); break;
+            case 'price-low': result.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b)); break;
+            case 'price-high': result.sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a)); break;
             case 'newest': result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)); break;
             case 'alphabetical-az': result.sort((a, b) => a.name.localeCompare(b.name)); break;
             case 'alphabetical-za': result.sort((a, b) => b.name.localeCompare(a.name)); break;
@@ -347,9 +342,11 @@ const CatalogPage = () => {
 
     const clearAllFilters = () => {
         setLocalPriceRange({ min: filterOptions.minPrice || 0, max: filterOptions.maxPrice || 10000 });
+        setPriceRange({ min: filterOptions.minPrice || 0, max: filterOptions.maxPrice || 10000 });
         setSelectedAvailability([]);
         setSelectedWeights([]);
         setSelectedDiscounts([]);
+        setSearchQuery('');
         navigate('/catalog');
     };
 
@@ -518,7 +515,12 @@ const CatalogPage = () => {
                                     ].map((preset) => (
                                         <button
                                             key={preset.label}
-                                            onClick={() => setLocalPriceRange({ min: preset.min, max: preset.max })}
+                                            onClick={() => {
+                                                const range = { min: preset.min, max: preset.max };
+                                                setLocalPriceRange(range);
+                                                // Apply immediately for presets to feel responsive
+                                                setPriceRange(range);
+                                            }}
                                             className={`px-4 py-2.5 rounded-xl text-[13px] font-bold border transition-all ${Number(localPriceRange.min) === preset.min && Number(localPriceRange.max) === preset.max
                                                 ? 'bg-[#2563EB] border-[#2563EB] text-white shadow-md'
                                                 : 'bg-white border-gray-200 text-[#4B5563] hover:border-gray-300'
@@ -654,6 +656,24 @@ const CatalogPage = () => {
                             <span className="text-xs text-gray-400 font-bold bg-gray-50 px-3 py-1 rounded-full">
                                 {filteredProducts.length} ITEMS
                             </span>
+                            
+                            {/* Clear All Button - Prominent Quick Action */}
+                            {(selectedCategory !== 'all' || 
+                              selectedSubcategory !== 'all' || 
+                              selectedAvailability.length > 0 || 
+                              selectedWeights.length > 0 || 
+                              selectedDiscounts.length > 0 || 
+                              searchQuery !== '' ||
+                              (priceRange.min !== filterOptions.minPrice || priceRange.max !== filterOptions.maxPrice)
+                             ) && (
+                                <button 
+                                    onClick={clearAllFilters}
+                                    className="flex items-center gap-1.5 text-[10px] md:text-[11px] font-black text-[#842A35] uppercase tracking-wider hover:underline bg-[#842A35]/5 px-3 py-1.5 rounded-full transition-colors"
+                                >
+                                    <X size={12} strokeWidth={3} />
+                                    Clear Filters
+                                </button>
+                            )}
                         </div>
 
                         <div className="hidden md:flex items-center gap-4">

@@ -12,14 +12,17 @@ export const useProducts = () => {
             if (!res.ok) throw new Error('Failed to fetch products');
             const data = await res.json();
 
-            // Inject dummy data for consistent UI as requested
-            return data.map(p => ({
-                ...p,
-                rating: p.rating || (4.0 + Math.random()).toFixed(1), // Random rating 4.0-5.0
-                tag: p.tag || 'BESTSELLER',
-                unitPrice: p.unitPrice || Math.floor((p.price || 500) * 2), // Dummy per kg price logic
-                reviews: p.reviews || Math.floor(Math.random() * 500) + 50
-            }));
+            // Inject deterministic dummy data for consistent UI
+            return data.map(p => {
+                const seed = parseInt(String(p._id || p.id).slice(-4), 16) || 0;
+                return {
+                    ...p,
+                    rating: p.rating || (4.0 + (seed % 10) / 10).toFixed(1),
+                    tag: p.tag || (seed % 3 === 0 ? 'BESTSELLER' : seed % 3 === 1 ? 'NEW' : 'TRENDING'),
+                    unitPrice: p.unitPrice || Math.floor((p.price || 500) * 1.8),
+                    reviews: p.reviews || (100 + (seed % 400))
+                };
+            });
         }
     });
 };
@@ -32,13 +35,14 @@ export const useProduct = (id) => {
             if (!res.ok) throw new Error('Failed to fetch product');
             const p = await res.json();
             
-            // Inject dummy data for consistent UI as requested
+            // Inject deterministic dummy data
+            const seed = parseInt(String(p._id || p.id).slice(-4), 16) || 0;
             return {
                 ...p,
-                rating: p.rating || (4.0 + Math.random()).toFixed(1),
-                tag: p.tag || 'BESTSELLER',
-                unitPrice: p.unitPrice || Math.floor((p.price || 500) * 2),
-                reviews: p.reviews || Math.floor(Math.random() * 500) + 50
+                rating: p.rating || (4.0 + (seed % 10) / 10).toFixed(1),
+                tag: p.tag || (seed % 3 === 0 ? 'BESTSELLER' : seed % 3 === 1 ? 'NEW' : 'TRENDING'),
+                unitPrice: p.unitPrice || Math.floor((p.price || 500) * 1.8),
+                reviews: p.reviews || (100 + (seed % 400))
             };
         },
         enabled: !!id,
