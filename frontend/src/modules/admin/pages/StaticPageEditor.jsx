@@ -1,27 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, RotateCcw, Globe, Eye, ImageIcon, Type, Upload } from 'lucide-react';
-import ReactQuill, { Quill } from 'react-quill-new';
+import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import ImageResizeModule from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
 import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
 import { PAGES_CONFIG } from '../../../config/pagesConfig';
-
-// Register Quill Modules only if not already registered
-if (typeof window !== 'undefined') {
-    window.Quill = Quill;
-}
-
-if (!Quill.imports['modules/imageResize']) {
-    try {
-        const ImageResize = ImageResizeModule?.default ?? ImageResizeModule;
-        Quill.register('modules/imageResize', ImageResize);
-    } catch (error) {
-        console.error('Error registering ImageResize:', error);
-    }
-}
 
 const StaticPageEditor = () => {
     const { pageId } = useParams();
@@ -104,11 +89,7 @@ const StaticPageEditor = () => {
             [{ 'list': 'ordered' }, { 'list': 'bullet' }],
             [{ 'align': [] }],
             ['link', 'image', 'clean']
-        ],
-        imageResize: {
-            parchment: Quill.import('parchment'),
-            modules: ['Resize', 'DisplaySize']
-        }
+        ]
     };
 
     if (loading || !pageConfig) return <div>Loading...</div>;

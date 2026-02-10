@@ -13,7 +13,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'framer-motion'],
   },
   optimizeDeps: {
-    include: ['quill-image-resize-module-react', 'react-quill-new'],
+    include: ['react-quill-new'],
   },
   build: {
     commonjsOptions: {

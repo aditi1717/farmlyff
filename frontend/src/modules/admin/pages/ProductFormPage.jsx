@@ -15,27 +15,14 @@ import {
     Search,
     Star
 } from 'lucide-react';
-import ReactQuill, { Quill } from 'react-quill-new';
+import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import ImageResize from 'quill-image-resize-module-react';
 import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories, useSubCategories, useUploadImage } from '../../../hooks/useProducts';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const API_URL = API_BASE_URL;
-
-if (typeof window !== 'undefined') {
-    window.Quill = Quill;
-}
-
-if (!Quill.imports['modules/imageResize']) {
-    try {
-        Quill.register('modules/imageResize', ImageResize);
-    } catch (error) {
-        console.error('Error registering ImageResize:', error);
-    }
-}
 
 // Predefined Options for Dropdowns
 const NUTRITION_LABELS = ['Energy', 'Protein', 'Carbohydrates', 'Sugar', 'Fat', 'Saturated Fat', 'Fiber', 'Sodium', 'Cholesterol', 'Iron', 'Calcium', 'Vitamin C', 'Vitamin A', 'Potassium'];
@@ -373,11 +360,7 @@ const ProductFormPage = () => {
                                                 ['bold', 'italic', 'underline', 'strike'],
                                                 [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                                                 ['link', 'image', 'clean']
-                                            ],
-                                            imageResize: {
-                                                parchment: Quill.import('parchment'),
-                                                modules: ['Resize', 'DisplaySize']
-                                            }
+                                            ]
                                         }}
                                     />
                                 </div>
