@@ -5,8 +5,9 @@ import { Save, ArrowLeft, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useBlogs, useAddBlog, useUpdateBlog } from '../../../hooks/useContent';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 const BlogFormPage = () => {
     const { id } = useParams();

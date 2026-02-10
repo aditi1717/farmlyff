@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     LayoutDashboard,
     Users,
     Layers,
@@ -51,7 +52,7 @@ const AdminSidebar = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
     
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_URL = API_BASE_URL;
     
     // Fetch Order Stats
     const { data: orderStats = {} } = useQuery({

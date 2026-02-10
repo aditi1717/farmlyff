@@ -3,6 +3,9 @@ import { Plus, Trash2, Video, ExternalLink, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/apiUrl';
+
+const API_URL = API_BASE_URL;
 
 const ReelsPage = () => {
     const queryClient = useQueryClient();
@@ -14,7 +17,7 @@ const ReelsPage = () => {
     const { data: serverReels = [] } = useQuery({
         queryKey: ['reels'],
         queryFn: async () => {
-             const res = await fetch('http://localhost:5000/api/reels');
+             const res = await fetch(`${API_URL}/reels`);
              if (!res.ok) throw new Error('Failed to fetch reels');
              return res.json();
         }
@@ -30,7 +33,7 @@ const ReelsPage = () => {
 
     const createMutation = useMutation({
         mutationFn: async (reel) => {
-            const res = await fetch('http://localhost:5000/api/reels', {
+            const res = await fetch(`${API_URL}/reels`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reel)
@@ -41,7 +44,7 @@ const ReelsPage = () => {
 
     const updateMutation = useMutation({
         mutationFn: async (reel) => {
-            const res = await fetch(`http://localhost:5000/api/reels/${reel._id || reel.id}`, {
+            const res = await fetch(`${API_URL}/reels/${reel._id || reel.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reel)
@@ -52,7 +55,7 @@ const ReelsPage = () => {
 
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
-            await fetch(`http://localhost:5000/api/reels/${id}`, { method: 'DELETE' });
+            await fetch(`${API_URL}/reels/${id}`, { method: 'DELETE' });
         }
     });
 

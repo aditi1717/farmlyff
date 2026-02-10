@@ -2,8 +2,9 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import useCartStore from '../store/useCartStore';
 import useUserStore from '../store/useUserStore';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = API_BASE_URL;
 
 const AuthContext = createContext();
 

@@ -4,6 +4,13 @@ import generateToken from '../utils/generateToken.js';
 import asyncHandler from 'express-async-handler';
 import { sendOTP, verifyOTP } from '../utils/smsService.js';
 
+const getJwtCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+});
+
 // @desc    Register new user
 // @route   POST /api/users
 // @access  Public
@@ -39,12 +46,7 @@ export const registerUser = async (req, res) => {
 
     if (user) {
       const token = generateToken(user.id);
-      res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie('jwt', token, getJwtCookieOptions());
 
       res.status(201).json({
         _id: user.id,
@@ -70,12 +72,7 @@ export const loginUser = async (req, res) => {
   // Admin Backdoor
   if (email === 'admin@farmlyf.com' && password === 'admin') {
       const token = generateToken('admin_01');
-      res.cookie('jwt', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV !== 'development',
-          sameSite: 'lax',
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie('jwt', token, getJwtCookieOptions());
       return res.json({
           _id: 'admin_01',
           name: 'Super Admin',
@@ -94,12 +91,7 @@ export const loginUser = async (req, res) => {
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const token = generateToken(user.id);
-      res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie('jwt', token, getJwtCookieOptions());
 
       res.json({
         _id: user.id,
@@ -383,12 +375,7 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
 
     // Login successful
     const token = generateToken(user.id);
-    res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('jwt', token, getJwtCookieOptions());
 
     res.json({
         _id: user.id,

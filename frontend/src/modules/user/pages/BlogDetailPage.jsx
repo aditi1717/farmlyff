@@ -9,10 +9,6 @@ const BlogDetailPage = () => {
     const { slug } = useParams();
     const { data: blog, isLoading, error } = useBlogBySlug(slug);
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
     const handleShare = async () => {
         const shareData = {
             title: blog.title,

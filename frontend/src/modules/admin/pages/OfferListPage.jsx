@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     Plus,
     Search,
     Edit2,
@@ -18,7 +19,7 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = API_BASE_URL;
 
 const OfferListPage = () => {
     const navigate = useNavigate();

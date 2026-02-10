@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Mail,
     Phone,
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
+const API_URL = API_BASE_URL;
+
 const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -32,7 +35,7 @@ const UserDetailPage = () => {
         queryKey: ['admin-user', id],
         queryFn: async () => {
             const token = localStorage.getItem('farmlyf_token');
-            const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+            const res = await fetch(`${API_URL}/users/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -47,7 +50,7 @@ const UserDetailPage = () => {
         queryKey: ['admin-user-orders', id],
         queryFn: async () => {
             const token = localStorage.getItem('farmlyf_token');
-            const res = await fetch(`http://localhost:5000/api/orders/user/${id}`, {
+            const res = await fetch(`${API_URL}/orders/user/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

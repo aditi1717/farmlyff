@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, RotateCcw, Globe, Eye, ImageIcon, Type, Upload } from 'lucide-react';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import ImageResize from 'quill-image-resize-module-react';
+import ImageResizeModule from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
 import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
@@ -16,6 +16,7 @@ if (typeof window !== 'undefined') {
 
 if (!Quill.imports['modules/imageResize']) {
     try {
+        const ImageResize = ImageResizeModule?.default ?? ImageResizeModule;
         Quill.register('modules/imageResize', ImageResize);
     } catch (error) {
         console.error('Error registering ImageResize:', error);

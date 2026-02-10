@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Save,
     Plus,
@@ -20,6 +21,8 @@ import { useProducts, useProduct, useAddProduct, useUpdateProduct, useCategories
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+
+const API_URL = API_BASE_URL;
 
 if (typeof window !== 'undefined') {
     window.Quill = Quill;
@@ -70,7 +73,7 @@ const ProductFormPage = () => {
     const { data: dbComboCategories = [] } = useQuery({
         queryKey: ['combo-categories'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/combo-categories');
+            const res = await fetch(`${API_URL}/combo-categories`);
             return res.json();
         }
     });

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     Plus,
     Search,
     Edit2,
@@ -26,6 +27,8 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
+const API_URL = API_BASE_URL;
+
 const CouponListPage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -34,7 +37,7 @@ const CouponListPage = () => {
     const { data: coupons = [], isLoading } = useQuery({
         queryKey: ['coupons'],
         queryFn: async () => {
-            const res = await fetch('http://localhost:5000/api/coupons');
+            const res = await fetch(`${API_URL}/coupons`);
             if (!res.ok) throw new Error('Failed to fetch coupons');
             return res.json();
         }
@@ -43,7 +46,7 @@ const CouponListPage = () => {
     // Delete Mutation
     const deleteMutation = useMutation({
         mutationFn: async (id) => {
-            const res = await fetch(`http://localhost:5000/api/coupons/${id}`, {
+            const res = await fetch(`${API_URL}/coupons/${id}`, {
                 method: 'DELETE'
             });
             if (!res.ok) throw new Error('Failed to delete coupon');

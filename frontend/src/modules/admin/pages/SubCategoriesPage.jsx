@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     Plus,
     Search,
     Edit2,
@@ -62,7 +63,7 @@ const SubCategoriesPage = () => {
     const fetchData = async () => {
         try {
             // Only fetch SubCategories, rely on Context for Parents
-            const resS = await fetch(`${import.meta.env.VITE_API_URL}/subcategories`);
+            const resS = await fetch(`${API_BASE_URL}/subcategories`);
             const dataS = await resS.json();
 
             if (resS.ok) {
@@ -87,8 +88,8 @@ const SubCategoriesPage = () => {
         try {
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit
-                ? `${import.meta.env.VITE_API_URL}/subcategories/${editingSub.id}`
-                : `${import.meta.env.VITE_API_URL}/subcategories`;
+                ? `${API_BASE_URL}/subcategories/${editingSub.id}`
+                : `${API_BASE_URL}/subcategories`;
 
             let payload;
             if (isEdit) {
@@ -137,7 +138,7 @@ const SubCategoriesPage = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this sub-category?')) return;
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/subcategories/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE_URL}/subcategories/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success('Deleted');
                 setSubCategories(subCategories.filter(s => (s._id || s.id) !== id));

@@ -162,13 +162,30 @@ export const verifyPayment = asyncHandler(async (req, res) => {
                     // Assign AWB automatically
                     try {
                         const awbResponse = await shiprocketService.assignAWB(shiprocketResponse.shipment_id);
-                        if (awbResponse && awbResponse.response) {
-                            newOrder.awbCode = awbResponse.response.data.awb_code;
-                            newOrder.courierName = awbResponse.response.data.courier_name;
+                        
+                        // Validate AWB response structure
+                        if (awbResponse && awbResponse.response && awbResponse.response.data) {
+                            const awbCode = awbResponse.response.data.awb_code;
+                            const courierName = awbResponse.response.data.courier_name;
+                            
+                            if (awbCode) {
+                                newOrder.awbCode = awbCode;
+                                newOrder.courierName = courierName;
+                                console.log(`AWB assigned successfully: ${awbCode} via ${courierName}`);
+                                
+                                // Only generate pickup if AWB was successfully assigned
+                                try {
+                                    await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
+                                    console.log('Pickup generated successfully');
+                                } catch (pickupError) {
+                                    console.error('Pickup generation failed:', pickupError.message);
+                                }
+                            } else {
+                                console.error('AWB assignment returned no AWB code');
+                            }
+                        } else {
+                            console.error('Invalid AWB response structure:', awbResponse);
                         }
-
-                        // Generate pickup
-                        await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
                     } catch (awbError) {
                         console.error('AWB assignment failed:', awbError.message);
                     }
@@ -253,13 +270,30 @@ export const createCODOrder = asyncHandler(async (req, res) => {
                     // Assign AWB automatically
                     try {
                         const awbResponse = await shiprocketService.assignAWB(shiprocketResponse.shipment_id);
-                        if (awbResponse && awbResponse.response) {
-                            newOrder.awbCode = awbResponse.response.data.awb_code;
-                            newOrder.courierName = awbResponse.response.data.courier_name;
+                        
+                        // Validate AWB response structure
+                        if (awbResponse && awbResponse.response && awbResponse.response.data) {
+                            const awbCode = awbResponse.response.data.awb_code;
+                            const courierName = awbResponse.response.data.courier_name;
+                            
+                            if (awbCode) {
+                                newOrder.awbCode = awbCode;
+                                newOrder.courierName = courierName;
+                                console.log(`AWB assigned successfully: ${awbCode} via ${courierName}`);
+                                
+                                // Only generate pickup if AWB was successfully assigned
+                                try {
+                                    await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
+                                    console.log('Pickup generated successfully');
+                                } catch (pickupError) {
+                                    console.error('Pickup generation failed:', pickupError.message);
+                                }
+                            } else {
+                                console.error('AWB assignment returned no AWB code');
+                            }
+                        } else {
+                            console.error('Invalid AWB response structure:', awbResponse);
                         }
-
-                        // Generate pickup
-                        await shiprocketService.generatePickup(shiprocketResponse.shipment_id);
                     } catch (awbError) {
                         console.error('AWB assignment failed:', awbError.message);
                     }

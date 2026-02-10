@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Box,
     Truck,
@@ -30,6 +31,8 @@ import {
 import toast from 'react-hot-toast';
 import baadaamImg from '../../../assets/baadaam.png';
 import cashewImg from '../../../assets/cashew.png';
+
+const API_URL = API_BASE_URL;
 
 const ReturnDetailPage = () => {
     const { id } = useParams();
@@ -390,7 +393,7 @@ const currentDummyData = DUMMY_CASES[id] || DUMMY_CASES['101'];
 const { data: ret, isLoading } = useQuery({
     queryKey: ['return', id],
     queryFn: async () => {
-        const res = await fetch(`http://localhost:5000/api/returns`);
+        const res = await fetch(`${API_URL}/returns`);
         if (!res.ok) throw new Error('Failed');
         const allReturns = await res.json();
         // Find by _id
@@ -403,7 +406,7 @@ const { data: ret, isLoading } = useQuery({
 // Approve Return Mutation
 const approveMutation = useMutation({
     mutationFn: async () => {
-        const res = await fetch(`http://localhost:5000/api/returns/${id}/approve`, {
+        const res = await fetch(`${API_URL}/returns/${id}/approve`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -424,7 +427,7 @@ const approveMutation = useMutation({
 // Update Status Mutation
 const updateStatusMutation = useMutation({
     mutationFn: async ({ status }) => {
-        const res = await fetch(`http://localhost:5000/api/returns/${id}`, {
+        const res = await fetch(`${API_URL}/returns/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })

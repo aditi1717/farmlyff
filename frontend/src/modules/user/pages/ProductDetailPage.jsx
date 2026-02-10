@@ -6,6 +6,7 @@ import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useProducts, useProduct } from '../../../hooks/useProducts';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 // import { PACKS } from '../../../mockData/data'; // Removed if unused
 
@@ -134,7 +135,7 @@ const ProductDetailPage = () => {
         if (!product) return;
         try {
             setReviewsLoading(true);
-            const API_URL = import.meta.env.VITE_API_URL;
+            const API_URL = API_BASE_URL;
             const res = await fetch(`${API_URL}/reviews/product/${product.id}`);
             if (res.ok) {
                 const data = await res.json();
@@ -156,7 +157,7 @@ const ProductDetailPage = () => {
         }
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL;
+            const API_URL = API_BASE_URL;
             const res = await fetch(`${API_URL}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -197,10 +198,6 @@ const ProductDetailPage = () => {
             fetchReviews();
         }
     }, [product]);
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [slug]);
 
     useEffect(() => {
         const handleClickOutside = (e) => {

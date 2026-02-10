@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     Search,
     Filter,
     ArrowLeft,
@@ -19,6 +20,8 @@ import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+
+const API_URL = API_BASE_URL;
 
 const ReturnRequestsPage = () => {
     const navigate = useNavigate();
@@ -80,7 +83,7 @@ const ReturnRequestsPage = () => {
         queryKey: ['returns'],
         queryFn: async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/returns');
+                const res = await fetch(`${API_URL}/returns`);
                 if (!res.ok) throw new Error('Failed to fetch returns');
                 const data = await res.json();
                 return data.length > 0 ? data : DUMMY_RETURNS;
@@ -95,7 +98,7 @@ const ReturnRequestsPage = () => {
     const queryClient = useQueryClient();
     const updateReturnStatus = useMutation({
         mutationFn: async ({ id, status }) => {
-            const res = await fetch(`http://localhost:5000/api/returns/${id}`, {
+            const res = await fetch(`${API_URL}/returns/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -113,7 +116,7 @@ const ReturnRequestsPage = () => {
     // Approve Return Mutation
     const approveReturn = useMutation({
         mutationFn: async (id) => {
-            const res = await fetch(`http://localhost:5000/api/returns/${id}/approve`, {
+            const res = await fetch(`${API_URL}/returns/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });

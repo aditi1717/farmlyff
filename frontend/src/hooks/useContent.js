@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 // Helper to check if user is authenticated
 const isAuthenticated = () => {
@@ -12,6 +13,15 @@ const isAuthenticated = () => {
     }
 };
 
+const getAuthHeaders = () => {
+    try {
+        const token = localStorage.getItem('farmlyf_token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch {
+        return {};
+    }
+};
+
 // Mock Banners Data for now if API not ready, or use local storage logic if that was the plan.
 // Previous implementation used localStorage 'farmlyf_banners'.
 // We can use a query that reads from localStorage for now to mimic "Server/Persisted" state,
@@ -19,7 +29,7 @@ const isAuthenticated = () => {
 // However, the prompt asked for "Products -> React Query", implies data fetching.
 // I will assume Banners are data.
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = API_BASE_URL;
 
 const defaultBanners = [
     {
@@ -52,7 +62,10 @@ export const useBanners = () => {
     return useQuery({
         queryKey: ['banners'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/banners`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/banners`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch banners');
             return res.json();
         }
@@ -65,7 +78,7 @@ export const useAddBanner = () => {
         mutationFn: async (data) => {
             const res = await fetch(`${API_URL}/banners`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
@@ -86,7 +99,7 @@ export const useUpdateBanner = () => {
         mutationFn: async ({ id, data }) => {
             const res = await fetch(`${API_URL}/banners/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
@@ -107,6 +120,7 @@ export const useDeleteBanner = () => {
         mutationFn: async (id) => {
             const res = await fetch(`${API_URL}/banners/${id}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(),
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to delete banner');
@@ -132,7 +146,10 @@ const createCRUDHooks = (queryKey, path) => {
         useData: () => useQuery({
             queryKey: [queryKey],
             queryFn: async () => {
-                const res = await fetch(`${API_URL}/${path}`, { credentials: 'include' });
+                const res = await fetch(`${API_URL}/${path}`, {
+                    credentials: 'include',
+                    headers: getAuthHeaders()
+                });
                 if (!res.ok) throw new Error(`Failed to fetch ${queryKey}`);
                 return res.json();
             }
@@ -143,7 +160,7 @@ const createCRUDHooks = (queryKey, path) => {
                 mutationFn: async (data) => {
                     const res = await fetch(`${API_URL}/${path}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify(data),
                         credentials: 'include'
                     });
@@ -163,7 +180,7 @@ const createCRUDHooks = (queryKey, path) => {
                 mutationFn: async ({ id, data }) => {
                     const res = await fetch(`${API_URL}/${path}/${id || ''}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                         body: JSON.stringify(data),
                         credentials: 'include'
                     });
@@ -183,6 +200,7 @@ const createCRUDHooks = (queryKey, path) => {
                 mutationFn: async (id) => {
                     const res = await fetch(`${API_URL}/${path}/${id}`, {
                         method: 'DELETE',
+                        headers: getAuthHeaders(),
                         credentials: 'include'
                     });
                     if (!res.ok) throw new Error(`Failed to delete ${queryKey}`);
@@ -214,7 +232,10 @@ export const useFeaturedSectionByName = (name) => {
     return useQuery({
         queryKey: ['featured-sections', name],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/featured-sections/${name}`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/featured-sections/${name}`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error(`Failed to fetch featured section ${name}`);
             return res.json();
         },
@@ -233,7 +254,10 @@ export const useAboutSection = () => {
     return useQuery({
         queryKey: ['about-section'], // Keep queryKey for cache stability if needed, or unify to ['page-content', 'about-us']
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/page-content/homepage-about`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/page-content/homepage-about`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error(`Failed to fetch homepage-about content`);
             const data = await res.json();
             // Return the nested content object to maintain compatibility with existing components
@@ -248,7 +272,7 @@ export const useUpdateAboutSectionInfo = () => {
         mutationFn: async ({ data }) => {
             const res = await fetch(`${API_URL}/page-content/homepage-about`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
@@ -272,7 +296,7 @@ export const useUpdateHealthBenefitSection = () => {
         mutationFn: async ({ data }) => {
             const res = await fetch(`${API_URL}/health-benefits`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
@@ -298,7 +322,10 @@ export const useAdminReviews = () => {
     return useQuery({
         queryKey: ['admin-reviews'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/reviews/admin/testimonials`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/reviews/admin/testimonials`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch testimonials');
             return res.json();
         }
@@ -317,7 +344,7 @@ export const useUpdateReviewStatus = () => {
         mutationFn: async ({ id, status }) => {
             const res = await fetch(`${API_URL}/reviews/${id}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify({ status }),
                 credentials: 'include'
             });
@@ -337,7 +364,10 @@ export const useFeaturedReviews = () => {
     return useQuery({
         queryKey: ['reviews', 'featured'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/reviews/testimonials`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/reviews/testimonials`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch testimonials');
             return res.json();
         }
@@ -354,7 +384,10 @@ export const useBlogBySlug = (slug) => {
     return useQuery({
         queryKey: ['blogs', 'slug', slug],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/blogs/slug/${slug}`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/blogs/slug/${slug}`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error(`Failed to fetch blog for ${slug}`);
             return res.json();
         },
@@ -366,7 +399,10 @@ export const useWebsiteContent = (slug) => {
     return useQuery({
         queryKey: ['page-content', slug],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/page-content/${slug}`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/page-content/${slug}`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error(`Failed to fetch content for ${slug}`);
             return res.json();
         },
@@ -380,7 +416,7 @@ export const useUpdateWebsiteContent = (slug) => {
         mutationFn: async (data) => {
             const res = await fetch(`${API_URL}/page-content/${slug}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
@@ -399,7 +435,10 @@ export const usePromoCard = () => {
     return useQuery({
         queryKey: ['promo-card'],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/promo-card`, { credentials: 'include' });
+            const res = await fetch(`${API_URL}/promo-card`, {
+                credentials: 'include',
+                headers: getAuthHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch promo card');
             return res.json();
         }
@@ -412,7 +451,7 @@ export const useUpdatePromoCard = () => {
         mutationFn: async (data) => {
             const res = await fetch(`${API_URL}/promo-card`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });

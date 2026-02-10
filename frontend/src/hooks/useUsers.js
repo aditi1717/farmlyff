@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 // Helper to check if user is authenticated
 const isAuthenticated = () => {
@@ -12,7 +13,7 @@ const isAuthenticated = () => {
     }
 };
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_BASE_URL;
 
 export const useUsers = () => {
     return useQuery({

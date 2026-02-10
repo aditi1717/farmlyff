@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+import { API_BASE_URL } from '@/lib/apiUrl';
     ArrowLeft,
     Printer,
     Download,
@@ -25,6 +26,8 @@ import {
 import toast from 'react-hot-toast';
 import baadaamImg from '../../../assets/baadaam.png';
 import cashewImg from '../../../assets/cashew.png';
+
+const API_URL = API_BASE_URL;
 
 const ReplacementDetailPage = () => {
     const { id } = useParams();
@@ -119,7 +122,7 @@ const ReplacementDetailPage = () => {
     const { data: currentData, isLoading, isError } = useQuery({
         queryKey: ['replacement', id],
         queryFn: async () => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}`);
+            const res = await fetch(`${API_URL}/replacements/${id}`);
             if (!res.ok) throw new Error('Failed to fetch replacement');
             return res.json();
         }
@@ -128,7 +131,7 @@ const ReplacementDetailPage = () => {
     // Approve Mutation
     const approveMutation = useMutation({
         mutationFn: async () => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}/approve`, {
+            const res = await fetch(`${API_URL}/replacements/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -149,7 +152,7 @@ const ReplacementDetailPage = () => {
     // Reject Mutation
     const rejectMutation = useMutation({
         mutationFn: async () => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}`, {
+            const res = await fetch(`${API_URL}/replacements/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'Rejected' })
@@ -167,7 +170,7 @@ const ReplacementDetailPage = () => {
     // Ship Replacement Mutation
     const shipMutation = useMutation({
         mutationFn: async () => {
-            const res = await fetch(`http://localhost:5000/api/replacements/${id}/ship`, {
+            const res = await fetch(`${API_URL}/replacements/${id}/ship`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' }
             });
