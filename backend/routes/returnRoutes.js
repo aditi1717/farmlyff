@@ -1,9 +1,10 @@
 import express from 'express';
-import { getReturns, createReturn, updateReturn, approveReturn } from '../controllers/returnController.js';
+import { getReturns, getReturnById, createReturn, updateReturn, approveReturn } from '../controllers/returnController.js';
 
 const router = express.Router();
 
 router.get('/', getReturns);
+router.get('/:id', getReturnById);
 router.post('/', createReturn);
 router.put('/:id', updateReturn);
 router.put('/:id/approve', approveReturn);

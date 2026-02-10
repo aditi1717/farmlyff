@@ -122,6 +122,19 @@ export const approveReturn = asyncHandler(async (req, res) => {
   }
 });
 
+export const getReturnById = asyncHandler(async (req, res) => {
+  try {
+    const returnReq = await Return.findById(req.params.id);
+    if (returnReq) {
+      res.json(returnReq);
+    } else {
+      res.status(404).json({ message: 'Return request not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // @desc    Update return status
 // @route   PUT /api/returns/:id
 // @access  Private/Admin

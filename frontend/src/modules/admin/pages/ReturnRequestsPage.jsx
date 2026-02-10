@@ -80,18 +80,12 @@ const ReturnRequestsPage = () => {
     ];
 
     // Fetch Returns
-    const { data: returnsData = DUMMY_RETURNS } = useQuery({
+    const { data: returnsData = [] } = useQuery({
         queryKey: ['returns'],
         queryFn: async () => {
-            try {
-                const res = await fetch(`${API_URL}/returns`);
-                if (!res.ok) throw new Error('Failed to fetch returns');
-                const data = await res.json();
-                return data.length > 0 ? data : DUMMY_RETURNS;
-            } catch (error) {
-                console.error("Fetch failed, using dummy data", error);
-                return DUMMY_RETURNS;
-            }
+            const res = await fetch(`${API_URL}/returns`);
+            if (!res.ok) throw new Error('Failed to fetch returns');
+            return res.json();
         }
     });
 

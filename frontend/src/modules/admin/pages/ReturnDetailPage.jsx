@@ -394,13 +394,9 @@ const currentDummyData = DUMMY_CASES[id] || DUMMY_CASES['101'];
 const { data: ret, isLoading } = useQuery({
     queryKey: ['return', id],
     queryFn: async () => {
-        const res = await fetch(`${API_URL}/returns`);
-        if (!res.ok) throw new Error('Failed');
-        const allReturns = await res.json();
-        // Find by _id
-        const found = allReturns.find(r => r._id === id || r.id === id);
-        if (found) return found;
-        throw new Error('Return not found');
+        const res = await fetch(`${API_URL}/returns/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch return details');
+        return res.json();
     }
 });
 
