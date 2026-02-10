@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 
 const variantSchema = new mongoose.Schema({
   id: String,
-  weight: String,
+  weight: String, // Kept for backward compatibility
+  quantity: String, // Numeric value (e.g., "250", "1")
+  unit: String,     // Unit type (e.g., "g", "kg", "piece")
   mrp: Number,
   price: Number,
   unitPrice: String,
