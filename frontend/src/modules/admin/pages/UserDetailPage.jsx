@@ -21,7 +21,8 @@ import {
     ChevronDown,
     ChevronUp,
     Briefcase,
-    Building2
+    Building2,
+    AlertCircle
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -112,14 +113,32 @@ const UserDetailPage = () => {
                     Back to CRM
                 </button>
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={handleToggleBan}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${user.isBanned
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                        : 'bg-red-50 text-red-500 border-red-100'
-                        }`}>
-                        {user.isBanned ? 'Unlock User' : 'Restrict Account'}
-                    </button>
+                    {user.isBanned ? (
+                        <div className="flex items-center gap-2">
+                            {/* Static Status Label - Non-Clickable */}
+                            <div className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-100 flex items-center gap-2 select-none">
+                                <AlertCircle size={14} />
+                                Restricted Account
+                            </div>
+                            {/* Separate Action Button */}
+                            <button
+                                onClick={handleToggleBan}
+                                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all flex items-center gap-2"
+                                title="Unlock User"
+                            >
+                                <ShieldCheck size={14} />
+                                Unlock User
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleToggleBan}
+                            className="p-2.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all group"
+                            title="Restrict Account"
+                        >
+                            <ShieldOff size={18} className="group-hover:scale-110 transition-transform" />
+                        </button>
+                    )}
                 </div>
             </div>
 

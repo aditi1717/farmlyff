@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Star, Trash2, CheckCircle, XCircle, Loader, Search, Clock, User, ShieldCheck, MessageCircle, ExternalLink, X, Image as ImageIcon, ArrowLeft, Eye, Quote, Edit3, Power, CheckCircle2, AlertCircle, Filter, Camera, Boxes, EyeOff } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview, useAllUserReviews, useUpdateReviewStatus } from '../../../hooks/useContent';
@@ -17,12 +17,12 @@ const AdminReviewsPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedReview, setSelectedReview] = useState(null);
-    const [statusFilter, setStatusFilter] = useState(activeTab === 'user' ? 'Pending' : 'All');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
 
     // Reset status filter when switching tabs
     React.useEffect(() => {
-        setStatusFilter(activeTab === 'user' ? 'Pending' : 'All');
+        setStatusFilter('All');
     }, [activeTab]);
 
     // API Hooks
