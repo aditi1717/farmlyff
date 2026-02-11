@@ -37,7 +37,7 @@ const calculatePer100g = (price, quantity, unit, weightStr) => {
     return null;
 };
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, showVault = true }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { addToCart, getCart } = useCartStore();
@@ -135,18 +135,20 @@ const ProductCard = ({ product }) => {
                         >
                             <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!user) {
-                                    return navigate('/login');
-                                }
-                                addToSaved(user.id, itemId);
-                            }}
-                            className={`transition-colors p-0.5 active:scale-95 ${isSaved ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
-                        >
-                            <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
-                        </button>
+                        {showVault && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!user) {
+                                        return navigate('/login');
+                                    }
+                                    addToSaved(user.id, itemId);
+                                }}
+                                className={`transition-colors p-0.5 active:scale-95 ${isSaved ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
+                            >
+                                <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
+                            </button>
+                        )}
                     </div>
                 </div>
 

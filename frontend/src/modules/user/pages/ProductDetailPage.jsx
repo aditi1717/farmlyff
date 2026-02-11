@@ -79,7 +79,7 @@ const ProductDetailPage = () => {
 
     // Hooks
     const { addToCart, getCart } = useCartStore();
-    const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist, getRecentlyViewed } = useUserStore();
+    const { toggleWishlist, addToRecentlyViewed, addToSaved, getWishlist, getRecentlyViewed, saveForLater } = useUserStore();
     const { data: product, isLoading: isProductLoading, isError: isProductError } = useProduct(slug);
     const { data: allProducts = [] } = useProducts();
     const { data: activeCoupons = [] } = useActiveCoupons();
@@ -387,8 +387,7 @@ const ProductDetailPage = () => {
     const currentStock = (isGroupProduct && selectedVariant) ? (selectedVariant.stock || 0) : (product.stock?.quantity || 0);
     const isOutOfStock = currentStock <= 0;
 
-    const savedMap = useUserStore(state => state.saveForLater);
-    const userSaved = user ? (savedMap[user.id] || []) : [];
+    const userSaved = user ? (saveForLater[user.id] || []) : [];
     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
     const isSaved = userSaved.some(item => String(item.packId) === String(skuId));
 

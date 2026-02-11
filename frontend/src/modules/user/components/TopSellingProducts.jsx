@@ -57,7 +57,7 @@ const TopSellingProducts = () => {
                                 transition={{ delay: index * 0.05 }}
                                 className="min-w-[160px] w-[170px] md:min-w-[280px] md:w-[280px] flex-shrink-0 snap-start"
                             >
-                                <ProductCard product={product} />
+                                <ProductCard product={product} showVault={false} />
                             </motion.div>
                         ))}
                     </div>
