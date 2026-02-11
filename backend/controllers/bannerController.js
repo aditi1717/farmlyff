@@ -32,7 +32,7 @@ export const getBannerById = async (req, res) => {
 // @route   POST /api/banners
 // @access  Private (Admin)
 export const createBanner = async (req, res) => {
-  const { title, subtitle, badgeText, ctaText, image, publicId, slides, link, section, order } = req.body;
+  const { title, subtitle, badgeText, ctaText, image, publicId, slides, link, section, order, promoCard } = req.body;
 
   try {
     const banner = new Banner({
@@ -46,6 +46,7 @@ export const createBanner = async (req, res) => {
       link,
       section,
       order,
+      promoCard: promoCard || undefined,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     });
 
