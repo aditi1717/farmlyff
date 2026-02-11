@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Leaf, Tag, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import authShowcaseImg from '../../../assets/auth_showcase.jpg';
@@ -136,7 +136,7 @@ const AuthPage = () => {
 
                     <div className="mt-auto pt-6 text-center">
                         <p className="text-gray-400 text-[10px] leading-relaxed">
-                            By continuing, you agree to our <span className="text-gray-600 font-bold">Terms of Service</span> and <span className="text-gray-600 font-bold">Privacy Policy</span>.
+                            By continuing, you agree to our <Link to="/terms-and-conditions" className="text-gray-600 font-bold hover:text-primary transition-colors">Terms of Service</Link> and <Link to="/privacy-policy" className="text-gray-600 font-bold hover:text-primary transition-colors">Privacy Policy</Link>.
                         </p>
                     </div>
                 </div>

@@ -51,9 +51,9 @@ const AdminSidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
-    
+
     const API_URL = API_BASE_URL;
-    
+
     // Fetch Order Stats
     const { data: orderStats = {} } = useQuery({
         queryKey: ['orderStats'],
@@ -703,6 +703,18 @@ const AdminSidebar = () => {
                             </div>
                         )}
                     </div>
+
+                    <Link
+                        to="/admin/profile"
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${location.pathname === '/admin/profile'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            }`}
+                    >
+                        <User size={20} strokeWidth={location.pathname === '/admin/profile' ? 2.5 : 2} />
+                        <span className="font-bold text-sm">Profile</span>
+                    </Link>
+
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all text-left group"

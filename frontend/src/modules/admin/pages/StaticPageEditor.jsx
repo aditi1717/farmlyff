@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, RotateCcw, Globe, Eye, ImageIcon, Type, Upload } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
+import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import ImageResize from 'quill-image-resize-module-react';
 import toast from 'react-hot-toast';
+
+Quill.register('modules/imageResize', ImageResize);
+
 import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
 import { PAGES_CONFIG } from '../../../config/pagesConfig';
@@ -89,7 +93,11 @@ const StaticPageEditor = () => {
             [{ 'list': 'ordered' }, { 'list': 'bullet' }],
             [{ 'align': [] }],
             ['link', 'image', 'clean']
-        ]
+        ],
+        imageResize: {
+            parchment: Quill.import('parchment'),
+            modules: ['Resize', 'DisplaySize']
+        }
     };
 
     if (loading || !pageConfig) return <div>Loading...</div>;

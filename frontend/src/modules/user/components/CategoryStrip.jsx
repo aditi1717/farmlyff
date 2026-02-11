@@ -64,11 +64,9 @@ const CategoryStrip = () => {
     // ... variants ...
 
     return (
-        <section className="bg-white pt-10 pb-1 md:pt-16 md:pb-4 px-4 md:px-12 relative overflow-hidden">
+        <section className="bg-white pt-10 pb-1 md:pt-16 md:pb-4 px-4 md:px-24 relative overflow-hidden">
             {/* ... header ... */}
             <div className="container mx-auto">
-                {/* ... header content ... */}
-
                 <div className="text-center mb-2 md:mb-14 space-y-1 md:space-y-2">
                     <motion.span
                         initial={{ opacity: 0, y: 10 }}
@@ -89,11 +87,17 @@ const CategoryStrip = () => {
                 </div>
 
                 <div className="relative flex items-center group">
-                    {/* ... scroll buttons ... */}
+                    {/* Left Navigation Button */}
+                    <button
+                        onClick={() => scroll('left')}
+                        className="absolute -left-2 md:-left-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
 
                     <motion.div
                         ref={scrollRef}
-                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth px-2 md:px-12 items-center w-full min-h-[90px] md:min-h-[150px]"
+                        className="flex gap-2 md:gap-14 overflow-x-auto no-scrollbar scroll-smooth items-center w-full min-h-[90px] md:min-h-[150px]"
                     >
                         {isLoading ? (
                             <div className="text-center w-full text-gray-400 text-sm">
@@ -154,7 +158,7 @@ const CategoryStrip = () => {
 
                     <button
                         onClick={() => scroll('right')}
-                        className="absolute -right-6 md:right-2 z-20 bg-white shadow-[0_4px_25px_rgba(0,0,0,0.1)] p-4 rounded-full hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-50 flex items-center justify-center hidden md:flex"
+                        className="absolute -right-2 md:-right-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                     >
                         <ChevronRight size={24} />
                     </button>

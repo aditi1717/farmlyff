@@ -145,39 +145,52 @@ const OTPPage = () => {
                 className="w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10 p-6 text-center"
             >
                 <div className="w-16 h-16 bg-[#2c5336]/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-[#2c5336]/20">
-                    <ShieldCheck size={32} className="text-[#2c5336]" />
+                    {isNewUser ? (
+                        <User size={32} className="text-[#2c5336]" />
+                    ) : (
+                        <ShieldCheck size={32} className="text-[#2c5336]" />
+                    )}
                 </div>
 
-                <h1 className="text-xl font-black text-gray-900 font-['Poppins'] mb-2 uppercase tracking-tight">Two-Step Verification</h1>
+                <h1 className="text-xl font-black text-gray-900 font-['Poppins'] mb-2 uppercase tracking-tight">
+                    {isNewUser ? 'Complete Profile' : 'Two-Step Verification'}
+                </h1>
                 <p className="text-gray-500 text-xs leading-relaxed mb-6">
-                    We've sent a 4-digit verification code to <br />
-                    <span className="font-bold text-[#2c5336]">+91 {phone}</span>
+                    {isNewUser
+                        ? "Please provide your details to finish signing up."
+                        : (
+                            <>
+                                We've sent a 4-digit verification code to <br />
+                                <span className="font-bold text-[#2c5336]">+91 {phone}</span>
+                            </>
+                        )}
                 </p>
 
                 <form onSubmit={handleVerify} className="space-y-4">
-                    <div className="flex justify-center gap-3 mb-2" onPaste={handlePaste}>
-                        {otp.map((digit, index) => (
-                            <input
-                                key={index}
-                                ref={el => inputRefs.current[index] = el}
-                                type="text"
-                                maxLength={1}
-                                value={digit}
-                                onChange={(e) => handleChange(index, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(index, e)}
-                                className="w-12 h-12 text-center text-lg font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
-                                autoFocus={index === 0}
-                            />
-                        ))}
-                    </div>
+                    {!isNewUser && (
+                        <div className="flex justify-center gap-3 mb-2" onPaste={handlePaste}>
+                            {otp.map((digit, index) => (
+                                <input
+                                    key={index}
+                                    ref={el => inputRefs.current[index] = el}
+                                    type="text"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleChange(index, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(index, e)}
+                                    className="w-12 h-12 text-center text-lg font-black bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#2c5336] focus:bg-white outline-none transition-all text-[#2c5336]"
+                                    autoFocus={index === 0}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                     {isNewUser && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="space-y-3 pt-3 border-t border-gray-100"
+                            className="space-y-3"
                         >
-                            <p className="text-[10px] font-bold text-[#2c5336] uppercase tracking-widest text-left mb-1">Complete Profile</p>
                             <div className="space-y-1 text-left">
                                 <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Full Name</label>
                                 <div className="relative">
@@ -261,16 +274,18 @@ const OTPPage = () => {
                     </button>
                 </form>
 
-                <div className="mt-5 pt-4 border-t border-gray-100 italic">
-                    <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-2">Didn't receive the code?</p>
-                    <button
-                        onClick={handleResend}
-                        disabled={timer > 0 || isNewUser}
-                        className={`flex items-center gap-2 mx-auto font-black text-[10px] uppercase tracking-tighter ${timer > 0 || isNewUser ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
-                    >
-                        {timer > 0 ? `Resend available in ${timer}s` : 'Resend New Code'}
-                    </button>
-                </div>
+                {!isNewUser && (
+                    <div className="mt-5 pt-4 border-t border-gray-100 italic">
+                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-2">Didn't receive the code?</p>
+                        <button
+                            onClick={handleResend}
+                            disabled={timer > 0}
+                            className={`flex items-center gap-2 mx-auto font-black text-[10px] uppercase tracking-tighter ${timer > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
+                        >
+                            {timer > 0 ? `Resend available in ${timer}s` : 'Resend New Code'}
+                        </button>
+                    </div>
+                )}
             </motion.div>
         </div>
     );

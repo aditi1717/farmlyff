@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useBlogs } from '../../../hooks/useContent';
+import toast from 'react-hot-toast';
 
 // Import blog images (fallback/placeholder logic if needed, but data should have URLs)
 import logoImg from '../../../assets/logo.png';
@@ -34,7 +35,7 @@ const BlogSection = () => {
 
     return (
         <section className="bg-white pt-12 pb-2 md:pt-16 md:pb-4 overflow-hidden">
-            <div className="container mx-auto px-4 md:px-12">
+            <div className="container mx-auto px-4 md:px-24">
                 {/* Section Header */}
                 <div className="text-center mb-8 md:mb-14">
                     <h2 className="text-2xl md:text-4xl font-['Poppins'] font-bold text-gray-900 mb-3">
@@ -48,14 +49,14 @@ const BlogSection = () => {
                     {/* Left Navigation Button */}
                     <button
                         onClick={() => scroll('left')}
-                        className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-gray-800 hover:bg-primary hover:text-white transition-all hidden md:flex items-center justify-center border border-gray-100"
+                        className="absolute -left-2 md:-left-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                     >
                         <ChevronLeft size={24} />
                     </button>
 
                     <div
                         ref={scrollRef}
-                        className="flex gap-6 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth pb-8 px-2"
+                        className="flex gap-6 md:gap-8 overflow-x-auto no-scrollbar scroll-smooth pb-8"
                     >
                         {blogPosts.map((post) => (
                             <motion.div
@@ -92,7 +93,29 @@ const BlogSection = () => {
                                                 <span className="bg-gray-50 px-2 py-1 rounded text-gray-600 border border-gray-100">
                                                     {post.category}
                                                 </span>
-                                                <Share2 size={14} className="text-gray-400 hover:text-primary cursor-pointer" />
+                                                <Share2
+                                                    size={14}
+                                                    className="text-gray-400 hover:text-primary cursor-pointer z-20 relative"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        const shareUrl = `${window.location.origin}/blog/${post.slug}`;
+                                                        if (navigator.share) {
+                                                            navigator.share({
+                                                                title: post.title,
+                                                                text: post.excerpt,
+                                                                url: shareUrl,
+                                                            }).catch(console.error);
+                                                        } else {
+                                                            navigator.clipboard.writeText(shareUrl)
+                                                                .then(() => toast.success('Link copied to clipboard!'))
+                                                                .catch((err) => {
+                                                                    console.error(err);
+                                                                    toast.error('Failed to copy link');
+                                                                });
+                                                        }
+                                                    }}
+                                                />
                                             </div>
                                         </div>
 
@@ -119,7 +142,7 @@ const BlogSection = () => {
                     {/* Right Navigation Button */}
                     <button
                         onClick={() => scroll('right')}
-                        className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-gray-800 hover:bg-primary hover:text-white transition-all hidden md:flex items-center justify-center border border-gray-100"
+                        className="absolute -right-2 md:-right-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                     >
                         <ChevronRight size={24} />
                     </button>
