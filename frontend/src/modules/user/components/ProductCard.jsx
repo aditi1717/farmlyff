@@ -7,6 +7,7 @@ import useUserStore from '../../../store/useUserStore';
 import { useNavigate } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import logo from '../../../assets/logo.png';
+import toast from 'react-hot-toast';
 
 const calculatePer100g = (price, quantity, unit, weightStr) => {
     let q = parseFloat(quantity);
@@ -120,7 +121,7 @@ const ProductCard = ({ product, showVault = true }) => {
 
                     <div className="flex items-center gap-2">
                         <div className="bg-footerBg text-white flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold shrink-0">
-                            <Star size={7} md:size={9} fill="currentColor" />
+                            <Star size={9} fill="currentColor" />
                             <span>{product.rating}</span>
                         </div>
                         <button
