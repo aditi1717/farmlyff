@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Save,
     User,
@@ -8,19 +8,109 @@ import {
     Shield,
     Send,
     Lock,
-    Edit // Import Edit icon
+    Edit,
+    Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 const AdminProfilePage = () => {
+    const { user, getAuthHeaders } = useAuth();
+    const API_URL = API_BASE_URL;
+
     const [showPassword, setShowPassword] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
-    const [isEditing, setIsEditing] = useState(false); // New state for edit mode
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: ''
+    });
+
+    const [passwordData, setPasswordData] = useState({
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                name: user.name || '',
+                email: user.email || '',
+                phone: user.phone || ''
+            });
+        }
+    }, [user]);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSave = async () => {
-        // Here you would typically make an API call to update the profile
-        toast.success("Profile updated successfully! (Simulated)");
-        setIsEditing(false); // Exit edit mode
+        setIsSaving(true);
+        try {
+            const response = await fetch(`${API_URL}/users/profile`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(formData),
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                toast.success("Profile updated successfully!");
+                setIsEditing(false);
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.message || "Failed to update profile");
+            }
+        } catch (error) {
+            console.error("Update profile error:", error);
+            toast.error("Network error. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUpdatePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            return toast.error("Passwords do not match");
+        }
+        if (passwordData.newPassword.length < 6) {
+            return toast.error("Password must be at least 6 characters");
+        }
+
+        setIsSaving(true);
+        try {
+            const response = await fetch(`${API_URL}/users/profile`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ password: passwordData.newPassword }),
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                toast.success("Password updated successfully!");
+                setIsChangingPassword(false);
+                setPasswordData({ newPassword: '', confirmPassword: '' });
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.message || "Failed to update password");
+            }
+        } catch (error) {
+            console.error("Update password error:", error);
+            toast.error("Network error. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -37,14 +127,16 @@ const AdminProfilePage = () => {
                         <button
                             onClick={() => setIsEditing(false)}
                             className="bg-gray-100 text-gray-500 px-5 py-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all"
+                            disabled={isSaving}
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSave}
-                            className="bg-black text-white px-5 py-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95"
+                            disabled={isSaving}
+                            className="bg-black text-white px-5 py-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                         >
-                            <Save size={14} /> Save Changes
+                            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isSaving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
                 ) : (
@@ -68,7 +160,7 @@ const AdminProfilePage = () => {
                             </div>
                         </div>
                         <div className="flex-1 space-y-1">
-                            <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Admin User</h3>
+                            <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">{formData.name}</h3>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Super Administrator</span>
                                 <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
@@ -83,8 +175,10 @@ const AdminProfilePage = () => {
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
                             <input
+                                name="name"
                                 type="text"
-                                defaultValue="Admin User"
+                                value={formData.name}
+                                onChange={handleChange}
                                 disabled={!isEditing}
                                 className={`w-full border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 outline-none transition-all ${isEditing ? 'bg-gray-50 focus:ring-1 focus:ring-black/5' : 'bg-transparent pl-0'}`}
                             />
@@ -92,8 +186,10 @@ const AdminProfilePage = () => {
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
                             <input
+                                name="email"
                                 type="email"
-                                defaultValue="admin@farmlyf.com"
+                                value={formData.email}
+                                onChange={handleChange}
                                 disabled={!isEditing}
                                 className={`w-full border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 outline-none transition-all ${isEditing ? 'bg-gray-50 focus:ring-1 focus:ring-black/5' : 'bg-transparent pl-0'}`}
                             />
@@ -101,8 +197,10 @@ const AdminProfilePage = () => {
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
                             <input
+                                name="phone"
                                 type="tel"
-                                defaultValue="+91 98765 43210"
+                                value={formData.phone}
+                                onChange={handleChange}
                                 disabled={!isEditing}
                                 className={`w-full border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 outline-none transition-all ${isEditing ? 'bg-gray-50 focus:ring-1 focus:ring-black/5' : 'bg-transparent pl-0'}`}
                             />
@@ -111,7 +209,7 @@ const AdminProfilePage = () => {
                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Role</label>
                             <input
                                 type="text"
-                                defaultValue="Super Admin"
+                                value="Super Admin"
                                 disabled
                                 className="w-full bg-transparent pl-0 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-gray-400 cursor-not-allowed outline-none"
                             />
@@ -141,7 +239,10 @@ const AdminProfilePage = () => {
                                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">New Password</label>
                                         <div className="relative">
                                             <input
+                                                name="newPassword"
                                                 type={showPassword ? "text" : "password"}
+                                                value={passwordData.newPassword}
+                                                onChange={handlePasswordChange}
                                                 placeholder="Enter new password"
                                                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:border-black transition-all outline-none pr-10"
                                             />
@@ -156,7 +257,10 @@ const AdminProfilePage = () => {
                                     <div className="space-y-1.5">
                                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Confirm Password</label>
                                         <input
+                                            name="confirmPassword"
                                             type="password"
+                                            value={passwordData.confirmPassword}
+                                            onChange={handlePasswordChange}
                                             placeholder="Confirm new password"
                                             className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:border-black transition-all outline-none"
                                         />
@@ -166,11 +270,16 @@ const AdminProfilePage = () => {
                                     <button
                                         onClick={() => setIsChangingPassword(false)}
                                         className="px-4 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest text-gray-500 hover:bg-gray-200 transition-all"
+                                        disabled={isSaving}
                                     >
                                         Cancel
                                     </button>
-                                    <button className="bg-black text-white px-4 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-gray-800 transition-all shadow-md">
-                                        Update Password
+                                    <button
+                                        onClick={handleUpdatePassword}
+                                        disabled={isSaving}
+                                        className="bg-black text-white px-4 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-gray-800 transition-all shadow-md disabled:opacity-50"
+                                    >
+                                        {isSaving ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </div>
                             </div>

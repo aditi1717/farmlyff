@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
@@ -124,26 +125,40 @@ export const logoutUser = (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 export const getUserProfile = asyncHandler(async (req, res) => {
-  // Use the user already attached by 'protect' middleware
-  const user = req.user;
+  let profile;
+  let isAdmin = req.user.role === 'admin';
 
-  if (user) {
+  if (isAdmin) {
+    profile = await Admin.findOne({ email: req.user.email });
+    if (!profile && req.user.email === 'admin@farmlyf.com') {
+      // Return hardcoded values for backdoor admin if not in DB yet
+      return res.json({
+        id: 'admin_01',
+        _id: 'admin_01',
+        name: 'Super Admin',
+        email: 'admin@farmlyf.com',
+        role: 'admin'
+      });
+    }
+  } else {
+    profile = req.user;
+  }
+
+  if (profile) {
     res.json({
-        id: user.id,
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        gender: user.gender || 'Other',
-        birthDate: user.birthDate || '',
-        addresses: user.addresses || [],
-        accountType: user.accountType || 'Individual',
-        gstNumber: user.gstNumber || '',
-        role: user.email === 'admin@farmlyf.com' ? 'admin' : 'user'
+        id: profile.id || profile._id,
+        _id: profile.id || profile._id,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone || '',
+        gender: profile.gender || 'Other',
+        birthDate: profile.birthDate || '',
+        addresses: profile.addresses || [],
+        accountType: profile.accountType || 'Individual',
+        gstNumber: profile.gstNumber || '',
+        role: isAdmin ? 'admin' : 'user'
     });
   } else {
-    // This case is actually handled by 'protect' middleware now, 
-    // but kept as a safety fallback.
     res.status(401).json({ message: 'Not authorized, profile unavailable' });
   }
 });
@@ -152,7 +167,22 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/profile
 // @access  Private
 export const updateUserProfile = asyncHandler(async (req, res) => {
-    const user = await User.findOne({ id: req.user.id });
+    let user;
+    let isAdmin = req.user.role === 'admin';
+
+    if (isAdmin) {
+        user = await Admin.findOne({ email: req.user.email });
+        if (!user && req.user.email === 'admin@farmlyf.com') {
+            // Create the admin record if it doesn't exist but they are logged in via backdoor
+            user = new Admin({
+                email: 'admin@farmlyf.com',
+                name: req.body.name || 'Super Admin',
+                password: 'admin' // Initial password if created this way
+            });
+        }
+    } else {
+        user = await User.findOne({ id: req.user.id });
+    }
 
     if (user) {
         if (req.body.name !== undefined) user.name = req.body.name;
@@ -175,17 +205,17 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
         const updatedUser = await user.save();
 
         res.json({
-            id: updatedUser.id,
-            _id: updatedUser.id,
+            id: isAdmin ? 'admin_01' : updatedUser.id,
+            _id: isAdmin ? 'admin_01' : updatedUser.id,
             name: updatedUser.name,
             email: updatedUser.email,
-            phone: updatedUser.phone,
-            gender: updatedUser.gender,
-            birthDate: updatedUser.birthDate,
-            addresses: updatedUser.addresses,
-            accountType: updatedUser.accountType,
-            gstNumber: updatedUser.gstNumber,
-            role: updatedUser.email === 'admin@farmlyf.com' ? 'admin' : 'user'
+            phone: updatedUser.phone || '',
+            gender: isAdmin ? 'Other' : updatedUser.gender,
+            birthDate: isAdmin ? '' : updatedUser.birthDate,
+            addresses: isAdmin ? [] : updatedUser.addresses,
+            accountType: isAdmin ? 'Admin' : (updatedUser.accountType || 'Individual'),
+            gstNumber: isAdmin ? '' : updatedUser.gstNumber,
+            role: isAdmin ? 'admin' : 'user'
         });
     } else {
         res.status(404);
