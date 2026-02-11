@@ -10,6 +10,44 @@ export const useNotifications = () => {
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const { user } = useAuth();
 
+  const getNotificationText = (payload) => {
+    const title =
+      payload?.notification?.title ||
+      payload?.data?.heading ||
+      payload?.data?.title ||
+      'New Notification';
+    const body =
+      payload?.notification?.body ||
+      payload?.data?.message ||
+      payload?.data?.body ||
+      'You have a new update.';
+    return { title, body };
+  };
+
+  const showForegroundSystemNotification = async (payload) => {
+    if (Notification.permission !== 'granted') return;
+    const { title, body } = getNotificationText(payload);
+    const options = {
+      body,
+      icon: '/vite.svg',
+      badge: '/vite.svg',
+      data: payload?.data || {}
+    };
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        if (registration) {
+          await registration.showNotification(title, options);
+          return;
+        }
+      }
+      new Notification(title, options);
+    } catch (error) {
+      console.error('Failed to show foreground system notification:', error);
+    }
+  };
+
   // Register FCM token with backend
   const registerFcmToken = async (token) => {
     try {
@@ -69,9 +107,10 @@ export const useNotifications = () => {
 
     const unsubscribe = onMessageListener((payload) => {
       console.log('Foreground notification received:', payload);
-      
-      // We rely on the custom toast for foreground notifications.
-      // Showing a native browser notification as well causes "double notifications" in the UI.
+      const { title, body } = getNotificationText(payload);
+
+      // Show a native notification in foreground so users see it even when actively browsing.
+      showForegroundSystemNotification(payload);
 
       toast.custom((t) => (
         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
@@ -79,10 +118,10 @@ export const useNotifications = () => {
             <div className="flex items-start">
               <div className="ml-3 flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {payload.notification?.title}
+                  {title}
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  {payload.notification?.body}
+                  {body}
                 </p>
               </div>
             </div>

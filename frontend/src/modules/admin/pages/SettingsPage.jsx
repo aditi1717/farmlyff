@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/apiUrl';
+import { useSetting, useUpdateSetting } from '../../../hooks/useSettings';
 import {
-
+    Send,
     Save,
     User,
     Bell,
@@ -22,6 +23,18 @@ const SettingsPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
     const [showPassword, setShowPassword] = useState(false);
+    const [pushMessage, setPushMessage] = useState({
+        heading: '',
+        message: '',
+        target: 'all'
+    });
+    const [checkoutFees, setCheckoutFees] = useState({
+        paymentHandlingFee: 0,
+        platformFee: 0,
+        handlingFee: 0
+    });
+    const { data: checkoutFeeConfigSetting } = useSetting('checkout_fee_config');
+    const updateSettingMutation = useUpdateSetting();
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -30,8 +43,45 @@ const SettingsPage = () => {
         }
     }, [searchParams, activeTab]);
 
+    useEffect(() => {
+        const value = checkoutFeeConfigSetting?.value;
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+        setCheckoutFees({
+            paymentHandlingFee: Number(value.paymentHandlingFee || 0),
+            platformFee: Number(value.platformFee || 0),
+            handlingFee: Number(value.handlingFee || 0)
+        });
+    }, [checkoutFeeConfigSetting]);
+
     const handleSave = async () => {
         toast.success("Settings preferences saved! (Simulated)");
+    };
+
+    const handleSendPush = () => {
+        if (!pushMessage.heading || !pushMessage.message) {
+            toast.error('Please enter both heading and message');
+            return;
+        }
+        toast.success('Push message queued (simulated)');
+    };
+
+    const handleFeeInputChange = (field, value) => {
+        const numeric = Number(value);
+        setCheckoutFees((prev) => ({
+            ...prev,
+            [field]: Number.isFinite(numeric) && numeric >= 0 ? numeric : 0
+        }));
+    };
+
+    const handleSaveCheckoutFees = async () => {
+        try {
+            await updateSettingMutation.mutateAsync({
+                key: 'checkout_fee_config',
+                value: checkoutFees
+            });
+        } catch (error) {
+            // Error toast already handled in hook
+        }
     };
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -243,6 +293,53 @@ const SettingsPage = () => {
                                     <option>UTC</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-8">
+                            <div className="mb-4">
+                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Checkout Fees</h4>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Used in checkout price details breakdown</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Payment Handling Fee</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={checkoutFees.paymentHandlingFee}
+                                        onChange={(e) => handleFeeInputChange('paymentHandlingFee', e.target.value)}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Platform Fee</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={checkoutFees.platformFee}
+                                        onChange={(e) => handleFeeInputChange('platformFee', e.target.value)}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Handling Fee</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={checkoutFees.handlingFee}
+                                        onChange={(e) => handleFeeInputChange('handlingFee', e.target.value)}
+                                        className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleSaveCheckoutFees}
+                                disabled={updateSettingMutation.isPending}
+                                className="mt-5 bg-black text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg active:scale-95 disabled:opacity-60"
+                            >
+                                {updateSettingMutation.isPending ? 'Saving...' : 'Save Checkout Fees'}
+                            </button>
                         </div>
                     </div>
                 )}

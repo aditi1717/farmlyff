@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect } from 'react';
 // import { useShop } from '../../../context/ShopContext'; // Removed
 import { useAuth } from '../../../context/AuthContext';
@@ -15,6 +15,7 @@ import { useUserProfile } from '../../../hooks/useUser';
 import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 import { useValidateReferral } from '../../../hooks/useReferrals';
+import { useSetting } from '../../../hooks/useSettings';
 import { API_BASE_URL } from '@/lib/apiUrl';
 
 const CheckoutPage = () => {
@@ -30,6 +31,7 @@ const CheckoutPage = () => {
     const { data: products = [] } = useProducts();
     const { data: activeCoupons = [] } = useActiveCoupons();
     const { data: userData } = useUserProfile();
+    const { data: checkoutFeeSetting } = useSetting('checkout_fee_config');
     const hasAddress = userData?.addresses && userData?.addresses.length > 0;
     const isProfileComplete = !!(hasAddress && (userData?.phone || userData.addresses.some(a => a.phone)));
     const { mutateAsync: validateReferralMutate } = useValidateReferral();
@@ -62,7 +64,7 @@ const CheckoutPage = () => {
         // First check actual coupons
         const coupon = activeCoupons.find(c => c.code === code);
         if (coupon) {
-            if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of ₹${coupon.minOrderValue} required` };
+            if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of â‚¹${coupon.minOrderValue} required` };
 
             let discount = 0;
             if (coupon.type === 'percent') {
@@ -121,6 +123,11 @@ const CheckoutPage = () => {
     }).filter(Boolean);
 
     const subtotal = enrichedCart.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0);
+    const mrpTotal = enrichedCart.reduce((acc, item) => {
+        const qty = Number(item.qty) || 0;
+        const unitMrp = Number(item.mrp || item.price || 0);
+        return acc + (unitMrp * qty);
+    }, 0);
     const shippingItemsPayload = enrichedCart.map((item) => ({
         id: item.id,
         productId: item.productId || item.id,
@@ -345,7 +352,20 @@ const CheckoutPage = () => {
     }, [formData.pincode, paymentMethod, subtotal, couponDiscount, shippingItemsSignature]);
 
     const shippingCharge = Number(shippingQuote.shippingCharge || 0);
-    const total = Math.max(0, subtotal - couponDiscount + shippingCharge);
+    const parseFeeAmount = (value) => {
+        const amount = Number(value);
+        return Number.isFinite(amount) && amount > 0 ? amount : 0;
+    };
+    const feeConfigValue = checkoutFeeSetting?.value;
+    const feeConfig = (feeConfigValue && typeof feeConfigValue === 'object' && !Array.isArray(feeConfigValue))
+        ? feeConfigValue
+        : {};
+    const paymentHandlingFee = parseFeeAmount(feeConfig.paymentHandlingFee);
+    const platformFee = parseFeeAmount(feeConfig.platformFee);
+    const handlingFee = parseFeeAmount(feeConfig.handlingFee);
+    const totalAdditionalFees = paymentHandlingFee + platformFee + handlingFee + shippingCharge;
+    const mrpDiscount = Math.max(0, mrpTotal - subtotal);
+    const total = Math.max(0, subtotal + totalAdditionalFees - couponDiscount);
 
     const getActiveCoupons = () => {
         if (!activeCoupons) return [];
@@ -446,6 +466,11 @@ const CheckoutPage = () => {
             paymentMethod: paymentMethod,
             subtotal,
             deliveryCharges: shippingCharge,
+            additionalFees: {
+                paymentHandlingFee,
+                platformFee,
+                handlingFee
+            },
             shippingQuote: {
                 source: shippingQuote.source,
                 courierName: shippingQuote.courierName,
@@ -759,7 +784,7 @@ const CheckoutPage = () => {
                                         </div>
                                         <div>
                                             <p className="font-black text-emerald-600 text-[10px] md:text-sm uppercase tracking-wider">{appliedCoupon.code}</p>
-                                            <p className="text-[9px] md:text-xs text-emerald-500 font-bold">Saved ₹{couponDiscount}!</p>
+                                            <p className="text-[9px] md:text-xs text-emerald-500 font-bold">Saved â‚¹{couponDiscount}!</p>
                                         </div>
                                     </div>
                                     <button
@@ -796,51 +821,81 @@ const CheckoutPage = () => {
                                                     <span className="text-[10px] md:text-xs text-gray-400">Qty: {item.qty}</span>
                                                     {item.weight && <span className="text-[10px] text-primary font-bold">{item.weight}</span>}
                                                 </div>
-                                                <span className="text-xs md:text-sm font-black text-footerBg">₹{item.price * item.qty}</span>
+                                                <span className="text-xs md:text-sm font-black text-footerBg">â‚¹{item.price * item.qty}</span>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="space-y-2 md:space-y-3 pt-3 md:pt-4 border-t border-gray-100">
-                                <div className="flex justify-between text-gray-500 text-[11px] md:text-sm">
-                                    <span>Subtotal</span>
-                                    <span className="font-bold text-footerBg">₹{subtotal}</span>
+                            <div className="space-y-3 pt-3 md:pt-4 border-t border-gray-100">
+                                <div className="flex justify-between text-[13px] md:text-base text-gray-700">
+                                    <span className="font-medium">MRP (incl. of all taxes)</span>
+                                    <span className="font-semibold text-footerBg">₹{mrpTotal}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-500 text-[11px] md:text-sm">
-                                    <span>Delivery</span>
-                                    <span className={`${shippingCharge > 0 ? 'text-footerBg' : 'text-emerald-500'} font-bold italic`}>
-                                        {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? `Rs ${shippingCharge}` : 'FREE'}
-                                    </span>
-                                </div>
-                                {(shippingQuote.courierName || shippingQuote.error || shippingQuote.source) && (
-                                    <div className="text-[9px] md:text-[11px] text-gray-400">
-                                        {shippingQuote.loading && <span>Checking live shipping rates...</span>}
-                                        {!shippingQuote.loading && shippingQuote.source === 'shiprocket' && (
-                                            <span>
-                                                Live rate via {shippingQuote.courierName || 'Shiprocket'}
-                                                {shippingQuote.estimatedDays ? ` | ETA ${shippingQuote.estimatedDays} day(s)` : ''}
-                                                {shippingQuote.weight ? ` | ${shippingQuote.weight} kg` : ''}
-                                            </span>
-                                        )}
-                                        {!shippingQuote.loading && shippingQuote.source !== 'shiprocket' && (
-                                            <span>
-                                                Standard shipping applied
-                                                {shippingQuote.error ? ` (${shippingQuote.error})` : ''}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                                {couponDiscount > 0 && (
-                                    <div className="flex justify-between text-emerald-500 text-[11px] md:text-sm font-black">
-                                        <span>Saving ({appliedCoupon.code})</span>
-                                        <span>-₹{couponDiscount}</span>
-                                    </div>
-                                )}
 
-                                <div className="flex justify-between text-lg md:text-xl font-black text-footerBg pt-2">
-                                    <span className="text-sm md:text-lg">Total</span>
+                                <div className="pt-1">
+                                    <p className="text-[13px] md:text-sm font-semibold text-gray-700 mb-2">Fees</p>
+                                    <div className="space-y-2 text-[12px] md:text-sm text-gray-500">
+                                        <div className="flex justify-between">
+                                            <span>Payment Handling Fee</span>
+                                            <span className="font-semibold text-footerBg">₹{paymentHandlingFee}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Platform Fee</span>
+                                            <span className="font-semibold text-footerBg">₹{platformFee}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Handling Fee</span>
+                                            <span className="font-semibold text-footerBg">₹{handlingFee}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Delivery Fee</span>
+                                            <span className={`${shippingCharge > 0 ? 'text-footerBg' : 'text-emerald-500'} font-semibold`}>
+                                                {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? `₹${shippingCharge}` : 'FREE'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {(shippingQuote.courierName || shippingQuote.error || shippingQuote.source) && (
+                                        <div className="text-[9px] md:text-[11px] text-gray-400 mt-2">
+                                            {shippingQuote.loading && <span>Checking live shipping rates...</span>}
+                                            {!shippingQuote.loading && shippingQuote.source === 'shiprocket' && (
+                                                <span>
+                                                    Live rate via {shippingQuote.courierName || 'Shiprocket'}
+                                                    {shippingQuote.estimatedDays ? ` | ETA ${shippingQuote.estimatedDays} day(s)` : ''}
+                                                    {shippingQuote.weight ? ` | ${shippingQuote.weight} kg` : ''}
+                                                </span>
+                                            )}
+                                            {!shippingQuote.loading && shippingQuote.source !== 'shiprocket' && (
+                                                <span>
+                                                    Standard shipping applied
+                                                    {shippingQuote.error ? ` (${shippingQuote.error})` : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="pt-2 border-t border-gray-100">
+                                    <p className="text-[13px] md:text-sm font-semibold text-gray-700 mb-2">Discounts</p>
+                                    <div className="space-y-2 text-[12px] md:text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">MRP Discount</span>
+                                            <span className={`${mrpDiscount > 0 ? 'text-emerald-600' : 'text-gray-400'} font-semibold`}>
+                                                {mrpDiscount > 0 ? `-₹${mrpDiscount}` : '₹0'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Coupons for you</span>
+                                            <span className={`${couponDiscount > 0 ? 'text-emerald-600' : 'text-gray-400'} font-semibold`}>
+                                                {couponDiscount > 0 ? `-₹${couponDiscount}` : '₹0'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between text-xl md:text-2xl font-black text-blue-600 pt-2 border-t border-gray-100">
+                                    <span className="text-base md:text-lg">Total Amount</span>
                                     <span>₹{total}</span>
                                 </div>
                             </div>
@@ -851,7 +906,7 @@ const CheckoutPage = () => {
                                 disabled={loading || !isProfileComplete || shippingQuote.loading}
                                 className="w-full bg-footerBg text-white py-3 md:py-4 rounded-xl font-black text-[11px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg mt-5 md:mt-8 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
                             >
-                                {loading ? 'Securing Order...' : shippingQuote.loading ? 'Calculating Shipping...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order - Rs ${total}`}
+                                {loading ? 'Securing Order...' : shippingQuote.loading ? 'Calculating Shipping...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order - ₹${total}`}
                             </button>
 
                             <p className="text-[9px] md:text-xs text-center text-gray-400 mt-3 md:mt-4">
