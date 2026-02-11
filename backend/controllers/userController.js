@@ -232,7 +232,7 @@ export const getUserById = async (req, res) => {
         if (user) {
             // Get stats for this user
             const orderStats = await mongoose.model('Order').aggregate([
-                { $match: { userId: user.id } },
+                { $match: { userId: user.id, status: { $ne: 'Cancelled' } } },
                 { 
                     $group: { 
                         _id: "$userId", 
@@ -291,7 +291,7 @@ export const getUsers = async (req, res) => {
     // Get Order Stats for these users
     const userIds = users.map(u => u.id);
     const orderStats = await mongoose.model('Order').aggregate([
-        { $match: { userId: { $in: userIds } } },
+        { $match: { userId: { $in: userIds }, status: { $ne: 'Cancelled' } } },
         { 
             $group: { 
                 _id: "$userId", 

@@ -50,6 +50,13 @@ const ProfilePage = () => {
     // Check for auth and redirect if needed
     useEffect(() => {
         if (!authLoading && !user) {
+            const isLoggingOut = sessionStorage.getItem('farmlyf_logout_pending');
+            if (isLoggingOut) {
+                // Clear the flag and redirect silently
+                sessionStorage.removeItem('farmlyf_logout_pending');
+                navigate('/login', { state: { from: '/profile' } });
+                return;
+            }
             navigate('/login', { state: { from: '/profile' } });
             toast.error('Please login to view your profile');
         }

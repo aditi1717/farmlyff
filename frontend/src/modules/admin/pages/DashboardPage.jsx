@@ -51,7 +51,9 @@ const DashboardPage = () => {
     // Calculate Stats
     const stats = useMemo(() => {
         // Business Overview
-        const totalRevenue = orders.reduce((acc, order) => acc + (order.amount || 0), 0);
+        const totalRevenue = orders
+            .filter(order => order.status !== 'Cancelled')
+            .reduce((acc, order) => acc + (order.amount || 0), 0);
         const combos = products.filter(p =>
             p.category === 'combos-packs' ||
             p.subcategory?.toLowerCase().includes('pack') ||
