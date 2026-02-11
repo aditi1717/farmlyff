@@ -519,7 +519,11 @@ const Navbar = () => {
 
                 {/* Right Icons */}
                 <div className="flex items-center gap-4">
-                    <button className="p-1 text-black">
+                    <button
+                        className="p-1 text-black"
+                        onClick={() => navigate('/catalog')}
+                        aria-label="Open search"
+                    >
                         <Search size={22} strokeWidth={2.5} />
                     </button>
                     <Link to="/cart" className="relative p-1 text-black">
