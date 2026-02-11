@@ -2,7 +2,7 @@ import React, { useState,useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Edit2, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner, usePromoCard, useUpdatePromoCard } from '../../../hooks/useContent';
+import { useBanners, useAddBanner, useDeleteBanner, useUpdateBanner } from '../../../hooks/useContent';
 import { useUploadImage } from '../../../hooks/useProducts';
 import { useOffers } from '../../../hooks/useOffers';
 
@@ -15,17 +15,12 @@ const BannerListPage = () => {
     const { data: offers = [] } = useOffers();
 
     // Promo Card Data
-    const { data: promoData } = usePromoCard();
-    const updatePromoMutation = useUpdatePromoCard();
+    // Refactored to be per-banner in formData
 
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
-    const [formData, setFormData] = useState({
-        title: 'Slide', subtitle: '', badgeText: '',
-        ctaText: 'Shop Now', link: '/', section: 'hero',
-        image: '', publicId: '', slides: [], isActive: true
-    });
-    const [promoForm, setPromoForm] = useState({
+    
+    const defaultPromoCard = {
         topBadge: 'Hot Deal',
         badgeText1: 'Upto',
         discountTitle: '60',
@@ -37,13 +32,14 @@ const BannerListPage = () => {
         couponCode: 'FRESH20',
         showCouponCode: true,
         isVisible: true
-    });
+    };
 
-    useEffect(() => {
-        if (promoData) {
-            setPromoForm(prev => ({ ...prev, ...promoData }));
-        }
-    }, [promoData]);
+    const [formData, setFormData] = useState({
+        title: 'Slide', subtitle: '', badgeText: '',
+        ctaText: 'Shop Now', link: '/', section: 'hero',
+        image: '', publicId: '', slides: [], isActive: true,
+        promoCard: { ...defaultPromoCard }
+    });
 
     const [preview, setPreview] = useState(null);
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
@@ -57,7 +53,8 @@ const BannerListPage = () => {
         setFormData({
             title: 'Slide', subtitle: '', badgeText: '',
             ctaText: 'Shop Now', link: '/', section: 'hero',
-            image: '', publicId: '', slides: [], isActive: true
+            image: '', publicId: '', slides: [], isActive: true,
+            promoCard: { ...defaultPromoCard }
         });
         setPreview(null);
         setIsEditing(false);
@@ -129,7 +126,8 @@ const BannerListPage = () => {
         setFormData({
             title: banner.title || 'Slide', subtitle: banner.subtitle || '', badgeText: banner.badgeText || '',
             ctaText: banner.ctaText || 'Shop Now', link: banner.link || '/', section: banner.section || 'hero',
-            image: banner.image || '', publicId: banner.publicId || '', slides: migratedSlides, isActive: banner.isActive !== false
+            image: banner.image || '', publicId: banner.publicId || '', slides: migratedSlides, isActive: banner.isActive !== false,
+            promoCard: banner.promoCard || { ...defaultPromoCard }
         });
         setPreview(banner.image);
         setIsEditing(true);
@@ -204,20 +202,20 @@ const BannerListPage = () => {
                                         {activeSlide.ctaText || 'Shop Now'}
                                     </button>
                                 </div>
-                                {promoForm.isVisible && (
+                                {formData.promoCard?.isVisible && (
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-lg border border-white/40 shadow-xl z-20 scale-[0.4] origin-right pointer-events-none">
-                                        <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg h-fit w-fit">{promoForm.topBadge}</div>
+                                        <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg h-fit w-fit">{formData.promoCard?.topBadge}</div>
                                         <div className="text-center font-sans">
-                                            <p className="text-gray-500 font-bold text-[8px] uppercase">{promoForm.badgeText1}</p>
+                                            <p className="text-gray-500 font-bold text-[8px] uppercase">{formData.promoCard?.badgeText1}</p>
                                             <div className="flex items-baseline gap-0.5 justify-center leading-none">
-                                                <span className="text-3xl font-black text-red-500">{promoForm.discountTitle}</span>
-                                                <span className="text-lg font-black text-gray-800">{promoForm.discountSuffix}</span>
+                                                <span className="text-3xl font-black text-red-500">{formData.promoCard?.discountTitle}</span>
+                                                <span className="text-lg font-black text-gray-800">{formData.promoCard?.discountSuffix}</span>
                                             </div>
                                             <div className="w-8 h-0.5 bg-primary/30 mx-auto rounded-full my-1"></div>
-                                            <p className="text-gray-500 font-bold text-[8px] uppercase leading-none">{promoForm.extraDiscountSubtitle}</p>
+                                            <p className="text-gray-500 font-bold text-[8px] uppercase leading-none">{formData.promoCard?.extraDiscountSubtitle}</p>
                                             <div className="flex items-baseline gap-0.5 justify-center mt-0.5">
-                                                <span className="text-xl font-black text-primary">{promoForm.extraDiscount}</span>
-                                                <span className="text-sm font-bold text-gray-800">{promoForm.extraDiscountSuffix}</span>
+                                                <span className="text-xl font-black text-primary">{formData.promoCard?.extraDiscount}</span>
+                                                <span className="text-sm font-bold text-gray-800">{formData.promoCard?.extraDiscountSuffix}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -365,6 +363,7 @@ const BannerListPage = () => {
                                             </div>
                                         </div>
                                     </div>
+
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info (Current Slide)</label>
                                         <input type="text" value={activeSlide.title ?? ''} onChange={(e)=>updateActiveSlide('title', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
@@ -372,7 +371,10 @@ const BannerListPage = () => {
                                         <input type="text" value={activeSlide.badgeText ?? ''} onChange={(e)=>updateActiveSlide('badgeText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
+                                            <span className="text-[8px] text-gray-400 font-medium">Visible to users</span>
+                                        </div>
                                         <label className="relative inline-flex items-center cursor-pointer scale-75">
                                             <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={(e)=>setFormData(prev=>({...prev, isActive:e.target.checked}))} />
                                             <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -391,9 +393,12 @@ const BannerListPage = () => {
                         ) : (
                             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 mb-4">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Offer Box Visible</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Offer Box Visible</span>
+                                        <span className="text-[8px] text-gray-400 font-medium">Show overlay on this banner</span>
+                                    </div>
                                     <label className="relative inline-flex items-center cursor-pointer scale-75">
-                                        <input type="checkbox" className="sr-only peer" checked={promoForm.isVisible} onChange={(e)=>setPromoForm(prev=>({...prev, isVisible:e.target.checked}))} />
+                                        <input type="checkbox" className="sr-only peer" checked={formData.promoCard?.isVisible} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, isVisible:e.target.checked}}))} />
                                         <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
                                     </label>
                                 </div>
@@ -402,37 +407,34 @@ const BannerListPage = () => {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Top Badge</label>
-                                            <input type="text" value={promoForm.topBadge} onChange={(e)=>setPromoForm(prev=>({...prev, topBadge:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={formData.promoCard?.topBadge} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, topBadge:e.target.value}}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Discount Title</label>
-                                            <input type="text" value={promoForm.discountTitle} onChange={(e)=>setPromoForm(prev=>({...prev, discountTitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={formData.promoCard?.discountTitle} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, discountTitle:e.target.value}}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Text</label>
-                                        <input type="text" value={promoForm.extraDiscountSubtitle} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscountSubtitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                        <input type="text" value={formData.promoCard?.extraDiscountSubtitle} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, extraDiscountSubtitle:e.target.value}}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Value</label>
-                                            <input type="text" value={promoForm.extraDiscount} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscount:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={formData.promoCard?.extraDiscount} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, extraDiscount:e.target.value}}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Coupon Code</label>
-                                            <input type="text" value={promoForm.couponCode} onChange={(e)=>setPromoForm(prev=>({...prev, couponCode:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all uppercase" />
+                                            <input type="text" value={formData.promoCard?.couponCode} onChange={(e)=>setFormData(prev=>({...prev, promoCard: {...prev.promoCard, couponCode:e.target.value}}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all uppercase" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <button 
-                                    type="button"
-                                    onClick={() => updatePromoMutation.mutate(promoForm)} 
-                                    disabled={updatePromoMutation.isPending}
-                                    className="w-full bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mt-4"
-                                >
-                                    {updatePromoMutation.isPending ? <Loader size={16} className="animate-spin" /> : 'Save Offer Box'}
-                                </button>
+                                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                    <p className="text-[10px] text-blue-600 font-bold text-center uppercase tracking-wide">
+                                        Save changes by clicking "Save Changes" in the main Banner Settings tab.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>

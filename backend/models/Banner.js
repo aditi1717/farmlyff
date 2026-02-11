@@ -19,7 +19,20 @@ const bannerSchema = new mongoose.Schema({
   link: { type: String, default: '/' }, // Where clicking the banner goes
   section: { type: String, enum: ['hero', 'promo'], default: 'hero' },
   isActive: { type: Boolean, default: true },
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0 },
+  promoCard: {
+    topBadge: { type: String, default: 'Hot Deal' },
+    badgeText1: { type: String, default: 'Upto' },
+    discountTitle: { type: String, default: '60' },
+    discountSuffix: { type: String, default: '%' },
+    discountLabel: { type: String, default: 'OFF' },
+    extraDiscountSubtitle: { type: String, default: 'EXTRA SAVE' },
+    extraDiscount: { type: String, default: '15' },
+    extraDiscountSuffix: { type: String, default: '%' },
+    couponCode: { type: String, default: 'FRESH20' },
+    showCouponCode: { type: Boolean, default: true },
+    isVisible: { type: Boolean, default: false }
+  }
 }, { timestamps: true });
 
 export default mongoose.model('Banner', bannerSchema);
