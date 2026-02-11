@@ -56,7 +56,7 @@ const OfferListPage = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = 10;
 
     const filteredOffers = useMemo(() => {
         return offers
@@ -180,11 +180,10 @@ const OfferListPage = () => {
                                     </AdminTableCell>
 
                                     <AdminTableCell>
-                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                                            offer.isActive 
-                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                            : 'bg-red-50 text-red-500 border-red-100'
-                                        }`}>
+                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-colors ${offer.isActive
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                : 'bg-red-50 text-red-500 border-red-100'
+                                            }`}>
                                             {offer.isActive ? 'Live' : 'Inactive'}
                                         </span>
                                     </AdminTableCell>

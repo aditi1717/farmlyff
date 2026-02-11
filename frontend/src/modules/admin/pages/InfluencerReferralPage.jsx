@@ -6,6 +6,7 @@ import {
     Twitter, Instagram, Youtube, Filter, Eye, ArrowRight, Activity, Ticket, IndianRupee, X
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 import { useReferrals, useCreateReferral, useUpdateReferral, useDeleteReferral, useAddPayout } from '../../../hooks/useReferrals';
@@ -47,10 +48,20 @@ const InfluencerReferralPage = () => {
 
     const handleSearch = (e) => setSearchTerm(e.target.value.toLowerCase());
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const filteredList = influencers.filter(item =>
         item.name.toLowerCase().includes(searchTerm) ||
         item.code.toLowerCase().includes(searchTerm)
     );
+
+    const paginatedList = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredList.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredList, currentPage]);
+
+    const totalPages = Math.ceil(filteredList.length / itemsPerPage);
 
     const openModal = (item = null) => {
         if (item) {
@@ -85,7 +96,7 @@ const InfluencerReferralPage = () => {
     const calculateEarnings = (item) => {
         const totalSales = item.totalSales || 0;
         const discountValue = item.value || 0;
-        
+
         let netSales = totalSales;
         if (item.type === 'percentage') {
             netSales = totalSales * (1 - (discountValue / 100));
@@ -95,7 +106,7 @@ const InfluencerReferralPage = () => {
             // However, the user specifically mentioned "Profit Percentage", suggesting % is the norm.
             netSales = Math.max(0, totalSales - (discountValue * (item.usageCount || 0)));
         }
-        
+
         return Math.floor(netSales * (item.commissionRate / 100));
     };
 
@@ -236,7 +247,7 @@ const InfluencerReferralPage = () => {
                             <AdminTableHead className="text-right">Actions</AdminTableHead>
                         </AdminTableHeader>
                         <AdminTableBody>
-                            {filteredList.map((item) => (
+                            {paginatedList.map((item) => (
                                 <AdminTableRow key={item._id || item.id}>
                                     <AdminTableCell>
                                         <div className="flex items-center gap-4 text-left">
@@ -315,6 +326,16 @@ const InfluencerReferralPage = () => {
                         </div>
                     )}
                 </div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    totalItems={filteredList.length}
+                    itemsPerPage={itemsPerPage}
+                />
             </div>
 
             {/* Modal - Compact & Clean Version */}
@@ -422,8 +443,8 @@ const InfluencerReferralPage = () => {
                                             <div className="text-center flex-1">
                                                 <p className="text-[9px] font-bold text-red-400 uppercase leading-none mb-1">User Profit</p>
                                                 <p className="text-xs font-black text-red-500">
-                                                    ₹{formData.type === 'percentage' 
-                                                        ? (1000 * (Number(formData.value) / 100)).toLocaleString() 
+                                                    ₹{formData.type === 'percentage'
+                                                        ? (1000 * (Number(formData.value) / 100)).toLocaleString()
                                                         : Number(formData.value).toLocaleString()}
                                                 </p>
                                             </div>
@@ -431,8 +452,8 @@ const InfluencerReferralPage = () => {
                                             <div className="text-center flex-1">
                                                 <p className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-1">Net Base</p>
                                                 <p className="text-xs font-black text-[#1a1a1a]">
-                                                    ₹{(1000 - (formData.type === 'percentage' 
-                                                        ? (1000 * (Number(formData.value) / 100)) 
+                                                    ₹{(1000 - (formData.type === 'percentage'
+                                                        ? (1000 * (Number(formData.value) / 100))
                                                         : Number(formData.value))).toLocaleString()}
                                                 </p>
                                             </div>
@@ -440,8 +461,8 @@ const InfluencerReferralPage = () => {
                                             <div className="text-center flex-1 bg-emerald-50 rounded-lg py-1">
                                                 <p className="text-[9px] font-bold text-emerald-600 uppercase leading-none mb-1">Partner Earn</p>
                                                 <p className="text-xs font-black text-emerald-700">
-                                                    ₹{Math.floor((1000 - (formData.type === 'percentage' 
-                                                        ? (1000 * (Number(formData.value) / 100)) 
+                                                    ₹{Math.floor((1000 - (formData.type === 'percentage'
+                                                        ? (1000 * (Number(formData.value) / 100))
                                                         : Number(formData.value))) * (Number(formData.commissionRate) / 100)).toLocaleString()}
                                                 </p>
                                             </div>

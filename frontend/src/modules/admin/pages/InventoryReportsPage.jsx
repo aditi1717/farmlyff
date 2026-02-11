@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Pagination from '../components/Pagination';
 import {
     ArrowLeft,
     Download,
@@ -15,6 +16,8 @@ const InventoryReportsPage = () => {
     const navigate = useNavigate();
     const [dateRange, setDateRange] = useState('All Time');
     const [activeTab, setActiveTab] = useState('category'); // 'category' or 'sku'
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const { data: products = [], isLoading: loadingProducts } = useProducts();
     const { data: orders = [], isLoading: loadingOrders } = useAllOrders();
@@ -32,7 +35,7 @@ const InventoryReportsPage = () => {
             const stock = p.stock?.quantity || 0;
             // Best effort price estimation: first variant's price or fallback
             const price = p.variants?.[0]?.price || p.price || 0;
-            
+
             categories[cat].items += 1;
             categories[cat].totalStock += stock;
             categories[cat].value += (stock * price);
@@ -61,7 +64,7 @@ const InventoryReportsPage = () => {
                 sales[prodId].revenue += ((item.qty || 0) * (item.price || 0));
             });
         });
-        
+
         return Object.values(sales)
             .map(s => ({
                 ...s,
@@ -122,7 +125,7 @@ const InventoryReportsPage = () => {
             {/* Tab Navigation */}
             <div className="flex gap-2 border-b border-gray-200 pb-1">
                 <button
-                    onClick={() => setActiveTab('category')}
+                    onClick={() => { setActiveTab('category'); setCurrentPage(1); }}
                     className={`px-6 py-3 rounded-t-xl text-xs font-bold flex items-center gap-2 transition-all border-b-2 ${activeTab === 'category'
                         ? 'border-black text-black bg-gray-50'
                         : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'
@@ -131,7 +134,7 @@ const InventoryReportsPage = () => {
                     📊 Category-wise Report
                 </button>
                 <button
-                    onClick={() => setActiveTab('sku')}
+                    onClick={() => { setActiveTab('sku'); setCurrentPage(1); }}
                     className={`px-6 py-3 rounded-t-xl text-xs font-bold flex items-center gap-2 transition-all border-b-2 ${activeTab === 'sku'
                         ? 'border-black text-black bg-gray-50'
                         : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50/50'
@@ -169,7 +172,7 @@ const InventoryReportsPage = () => {
                                     <AdminTableHead className="text-right">Estimated Value</AdminTableHead>
                                 </AdminTableHeader>
                                 <AdminTableBody>
-                                    {valuationData.map((row) => (
+                                    {valuationData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row) => (
                                         <AdminTableRow key={row.id}>
                                             <AdminTableCell>
                                                 <span className="font-bold text-sm text-gray-900">{row.category}</span>
@@ -188,6 +191,16 @@ const InventoryReportsPage = () => {
                                 </AdminTableBody>
                             </AdminTable>
                         </div>
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(valuationData.length / itemsPerPage)}
+                            onPageChange={(page) => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            totalItems={valuationData.length}
+                            itemsPerPage={itemsPerPage}
+                        />
                     </div>
                 </div>
             )}
@@ -230,7 +243,7 @@ const InventoryReportsPage = () => {
                                     <AdminTableHead className="text-right">Total Revenue</AdminTableHead>
                                 </AdminTableHeader>
                                 <AdminTableBody>
-                                    {productSalesData.map((product) => (
+                                    {productSalesData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((product) => (
                                         <AdminTableRow key={product.id}>
                                             <AdminTableCell>
                                                 <div className="flex items-center gap-3">
@@ -259,6 +272,16 @@ const InventoryReportsPage = () => {
                                 </AdminTableBody>
                             </AdminTable>
                         </div>
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(productSalesData.length / itemsPerPage)}
+                            onPageChange={(page) => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            totalItems={productSalesData.length}
+                            itemsPerPage={itemsPerPage}
+                        />
                     </div>
                 </div>
             )}

@@ -13,9 +13,12 @@ import {
 } from 'lucide-react';
 import { useComboCategories, useAddComboCategory, useUpdateComboCategory, useDeleteComboCategory } from '../../../hooks/useProducts';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const ComboListPage = () => {
+    const navigate = useNavigate();
 
     // Data & Mutation Hooks
     const { data: comboCategories = [], isLoading } = useComboCategories();
@@ -33,11 +36,21 @@ const ComboListPage = () => {
     const [preview, setPreview] = useState(null);
     const fileInputRef = useRef(null);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const filteredCombos = useMemo(() => {
         return comboCategories.filter(combo =>
             combo.name?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [comboCategories, searchTerm]);
+
+    const paginatedCombos = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredCombos.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredCombos, currentPage]);
+
+    const totalPages = Math.ceil(filteredCombos.length / itemsPerPage);
 
     const handleFileChange = (e, isEdit = false) => {
         const file = e.target.files[0];
@@ -200,7 +213,7 @@ const ComboListPage = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredCombos.map(combo => (
+                                paginatedCombos.map(combo => (
                                     <AdminTableRow key={combo.id || combo._id} className="group">
                                         <AdminTableCell>
                                             <div className="flex items-center gap-4">
@@ -253,6 +266,16 @@ const ComboListPage = () => {
                         </AdminTableBody>
                     </AdminTable>
                 </div>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    totalItems={filteredCombos.length}
+                    itemsPerPage={itemsPerPage}
+                />
             </div>
 
             {/* Add/Edit Modal */}

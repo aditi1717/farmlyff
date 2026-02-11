@@ -12,6 +12,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 
 const StockHistoryPage = () => {
@@ -99,8 +100,8 @@ const StockHistoryPage = () => {
         }
     ];
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const filteredHistory = useMemo(() => {
         return dummyHistory.filter(item => {
@@ -111,6 +112,13 @@ const StockHistoryPage = () => {
             return matchesSearch && matchesType;
         });
     }, [searchTerm, filterType]);
+
+    const paginatedHistory = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredHistory.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredHistory, currentPage]);
+
+    const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
 
     const getTypeColor = (type) => {
         switch (type) {
@@ -197,7 +205,7 @@ const StockHistoryPage = () => {
                         <AdminTableHead>User / Reason</AdminTableHead>
                     </AdminTableHeader>
                     <AdminTableBody>
-                        {filteredHistory.map((item) => (
+                        {paginatedHistory.map((item) => (
                             <AdminTableRow key={item.id} className="hover:bg-gray-50/50">
                                 <AdminTableCell>
                                     <div className="flex flex-col">
@@ -255,6 +263,16 @@ const StockHistoryPage = () => {
                         )}
                     </AdminTableBody>
                 </AdminTable>
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    totalItems={filteredHistory.length}
+                    itemsPerPage={itemsPerPage}
+                />
             </div>
         </div>
     );

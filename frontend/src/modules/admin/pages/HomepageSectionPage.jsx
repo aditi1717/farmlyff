@@ -9,6 +9,7 @@ import {
     X
 } from 'lucide-react';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
+import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 
 import { useFeaturedSectionByName, useUpdateFeaturedSection } from '../../../hooks/useContent';
@@ -23,8 +24,17 @@ const HomepageSectionPage = () => {
 
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const products = sectionData?.products || [];
+
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return products.slice(startIndex, startIndex + itemsPerPage);
+    }, [products, currentPage]);
+
+    const totalPages = Math.ceil(products.length / itemsPerPage);
 
     // Get section title based on ID
     const getSectionTitle = () => {
@@ -41,18 +51,18 @@ const HomepageSectionPage = () => {
         const updatedProductIds = products
             .filter(p => (p._id || p.id) !== productId)
             .map(p => p._id || p.id);
-        
+
         try {
             await updateSectionMutation.mutateAsync({
                 id: sectionData._id,
                 data: { products: updatedProductIds }
             });
-        } catch (error) {}
+        } catch (error) { }
     };
 
     const handleAddProduct = async (productId) => {
         if (!sectionData) return;
-        
+
         // Prevent duplicates
         if (products.some(p => (p._id || p.id) === productId)) {
             toast.error('Product already in section');
@@ -63,7 +73,7 @@ const HomepageSectionPage = () => {
             ...products.map(p => p._id || p.id),
             productId
         ];
-        
+
         try {
             await updateSectionMutation.mutateAsync({
                 id: sectionData._id,
@@ -103,9 +113,8 @@ const HomepageSectionPage = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-gray-200 ${
-                            isAdding ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'
-                        }`}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-gray-200 ${isAdding ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'
+                            }`}
                     >
                         {isAdding ? <X size={16} /> : <Plus size={16} />}
                         {isAdding ? 'Cancel' : 'Add Products'}
@@ -128,7 +137,7 @@ const HomepageSectionPage = () => {
                                 className="w-full bg-gray-50 border border-transparent rounded-xl py-3 pl-12 pr-4 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
                             />
                         </div>
-                        <button 
+                        <button
                             onClick={() => { setIsAdding(false); setSearchTerm(''); }}
                             className="px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
                         >
@@ -179,7 +188,7 @@ const HomepageSectionPage = () => {
                             <AdminTableHead className="text-right">Action</AdminTableHead>
                         </AdminTableHeader>
                         <AdminTableBody>
-                            {products.map((product, index) => (
+                            {paginatedProducts.map((product, index) => (
                                 <AdminTableRow key={product._id || product.id} className="group">
                                     <AdminTableCell>
                                         <div className="text-gray-300 cursor-move group-hover:text-gray-500">
@@ -226,8 +235,20 @@ const HomepageSectionPage = () => {
                         <p className="text-xs mt-1">Click "Add Products" to populate this section</p>
                     </div>
                 )}
+                {products.length > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={(page) => {
+                            setCurrentPage(page);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        totalItems={products.length}
+                        itemsPerPage={itemsPerPage}
+                    />
+                )}
             </div>
-        </div>
+        </div >
     );
 };
 

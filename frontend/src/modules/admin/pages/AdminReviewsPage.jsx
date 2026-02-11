@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Star, Trash2, CheckCircle, XCircle, Loader, Search, Clock, User, ShieldCheck, MessageCircle, ExternalLink, X, Image as ImageIcon, ArrowLeft, Eye, Quote, Edit3, Power, CheckCircle2, AlertCircle, Filter, Camera, Boxes, EyeOff } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import { useAdminReviews, useAddAdminReview, useUpdateAdminReview, useDeleteAdminReview, useAllUserReviews, useUpdateReviewStatus } from '../../../hooks/useContent';
 import { API_BASE_URL } from '@/lib/apiUrl';
@@ -44,6 +45,9 @@ const AdminReviewsPage = () => {
     const [preview, setPreview] = useState(null);
 
     // Filter Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const filteredReviews = useMemo(() => {
         const list = activeTab === 'user' ? userReviews : adminReviews;
         return list.filter(r => {
@@ -53,6 +57,13 @@ const AdminReviewsPage = () => {
             return matchesStatus && matchesSearch;
         });
     }, [activeTab, userReviews, adminReviews, statusFilter, searchTerm]);
+
+    const paginatedReviews = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredReviews.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredReviews, currentPage]);
+
+    const totalPages = Math.ceil(filteredReviews.length / itemsPerPage);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -107,13 +118,13 @@ const AdminReviewsPage = () => {
     };
 
     const resetForm = () => {
-        setFormData({ 
-            name: '', 
-            title: '', 
-            comment: '', 
-            image: '', 
-            rating: 5, 
-            status: activeTab === 'user' ? 'Approved' : 'Active' 
+        setFormData({
+            name: '',
+            title: '',
+            comment: '',
+            image: '',
+            rating: 5,
+            status: activeTab === 'user' ? 'Approved' : 'Active'
         });
         setPreview(null);
     };
@@ -292,7 +303,7 @@ const AdminReviewsPage = () => {
                             <AdminTableHead className="text-right">Actions</AdminTableHead>
                         </AdminTableHeader>
                         <AdminTableBody>
-                            {filteredReviews.map((review) => (
+                            {paginatedReviews.map((review) => (
                                 <AdminTableRow key={review._id}>
                                     <AdminTableCell className="font-bold text-[#0f1a11] text-sm">
                                         {activeTab === 'user' ? (review.product?.name || 'N/A') : review.name}
@@ -325,16 +336,16 @@ const AdminReviewsPage = () => {
                                         <div className="flex items-center justify-end gap-2">
                                             {activeTab === 'user' && review.status === 'Pending' && (
                                                 <>
-                                                    <button 
-                                                        onClick={() => handleStatusUpdate(review._id, 'Approved')} 
-                                                        className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all" 
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(review._id, 'Approved')}
+                                                        className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
                                                         title="Approve"
                                                     >
                                                         <CheckCircle size={16} />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleStatusUpdate(review._id, 'Rejected')} 
-                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all" 
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(review._id, 'Rejected')}
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                         title="Reject"
                                                     >
                                                         <XCircle size={16} />
@@ -351,6 +362,16 @@ const AdminReviewsPage = () => {
                         </AdminTableBody>
                     </AdminTable>
                 )}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    totalItems={filteredReviews.length}
+                    itemsPerPage={itemsPerPage}
+                />
             </div>
 
             {/* View Modal */}
@@ -381,14 +402,14 @@ const AdminReviewsPage = () => {
                         <div className="flex gap-3">
                             {activeTab === 'user' && selectedReview.status === 'Pending' && (
                                 <>
-                                    <button 
-                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Approved'); setShowViewModal(false); }} 
+                                    <button
+                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Approved'); setShowViewModal(false); }}
                                         className="flex-1 bg-emerald-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
                                     >
                                         Approve
                                     </button>
-                                    <button 
-                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Rejected'); setShowViewModal(false); }} 
+                                    <button
+                                        onClick={() => { handleStatusUpdate(selectedReview._id, 'Rejected'); setShowViewModal(false); }}
                                         className="flex-1 bg-red-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
                                     >
                                         Reject

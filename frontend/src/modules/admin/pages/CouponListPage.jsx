@@ -65,7 +65,7 @@ const CouponListPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const itemsPerPage = 8;
+    const itemsPerPage = 10;
 
     const filteredCoupons = useMemo(() => {
         return coupons
