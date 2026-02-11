@@ -56,6 +56,10 @@ const CartPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     // Zustand Stores
     const { getCart, removeFromCart, updateCartQty, addToCart, clearCart, applyCoupon, removeCoupon, getAppliedCoupon } = useCartStore();
     const { getSaveForLater, saveForLater, addToSaved: saveForLaterAction, removeFromSaved } = useUserStore();
