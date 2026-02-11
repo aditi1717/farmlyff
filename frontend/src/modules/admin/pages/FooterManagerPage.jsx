@@ -273,7 +273,10 @@ const FooterManagerPage = () => {
                                         type="text"
                                         className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
                                         value={config.contact.phone}
-                                        onChange={(e) => updateNestedState('contact.phone', e.target.value)}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                            updateNestedState('contact.phone', value);
+                                        }}
                                     />
                                 </div>
                                 <div className="space-y-2">
