@@ -100,6 +100,8 @@ const StockHistoryPage = () => {
         }
     ];
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 

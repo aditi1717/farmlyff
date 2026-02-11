@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, Plus, Edit2, Trash2, Users, CheckCircle2, XCircle,
@@ -26,7 +26,6 @@ const InfluencerReferralPage = () => {
     const createReferralMutation = useCreateReferral();
     const updateReferralMutation = useUpdateReferral();
     const deleteReferralMutation = useDeleteReferral();
-    const addPayoutMutation = useAddPayout();
 
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -110,21 +109,6 @@ const InfluencerReferralPage = () => {
         return Math.floor(netSales * (item.commissionRate / 100));
     };
 
-    const handleAddPayout = () => {
-        const amount = Number(payoutAmount);
-        if (!amount || amount <= 0) return;
-
-        addPayoutMutation.mutate({ id: detailItem._id || detailItem.id, amount }, {
-            onSuccess: (updatedItem) => {
-                setDetailItem(prev => ({
-                    ...prev,
-                    totalPaid: (prev.totalPaid || 0) + amount
-                }));
-                setIsAddingPayout(false);
-                setPayoutAmount('');
-            }
-        });
-    };
 
     const handleSave = (e) => {
         e.preventDefault();
