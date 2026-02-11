@@ -65,28 +65,44 @@ const AdminSidebar = () => {
         refetchInterval: 30000 // Refetch every 30 seconds
     });
 
-    const [combosExpanded, setCombosExpanded] = useState(false);
-    const [comboProductsExpanded, setComboProductsExpanded] = useState(false);
-    const [productsExpanded, setProductsExpanded] = useState(false);
-    const [bannersExpanded, setBannersExpanded] = useState(false);
-    const [reviewsExpanded, setReviewsExpanded] = useState(false);
-    const [ordersExpanded, setOrdersExpanded] = useState(true);
-    const [inventoryExpanded, setInventoryExpanded] = useState(false);
-    const [pagesExpanded, setPagesExpanded] = useState(false);
-    const [settingsExpanded, setSettingsExpanded] = useState(false);
-    const [notificationsExpanded, setNotificationsExpanded] = useState(false);
-    const [blogsExpanded, setBlogsExpanded] = useState(false);
+    const [openSection, setOpenSection] = useState(null);
 
-    // Auto-expand sections based on active route
+    // Helpers to determine active states
+    const isPathInInventory = (path) => path.startsWith('/admin/inventory');
+    const isPathInHomepage = (path) => (path.startsWith('/admin/banners') || path.startsWith('/admin/sections') || path.startsWith('/admin/manage-header') || path.startsWith('/admin/manage-faq')) && !path.startsWith('/admin/manage-footer');
+    const isPathInProducts = (path) => path.startsWith('/admin/products');
+    const isPathInCombos = (path) => path.startsWith('/admin/combo');
+    const isPathInOrders = (path) => path.startsWith('/admin/orders');
+    const isPathInPages = (path) => path.startsWith('/admin/pages');
+    const isPathInBlogs = (path) => path.startsWith('/admin/blogs');
+    const isPathInReviews = (path) => path.startsWith('/admin/reviews');
+    const isPathInNotifications = (path) => path.startsWith('/admin/notifications');
+    const isPathInSettings = (path) => path.startsWith('/admin/settings');
+
+    const getSectionFromPath = (path) => {
+        if (isPathInProducts(path)) return 'products';
+        if (isPathInCombos(path)) return 'combos';
+        if (isPathInOrders(path)) return 'orders';
+        if (isPathInInventory(path)) return 'inventory';
+        if (isPathInHomepage(path)) return 'homepage';
+        if (isPathInPages(path)) return 'pages';
+        if (isPathInBlogs(path)) return 'blogs';
+        if (isPathInReviews(path)) return 'reviews';
+        if (isPathInNotifications(path)) return 'notifications';
+        if (isPathInSettings(path)) return 'settings';
+        return null;
+    };
+
+    // Auto-sync section with route
     useEffect(() => {
-        if (location.pathname.startsWith('/admin/orders')) setOrdersExpanded(true);
-        if (location.pathname.startsWith('/admin/products')) setProductsExpanded(true);
-        if (location.pathname.startsWith('/admin/combo')) setCombosExpanded(true);
-        if (location.pathname.startsWith('/admin/inventory')) setInventoryExpanded(true);
-        if (location.pathname.startsWith('/admin/banners') || location.pathname.startsWith('/admin/sections') || location.pathname.startsWith('/admin/manage')) setBannersExpanded(true);
-        if (location.pathname.startsWith('/admin/pages')) setPagesExpanded(true);
-        if (location.pathname.startsWith('/admin/blogs')) setBlogsExpanded(true);
+        const section = getSectionFromPath(location.pathname);
+        if (section) setOpenSection(section);
+        else setOpenSection(null);
     }, [location.pathname]);
+
+    const toggleSection = (sectionId) => {
+        setOpenSection(prev => prev === sectionId ? null : sectionId);
+    };
 
     const handleLogout = () => {
         logout();
@@ -98,8 +114,6 @@ const AdminSidebar = () => {
         { icon: Users, label: 'Users', path: '/admin/users' },
         { icon: Layers, label: 'Categories', path: '/admin/categories' },
         { icon: Layers, label: 'Sub-categories', path: '/admin/sub-categories' },
-        // Products and Banners moved to manual handling
-        // Orders moved to manual handling
         { icon: RefreshCcw, label: 'Returns', path: '/admin/returns' },
         { icon: ArrowLeftRight, label: 'Replacements', path: '/admin/replacements' },
         { icon: TicketPercent, label: 'Coupons', path: '/admin/coupons' },
@@ -107,10 +121,16 @@ const AdminSidebar = () => {
         { icon: Share2, label: 'Referrals', path: '/admin/referrals' },
     ];
 
-    const isActive = (path) => location.pathname.startsWith(path);
-    const isCombosActive = location.pathname.startsWith('/admin/combo');
-    const isProductsActive = location.pathname.startsWith('/admin/products');
-    const isBannersActive = location.pathname.startsWith('/admin/banners');
+    // Main highlight logic: Only one item in the main list can be green at once
+    const isSectionHighlighted = (sectionId) => {
+        // Highlight if open or if the current route belongs to this section (and no other section is open)
+        return openSection === sectionId || (!openSection && getSectionFromPath(location.pathname) === sectionId);
+    };
+
+    const isDirectItemHighlighted = (path) => {
+        // Highlight only if no section is active/open and the path matches
+        return !openSection && location.pathname === path;
+    };
 
     return (
         <div className="w-72 h-screen bg-footerBg text-white flex flex-col fixed left-0 top-0 z-50 overflow-hidden" style={{ overscrollBehavior: 'contain' }} data-lenis-prevent>
@@ -129,12 +149,12 @@ const AdminSidebar = () => {
                     <Link
                         key={item.path}
                         to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isDirectItemHighlighted(item.path)
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+                        <item.icon size={20} strokeWidth={isDirectItemHighlighted(item.path) ? 2.5 : 2} />
                         <span className="font-bold text-sm">{item.label}</span>
                     </Link>
                 ))}
@@ -142,18 +162,18 @@ const AdminSidebar = () => {
                 {/* Products Section - Expandable */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setProductsExpanded(!productsExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isProductsActive
+                        onClick={() => toggleSection('products')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('products')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <Package size={20} strokeWidth={isProductsActive ? 2.5 : 2} />
+                        <Package size={20} strokeWidth={isSectionHighlighted('products') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Products</span>
-                        {productsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'products' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {productsExpanded && (
+                    {openSection === 'products' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             <Link
                                 to="/admin/products/add"
@@ -182,20 +202,19 @@ const AdminSidebar = () => {
                 {/* Combos Section - Updated to 3 Sub-items */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setCombosExpanded(!combosExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isCombosActive
+                        onClick={() => toggleSection('combos')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('combos')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <Boxes size={20} strokeWidth={isCombosActive ? 2.5 : 2} />
+                        <Boxes size={20} strokeWidth={isSectionHighlighted('combos') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Combos</span>
-                        {combosExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'combos' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {combosExpanded && (
+                    {openSection === 'combos' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
-                            {/* 1. Combo Categories */}
                             <Link
                                 to="/admin/combo-categories"
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/combo-categories'
@@ -206,8 +225,6 @@ const AdminSidebar = () => {
                                 <Layers size={16} />
                                 <span className="font-semibold">Combo Categories</span>
                             </Link>
-
-                            {/* 2. Add Combo Product */}
                             <Link
                                 to="/admin/combo-products/add"
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/combo-products/add'
@@ -218,8 +235,6 @@ const AdminSidebar = () => {
                                 <Plus size={16} />
                                 <span className="font-semibold">Add Combo</span>
                             </Link>
-
-                            {/* 3. Combo Product List */}
                             <Link
                                 to="/admin/combo-products"
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/combo-products'
@@ -237,18 +252,18 @@ const AdminSidebar = () => {
                 {/* Homepage Sections - NEW */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setBannersExpanded(!bannersExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isBannersActive
+                        onClick={() => toggleSection('homepage')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('homepage')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <Monitor size={20} strokeWidth={isBannersActive ? 2.5 : 2} />
+                        <Monitor size={20} strokeWidth={isSectionHighlighted('homepage') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Homepage Sections</span>
-                        {bannersExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'homepage' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {bannersExpanded && (
+                    {openSection === 'homepage' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             <Link
                                 to="/admin/banners"
@@ -339,18 +354,18 @@ const AdminSidebar = () => {
                 {/* Website Pages - Expandable */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setPagesExpanded(!pagesExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/pages')
+                        onClick={() => toggleSection('pages')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('pages')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <FileText size={20} strokeWidth={location.pathname.startsWith('/admin/pages') ? 2.5 : 2} />
+                        <FileText size={20} strokeWidth={isSectionHighlighted('pages') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Website Pages</span>
-                        {pagesExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'pages' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {pagesExpanded && (
+                    {openSection === 'pages' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-4 py-2">
                             <div>
                                 <h4 className="text-[10px] uppercase font-bold text-gray-500 mb-2 pl-2 tracking-wider">Pages</h4>
@@ -390,18 +405,18 @@ const AdminSidebar = () => {
                 {/* Blogs Section - Expandable */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setBlogsExpanded(!blogsExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/blogs')
+                        onClick={() => toggleSection('blogs')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('blogs')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <FileText size={20} strokeWidth={location.pathname.startsWith('/admin/blogs') ? 2.5 : 2} />
+                        <FileText size={20} strokeWidth={isSectionHighlighted('blogs') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Blogs</span>
-                        {blogsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'blogs' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {blogsExpanded && (
+                    {openSection === 'blogs' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             <Link
                                 to="/admin/blogs"
@@ -430,30 +445,30 @@ const AdminSidebar = () => {
                 {/* Footer Management */}
                 <Link
                     to="/admin/manage-footer"
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${location.pathname === '/admin/manage-footer'
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${isDirectItemHighlighted('/admin/manage-footer')
                         ? 'bg-primary text-white shadow-lg shadow-primary/20'
                         : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
-                    <Layout size={20} strokeWidth={location.pathname === '/admin/manage-footer' ? 2.5 : 2} />
+                    <Layout size={20} strokeWidth={isDirectItemHighlighted('/admin/manage-footer') ? 2.5 : 2} />
                     <span className="font-bold text-sm">Footer</span>
                 </Link>
 
                 {/* Reviews Section - Expandable */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setReviewsExpanded(!reviewsExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/reviews')
+                        onClick={() => toggleSection('reviews')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('reviews')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <MessageSquare size={20} strokeWidth={location.pathname.startsWith('/admin/reviews') ? 2.5 : 2} />
+                        <MessageSquare size={20} strokeWidth={isSectionHighlighted('reviews') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Reviews</span>
-                        {reviewsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'reviews' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {reviewsExpanded && (
+                    {openSection === 'reviews' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             <Link
                                 to="/admin/reviews?tab=user"
@@ -483,18 +498,18 @@ const AdminSidebar = () => {
                 <div className="mt-6 mb-2">
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 px-2 tracking-widest">Order Section</p>
                     <button
-                        onClick={() => setOrdersExpanded(!ordersExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/orders')
+                        onClick={() => toggleSection('orders')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('orders')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <ShoppingCart size={20} strokeWidth={location.pathname.startsWith('/admin/orders') ? 2.5 : 2} />
+                        <ShoppingCart size={20} strokeWidth={isSectionHighlighted('orders') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Order List</span>
-                        {ordersExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'orders' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {ordersExpanded && (
+                    {openSection === 'orders' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             {[
                                 { label: 'All Order', count: orderStats.All || 0, color: 'bg-pink-500', icon: ShoppingCart, path: '/admin/orders?status=All' },
@@ -530,12 +545,12 @@ const AdminSidebar = () => {
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isDirectItemHighlighted(item.path)
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
-                            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+                            <item.icon size={20} strokeWidth={isDirectItemHighlighted(item.path) ? 2.5 : 2} />
                             <span className="font-bold text-sm">{item.label}</span>
                         </Link>
                     ))
@@ -544,18 +559,18 @@ const AdminSidebar = () => {
                 {/* Inventory Management Section - Expandable */}
                 <div className="mt-1">
                     <button
-                        onClick={() => setInventoryExpanded(!inventoryExpanded)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/inventory')
+                        onClick={() => toggleSection('inventory')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('inventory')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <Package size={20} strokeWidth={location.pathname.startsWith('/admin/inventory') ? 2.5 : 2} />
+                        <Package size={20} strokeWidth={isSectionHighlighted('inventory') ? 2.5 : 2} />
                         <span className="font-bold text-sm flex-1 text-left">Inventory Management</span>
-                        {inventoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {openSection === 'inventory' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {inventoryExpanded && (
+                    {openSection === 'inventory' && (
                         <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                             <Link
                                 to="/admin/inventory/adjust"
@@ -608,12 +623,12 @@ const AdminSidebar = () => {
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive(item.path)
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isDirectItemHighlighted(item.path)
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
-                            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+                            <item.icon size={20} strokeWidth={isDirectItemHighlighted(item.path) ? 2.5 : 2} />
                             <span className="font-bold text-sm">{item.label}</span>
                         </Link>
                     ))
@@ -623,18 +638,18 @@ const AdminSidebar = () => {
                     {/* Push Notifications Section - Expandable */}
                     <div className="mt-1">
                         <button
-                            onClick={() => setNotificationsExpanded(!notificationsExpanded)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/notifications')
+                            onClick={() => toggleSection('notifications')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('notifications')
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
-                            <Bell size={20} strokeWidth={location.pathname.startsWith('/admin/notifications') ? 2.5 : 2} />
+                            <Bell size={20} strokeWidth={isSectionHighlighted('notifications') ? 2.5 : 2} />
                             <span className="font-bold text-sm flex-1 text-left">Push Notifications</span>
-                            {notificationsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {openSection === 'notifications' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </button>
 
-                        {notificationsExpanded && (
+                        {openSection === 'notifications' && (
                             <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                                 <Link
                                     to="/admin/notifications?tab=list"
@@ -663,18 +678,18 @@ const AdminSidebar = () => {
                     {/* Settings Section - Expandable */}
                     <div className="mt-1">
                         <button
-                            onClick={() => setSettingsExpanded(!settingsExpanded)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${location.pathname.startsWith('/admin/settings')
+                            onClick={() => toggleSection('settings')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isSectionHighlighted('settings')
                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
-                            <Settings size={20} strokeWidth={location.pathname.startsWith('/admin/settings') ? 2.5 : 2} />
+                            <Settings size={20} strokeWidth={isSectionHighlighted('settings') ? 2.5 : 2} />
                             <span className="font-bold text-sm flex-1 text-left">Settings</span>
-                            {settingsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {openSection === 'settings' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </button>
 
-                        {settingsExpanded && (
+                        {openSection === 'settings' && (
                             <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                                 <Link
                                     to="/admin/settings?tab=general"
@@ -692,12 +707,12 @@ const AdminSidebar = () => {
 
                     <Link
                         to="/admin/profile"
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${location.pathname === '/admin/profile'
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-1 ${isDirectItemHighlighted('/admin/profile')
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
                             }`}
                     >
-                        <User size={20} strokeWidth={location.pathname === '/admin/profile' ? 2.5 : 2} />
+                        <User size={20} strokeWidth={isDirectItemHighlighted('/admin/profile') ? 2.5 : 2} />
                         <span className="font-bold text-sm">Profile</span>
                     </Link>
 
