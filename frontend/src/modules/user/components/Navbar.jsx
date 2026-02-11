@@ -119,6 +119,8 @@ const Navbar = () => {
     const [expandedMenu, setExpandedMenu] = React.useState(null); // Accordion State
     const [showNotifications, setShowNotifications] = React.useState(false);
     const notificationDropdownRef = React.useRef(null);
+    const mobileNotificationDropdownRef = React.useRef(null);
+    const [showMobileSearch, setShowMobileSearch] = React.useState(false);
 
     const { filteredProducts, filteredCats, filteredSubs, filteredCombos } = React.useMemo(() => {
         if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [], filteredCombos: [] };
@@ -181,7 +183,9 @@ const Navbar = () => {
     React.useEffect(() => {
         const handleClickOutside = (event) => {
             if (!showNotifications) return;
-            if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
+            const clickedDesktop = notificationDropdownRef.current?.contains(event.target);
+            const clickedMobile = mobileNotificationDropdownRef.current?.contains(event.target);
+            if (!clickedDesktop && !clickedMobile) {
                 setShowNotifications(false);
             }
         };
@@ -521,7 +525,7 @@ const Navbar = () => {
                 <div className="flex items-center gap-4">
                     <button
                         className="p-1 text-black"
-                        onClick={() => navigate('/catalog')}
+                        onClick={() => setShowMobileSearch((prev) => !prev)}
                         aria-label="Open search"
                     >
                         <Search size={22} strokeWidth={2.5} />
@@ -534,8 +538,131 @@ const Navbar = () => {
                             </span>
                         )}
                     </Link>
+                    <div ref={mobileNotificationDropdownRef} className="relative">
+                        <button
+                            className="relative p-1 text-black"
+                            onClick={toggleNotifications}
+                            aria-label="Open notifications"
+                        >
+                            <Bell size={22} strokeWidth={2.5} />
+                            {unreadNotificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-primary text-white text-[8px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white">
+                                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <AnimatePresence>
+                            {showNotifications && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 8 }}
+                                    className="absolute top-full right-0 mt-2 w-[88vw] max-w-[340px] bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden"
+                                    style={{ zIndex: 10012 }}
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                        <div>
+                                            <p className="text-xs font-black text-footerBg uppercase tracking-wider">Notifications</p>
+                                            <p className="text-[10px] text-gray-400 font-semibold">
+                                                {unreadNotificationCount} unread • {notificationItems.length} in history
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const now = new Date().toISOString();
+                                                localStorage.setItem(`farmlyf_notif_feed_cleared_at_${user?.id || 'guest'}`, now);
+                                                localStorage.setItem('farmlyf_notif_feed_cleared_at_guest', now);
+                                                clearNotifications(user?.id);
+                                                clearNotifications('guest');
+                                            }}
+                                            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-500 hover:text-red-600"
+                                        >
+                                            <Trash2 size={12} /> Clear
+                                        </button>
+                                    </div>
+
+                                    <div className="max-h-72 overflow-y-auto">
+                                        {notificationItems.length === 0 ? (
+                                            <div className="px-4 py-10 text-center text-xs text-gray-400 font-semibold">
+                                                No notifications yet.
+                                            </div>
+                                        ) : (
+                                            notificationItems.map((item) => (
+                                                <div key={item.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                                                    <p className="text-sm font-bold text-footerBg">{item.title}</p>
+                                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.body}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-2">
+                                                        {new Date(item.createdAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
+
+            {/* Mobile Search Bar */}
+            <AnimatePresence>
+                {showMobileSearch && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="md:hidden mt-2 relative z-[10006]"
+                    >
+                        <form
+                            onSubmit={(e) => {
+                                handleSearch(e);
+                                setShowMobileSearch(false);
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button
+                                type="submit"
+                                className="px-3 py-2 bg-footerBg text-white rounded-xl text-xs font-bold uppercase tracking-wide"
+                            >
+                                Search
+                            </button>
+                        </form>
+
+                        {searchQuery.length > 0 && (
+                            <div className="mt-2 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.slice(0, 5).map((p) => (
+                                        <Link
+                                            key={p.id}
+                                            to={`/product/${p.slug || p.id}`}
+                                            onClick={() => {
+                                                setShowMobileSearch(false);
+                                                setSearchQuery('');
+                                            }}
+                                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                                        >
+                                            <img src={p.image} alt="" className="w-8 h-8 object-contain" />
+                                            <span className="text-sm font-semibold text-footerBg">{p.name}</span>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-3 text-sm text-gray-400">No products found.</div>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile Menu Sidebar (Drawer) */}
             <AnimatePresence>
