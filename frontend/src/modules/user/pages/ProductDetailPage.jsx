@@ -21,6 +21,7 @@ import {
     Truck,
     RotateCcw,
     ChevronRight,
+    ChevronLeft,
     ShoppingBag,
     CheckCircle2,
     Leaf,
@@ -137,6 +138,28 @@ const ProductDetailPage = () => {
     const [imageZoomPosition, setImageZoomPosition] = useState({ x: 0, y: 0 });
     const [isImageHovered, setIsImageHovered] = useState(false);
     const [showStickyBar, setShowStickyBar] = useState(false);
+    const [shouldScrollToReviews, setShouldScrollToReviews] = useState(false);
+
+    useEffect(() => {
+        if (shouldScrollToReviews) {
+            // Delay slightly to allow tab transition and form to mount
+            const timer = setTimeout(() => {
+                const element = document.getElementById('product-tabs');
+                if (element) {
+                    const headerOffset = 100;
+                    const elementPosition = element.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+                setShouldScrollToReviews(false);
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [shouldScrollToReviews]);
 
     const fetchReviews = async () => {
         if (!product) return;
@@ -215,6 +238,49 @@ const ProductDetailPage = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showShareDropdown]);
+
+    const allImages = React.useMemo(() => {
+        if (!product) return [];
+        const imgs = [product.image, ...(product.images || [])].filter(Boolean);
+        return [...new Set(imgs)]; // Remove duplicates
+    }, [product]);
+
+    useEffect(() => {
+        if (!selectedImage && allImages.length > 0) {
+            setSelectedImage(allImages[0]);
+        }
+    }, [allImages, selectedImage]);
+
+    const currentImgIndex = allImages.indexOf(selectedImage);
+
+    const handleNextImage = (e) => {
+        if (e) e.stopPropagation();
+        if (allImages.length <= 1) return;
+        const nextIndex = (currentImgIndex + 1) % allImages.length;
+        setSelectedImage(allImages[nextIndex]);
+    };
+
+    const handlePrevImage = (e) => {
+        if (e) e.stopPropagation();
+        if (allImages.length <= 1) return;
+        const prevIndex = (currentImgIndex - 1 + allImages.length) % allImages.length;
+        setSelectedImage(allImages[prevIndex]);
+    };
+
+    // Auto-scroll active thumbnail into view
+    useEffect(() => {
+        if (selectedImage && scrollRef.current) {
+            const container = scrollRef.current;
+            const activeThumb = container.querySelector(`[data-active="true"]`);
+            if (activeThumb) {
+                const containerRect = container.getBoundingClientRect();
+                const thumbRect = activeThumb.getBoundingClientRect();
+                const scrollOffset = thumbRect.left - containerRect.left - (containerRect.width / 2) + (thumbRect.width / 2);
+                container.scrollBy({ left: scrollOffset, behavior: 'smooth' });
+            }
+        }
+    }, [selectedImage]);
+
 
     useEffect(() => {
         const handleScroll = () => {
@@ -371,6 +437,8 @@ const ProductDetailPage = () => {
         );
     }
 
+
+
     const isGroupProduct = product.variants && product.variants.length > 0;
     const currentPrice = (isGroupProduct && selectedVariant) ? selectedVariant.price : (product.price || 0);
     const currentMrp = (isGroupProduct && selectedVariant) ? selectedVariant.mrp : (product.mrp || 0);
@@ -474,11 +542,29 @@ const ProductDetailPage = () => {
                                     } : {}}
                                 />
 
-                                {/* Tag Badge */}
+                                {/* Main Image Navigation Arrows */}
+                                {allImages.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={handlePrevImage}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center text-gray-800 hover:bg-primary hover:text-white transition-all z-20 active:scale-90"
+                                            aria-label="Previous image"
+                                        >
+                                            <ChevronLeft size={24} />
+                                        </button>
+                                        <button
+                                            onClick={handleNextImage}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center text-gray-800 hover:bg-primary hover:text-white transition-all z-20 active:scale-90"
+                                            aria-label="Next image"
+                                        >
+                                            <ChevronRight size={24} />
+                                        </button>
+                                    </>
+                                )}
 
                                 {/* Zoom Hint */}
                                 {!isImageHovered && (
-                                    <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                    <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] md:text-xs px-3 py-1.5 rounded-full backdrop-blur-sm z-20">
                                         Click to enlarge
                                     </div>
                                 )}
@@ -486,23 +572,18 @@ const ProductDetailPage = () => {
                         </div>
                         {/* Thumbnails */}
 
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => scrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}
-                                className="hidden md:flex w-8 h-8 rounded-full border border-black items-center justify-center hover:bg-gray-50 shrink-0 transition-colors"
-                            >
-                                <ArrowLeft size={18} />
-                            </button>
+                        <div className="flex items-center px-2 relative">
                             <div
                                 ref={scrollRef}
-                                className="flex gap-4 overflow-x-auto scrollbar-none items-center scroll-smooth py-1 px-1"
+                                className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar items-center scroll-smooth py-2 px-1 flex-1 h-24 md:h-32"
                             >
-                                {[product.image, ...(product.images || [])].filter(Boolean).map((img, idx) => (
+                                {allImages.map((img, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedImage(img)}
-                                        className={`shrink-0 w-20 h-20 md:w-24 md:h-24 bg-white border rounded-xl overflow-hidden p-2 transition-all
-                                                    ${(selectedImage || product.image) === img
+                                        data-active={selectedImage === img}
+                                        className={`shrink-0 w-16 h-16 md:w-24 md:h-24 bg-white border rounded-xl overflow-hidden p-1.5 md:p-2 transition-all
+                                                    ${selectedImage === img
                                                 ? 'border-primary border-2 shadow-md scale-105'
                                                 : 'border-gray-200 hover:border-gray-300'
                                             }`}
@@ -511,12 +592,6 @@ const ProductDetailPage = () => {
                                     </button>
                                 ))}
                             </div>
-                            <button
-                                onClick={() => scrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}
-                                className="hidden md:flex w-8 h-8 rounded-full border border-black items-center justify-center hover:bg-gray-50 shrink-0 transition-colors"
-                            >
-                                <ArrowRight size={18} />
-                            </button>
                         </div>
 
                         {/* Benefits Icons Row - Styled to match screenshot */}
@@ -636,7 +711,19 @@ const ProductDetailPage = () => {
                                 <span>{product.rating || 0}</span>
                                 <Star size={10} fill="white" stroke="white" />
                             </div>
-                            <span className="text-xs text-gray-500">{reviewsList.length} reviews / Write a review</span>
+                            <span className="text-xs text-gray-500">
+                                {reviewsList.length} reviews /
+                                <span
+                                    onClick={() => {
+                                        setActiveTab('Reviews');
+                                        setShowReviewForm(true);
+                                        setShouldScrollToReviews(true);
+                                    }}
+                                    className="hover:underline cursor-pointer ml-1"
+                                >
+                                    Write a review
+                                </span>
+                            </span>
                         </div>
 
                         {/* Pricing */}
@@ -753,9 +840,9 @@ const ProductDetailPage = () => {
                                             ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                                             : 'bg-primary text-white hover:bg-primaryHover'}`}
                             >
-                                <ShoppingBag size={18} /> 
-                                {isOutOfStock 
-                                    ? 'OUT OF STOCK' 
+                                <ShoppingBag size={18} />
+                                {isOutOfStock
+                                    ? 'OUT OF STOCK'
                                     : getCart(user?.id).some(item => String(item.packId) === String((isGroupProduct && selectedVariant) ? selectedVariant.id : product.id))
                                         ? 'GO TO BAG'
                                         : 'ADD TO CART'}
@@ -838,7 +925,7 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* BOTTOM SECTION - Tabs */}
-                <div className="mt-10">
+                <div className="mt-10" id="product-tabs">
                     {/* Tab Navigation */}
                     <div className="flex items-center justify-between w-full mb-8 border-b border-gray-200 pb-0 px-4 md:px-0">
                         {tabs.map((tab, index) => (
@@ -1092,15 +1179,15 @@ const ProductDetailPage = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-white/80 backdrop-blur-xl z-50 flex items-center justify-center p-4"
                         onClick={() => setShowImageLightbox(false)}
                     >
                         <button
                             onClick={() => setShowImageLightbox(false)}
-                            className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/50 backdrop-blur-sm transition-colors z-10"
+                            className="absolute top-6 right-6 text-gray-800 hover:text-primary p-2 rounded-full bg-white/50 backdrop-blur-md shadow-lg transition-all z-10 hover:rotate-90"
                             aria-label="Close lightbox"
                         >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
