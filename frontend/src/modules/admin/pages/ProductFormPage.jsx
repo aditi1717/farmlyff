@@ -47,6 +47,36 @@ const BENEFIT_TITLES = [
 ];
 
 const UNIT_OPTIONS = ['g', 'kg'];
+const SuggestionInput = ({ value, onChange, placeholder, options }) => {
+    const [show, setShow] = useState(false);
+    return (
+        <div className="relative w-full group/combo">
+            <input
+                type="text"
+                value={value}
+                onChange={onChange}
+                onFocus={() => setShow(true)}
+                onBlur={() => setTimeout(() => setShow(false), 200)}
+                placeholder={placeholder}
+                className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
+            />
+            {show && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50">
+                    {options.filter(o => o.toLowerCase().includes(value.toLowerCase())).map((opt, i) => (
+                        <div
+                            key={i}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-xs font-medium text-gray-700"
+                            onMouseDown={() => onChange({ target: { value: opt } })}
+                        >
+                            {opt}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const ProductFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -726,6 +756,42 @@ const ProductFormPage = () => {
                         </div>
                     </div>
 
+                    {/* Specifications */}
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-300 shadow-sm space-y-6 text-left">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-black text-purple-700 uppercase tracking-widest flex items-center gap-2">
+                                Specifications
+                            </h3>
+                            <button type="button" onClick={() => addItem('specifications', { label: '', value: '' })} className="text-[10px] font-black text-primary uppercase">+ Add</button>
+                        </div>
+                        <div className="space-y-3">
+                            {Array.isArray(formData.specifications) && formData.specifications.map((spec, idx) => (
+                                <div key={idx} className="flex gap-2 items-center">
+                                    <div className="w-1/3 relative z-20">
+                                        <SuggestionInput 
+                                            value={spec.label}
+                                            onChange={(e) => updateItem('specifications', idx, 'label', e.target.value)}
+                                            placeholder="Label"
+                                            options={SPECIFICATION_LABELS}
+                                        />
+                                    </div>
+                                    <input
+                                        placeholder="Value (e.g. India)"
+                                        value={spec.value}
+                                        onChange={(e) => updateItem('specifications', idx, 'value', e.target.value)}
+                                        className="flex-1 bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
+                                    />
+                                    <button type="button" onClick={() => removeItem('specifications', idx)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                </div>
+                            ))}
+                            {(!Array.isArray(formData.specifications) || formData.specifications.length === 0) && (
+                                <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No specifications added</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Nutrition - Moved to Right Side */}
                     <div className="bg-white p-8 rounded-[2.5rem] border border-gray-300 shadow-sm space-y-6 text-left">
                         <div className="flex items-center justify-between">
@@ -737,17 +803,13 @@ const ProductFormPage = () => {
                         <div className="space-y-3">
                             {Array.isArray(formData.nutrition) && formData.nutrition.map((nut, idx) => (
                                 <div key={idx} className="flex gap-2 items-center">
-                                    <div className="w-1/3 relative">
-                                        <input
-                                            list={`nutrition-options-${idx}`}
-                                            placeholder="Label"
+                                    <div className="w-1/3 relative z-20">
+                                        <SuggestionInput
                                             value={nut.label}
                                             onChange={(e) => updateItem('nutrition', idx, 'label', e.target.value)}
-                                            className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs font-bold text-black outline-none focus:border-black transition-all"
+                                            placeholder="Label"
+                                            options={NUTRITION_LABELS}
                                         />
-                                        <datalist id={`nutrition-options-${idx}`}>
-                                            {NUTRITION_LABELS.map((opt, i) => <option key={i} value={opt} />)}
-                                        </datalist>
                                     </div>
                                     <input
                                         placeholder="Value"

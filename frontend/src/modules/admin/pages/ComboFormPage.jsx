@@ -11,7 +11,8 @@ import {
     Info,
     ChevronRight,
     Search,
-    Gift
+    Gift,
+    Star
 } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -281,7 +282,7 @@ const ComboFormPage = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-xs font-black text-black uppercase tracking-widest ml-1 text-left">Brand Name</label>
                                     <input
@@ -291,6 +292,41 @@ const ComboFormPage = () => {
                                         onChange={handleChange}
                                         className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-sm font-bold text-black outline-none focus:border-black transition-all"
                                     />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-xs font-black text-black uppercase tracking-widest ml-1 text-left">Combo Rating (0-5)</label>
+                                    <div className="flex items-center gap-4 bg-white border border-gray-300 rounded-2xl p-3">
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                                                    className="focus:outline-none transition-transform hover:scale-110"
+                                                >
+                                                    <Star
+                                                        size={20}
+                                                        className={star <= Math.round(formData.rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <input
+                                            type="number"
+                                            name="rating"
+                                            value={formData.rating}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val >= 0 && val <= 5) {
+                                                    setFormData(prev => ({ ...prev, rating: val }));
+                                                }
+                                            }}
+                                            step="0.1"
+                                            min="0"
+                                            max="5"
+                                            className="w-16 bg-gray-50 border border-gray-100 rounded-lg p-2 text-sm font-black text-center outline-none focus:bg-white focus:border-black transition-all"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <label className="text-xs font-black text-black uppercase tracking-widest ml-1 text-left">Badge / Tag</label>
