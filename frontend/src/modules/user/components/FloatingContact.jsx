@@ -32,9 +32,89 @@ const FloatingContact = () => {
         diet: 'balanced',
         allergies: ''
     });
-    const MAX_RECOMMENDATIONS = 5;
+    const MAX_RECOMMENDATIONS = 1;
 
     const normalizeText = (value) => (value || '').toString().toLowerCase().trim();
+    const stripHtml = (value) => (value || '').toString().replace(/<[^>]*>/g, ' ');
+    const tokenize = (value) =>
+        normalizeText(value)
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter((t) => t.length >= 3);
+
+    const PRODUCT_FIELD_WEIGHTS = {
+        name: 4,
+        category: 2,
+        subcategory: 2,
+        tag: 1,
+        description: 5,
+        benefits: 4,
+        specifications: 3,
+        nutrition: 4,
+        faqs: 2,
+        contents: 2
+    };
+
+    const buildProductKnowledge = (product) => {
+        if (!product) return { weightedTokens: [], fullText: '' };
+        const fieldValues = {
+            name: product.name,
+            category: product.category,
+            subcategory: product.subcategory,
+            tag: product.tag,
+            description: stripHtml(product.description),
+            benefits: (product.benefits || []).map((b) => `${b?.title || ''} ${b?.description || ''}`).join(' '),
+            specifications: (product.specifications || []).map((s) => `${s?.label || ''} ${s?.value || ''}`).join(' '),
+            nutrition: (product.nutrition || []).map((n) => `${n?.label || ''} ${n?.value || ''}`).join(' '),
+            faqs: (product.faqs || []).map((f) => `${f?.q || ''} ${f?.a || ''}`).join(' '),
+            contents: (product.contents || []).map((c) => `${c?.productName || ''} ${c?.quantity || ''}`).join(' ')
+        };
+
+        const weightedTokens = [];
+        Object.entries(fieldValues).forEach(([key, text]) => {
+            const tokens = tokenize(text);
+            const weight = PRODUCT_FIELD_WEIGHTS[key] || 1;
+            for (let i = 0; i < weight; i += 1) {
+                weightedTokens.push(...tokens);
+            }
+        });
+
+        return {
+            weightedTokens,
+            fullText: Object.values(fieldValues).filter(Boolean).join(' ')
+        };
+    };
+
+    const buildIntentTokens = () => {
+        const goal = normalizeText(form.goal);
+        const activity = normalizeText(form.activity);
+        const diet = normalizeText(form.diet);
+        const allergy = normalizeText(form.allergies);
+
+        const goalMap = {
+            lose: ['weight', 'loss', 'fiber', 'high-fiber', 'light', 'low-sugar', 'roasted', 'seed', 'almond', 'walnut', 'pistachio'],
+            gain: ['weight', 'gain', 'energy', 'calorie', 'protein', 'dates', 'raisins', 'fig', 'cashew', 'mix', 'trail'],
+            maintain: ['balanced', 'daily', 'nuts', 'dry', 'fruit', 'snack', 'omega', 'protein', 'fiber']
+        };
+        const activityMap = {
+            low: ['light', 'snack', 'fiber', 'digestive'],
+            moderate: ['balanced', 'energy', 'protein', 'daily'],
+            high: ['energy', 'protein', 'recovery', 'stamina', 'trail', 'mix']
+        };
+        const dietMap = {
+            balanced: ['balanced', 'mixed', 'nutrient', 'vitamin', 'minerals'],
+            highprotein: ['protein', 'amino', 'muscle', 'recovery'],
+            lowcarb: ['low-carb', 'healthy-fat', 'fat', 'protein', 'nuts']
+        };
+
+        const tokens = [
+            ...(goalMap[goal] || goalMap.maintain),
+            ...(activityMap[activity] || activityMap.moderate),
+            ...(dietMap[diet] || dietMap.balanced),
+            ...tokenize(allergy)
+        ];
+        return tokens;
+    };
 
     const getAllergyKeywords = (allergiesInput) => {
         const text = normalizeText(allergiesInput);
@@ -61,31 +141,30 @@ const FloatingContact = () => {
     const curateProducts = (allProducts) => {
         if (!Array.isArray(allProducts) || allProducts.length === 0) return [];
         const allergyKeywords = getAllergyKeywords(form.allergies);
-        const goal = normalizeText(form.goal);
-        const activity = normalizeText(form.activity);
-
-        const scoreKeywords = {
-            lose: ['berries', 'seed', 'almond', 'walnut', 'pistachio', 'roasted'],
-            gain: ['dates', 'raisins', 'fig', 'cashew', 'trail', 'mix', 'energy'],
-            maintain: ['mixed', 'assorted', 'nuts', 'dry fruit', 'snack']
-        };
-        const activityBoost = activity === 'high' ? ['energy', 'protein', 'trail', 'mix'] : [];
+        const intentTokens = buildIntentTokens();
+        const intentTokenSet = new Set(intentTokens);
 
         const scored = allProducts
             .filter((p) => p && p.name)
             .map((p) => {
-                const text = normalizeText([p.name, p.category, p.subcategory, p.tag].filter(Boolean).join(' '));
+                const knowledge = buildProductKnowledge(p);
+                const text = normalizeText(knowledge.fullText);
                 if (allergyKeywords.some((k) => text.includes(k))) return null;
                 let score = 0;
                 if (p.image || p?.images?.[0] || p?.seoImage) score += 2;
                 if (p.price || p?.variants?.[0]?.price) score += 1;
-                const keywords = scoreKeywords[goal] || scoreKeywords.maintain;
-                if (keywords.some((k) => text.includes(k))) score += 2;
-                if (activityBoost.some((k) => text.includes(k))) score += 1;
-                return { product: p, score, text };
+                if (p.inStock !== false) score += 1;
+                if ((p.rating || 0) >= 4.5) score += 1;
+
+                const overlapScore = knowledge.weightedTokens.reduce((acc, token) => (
+                    acc + (intentTokenSet.has(token) ? 1 : 0)
+                ), 0);
+                score += overlapScore;
+
+                return { product: p, score, text, overlapScore };
             })
             .filter(Boolean)
-            .sort((a, b) => b.score - a.score || a.text.localeCompare(b.text));
+            .sort((a, b) => b.score - a.score || b.overlapScore - a.overlapScore || a.text.localeCompare(b.text));
 
         return scored.slice(0, 25).map((item) => item.product);
     };
@@ -160,7 +239,7 @@ const FloatingContact = () => {
             allergies: form.allergies
         };
 
-        const productList = (curatedProducts || []).map((p) => ({
+        const productList = (curatedProducts || []).slice(0, 12).map((p) => ({
             id: p._id || p.id,
             name: p.name,
             category: p.category,
@@ -168,7 +247,12 @@ const FloatingContact = () => {
             tag: p.tag,
             price: p.price || p?.variants?.[0]?.price,
             slug: p.slug,
-            image: p.image || p?.images?.[0] || p?.seoImage
+            image: p.image || p?.images?.[0] || p?.seoImage,
+            description: stripHtml(p.description || ''),
+            benefits: (p.benefits || []).map((b) => `${b?.title || ''}: ${b?.description || ''}`),
+            specifications: (p.specifications || []).map((s) => `${s?.label || ''}: ${s?.value || ''}`),
+            nutrition: (p.nutrition || []).map((n) => `${n?.label || ''}: ${n?.value || ''}`),
+            faqs: (p.faqs || []).map((f) => `Q:${f?.q || ''} A:${f?.a || ''}`)
         }));
 
         return `You are a nutrition assistant for Farmlyf (dry fruits and healthy foods).
@@ -177,9 +261,11 @@ Available products: ${JSON.stringify(productList)}
 
 Task:
 1) Explain BMI status in 1-2 sentences.
-2) Recommend 3-5 products from the list, with short reasons (max 1 line each). Do not recommend products outside the list.
-3) If allergies are listed, avoid those ingredients.
-4) Return JSON with keys: bmiSummary, recommendations (array of {name, reason, slug, image}).`;
+2) Recommend only 1 best product from the list, with a short reason (max 1 line).
+3) Analyze deeply using product description, benefits, specifications, nutrition, and FAQs.
+4) Do not recommend products outside the list.
+5) If allergies are listed, avoid those ingredients.
+4) Return JSON with keys: bmiSummary, recommendations (array with exactly 1 item: {name, reason, slug, image}).`;
     };
 
     const runGemini = async (curatedProducts) => {
@@ -209,12 +295,24 @@ Task:
     };
 
     const fallbackRecommendations = (curatedProducts) => {
-        const list = (curatedProducts || []).slice(0, MAX_RECOMMENDATIONS).map((p) => ({
-            name: p.name,
-            reason: 'Nutrient-dense and wholesome.',
-            slug: p.slug,
-            image: p.image || p?.images?.[0] || p?.seoImage
-        }));
+        const goal = normalizeText(form.goal);
+        const list = (curatedProducts || []).slice(0, MAX_RECOMMENDATIONS).map((p) => {
+            const knowledge = normalizeText(buildProductKnowledge(p).fullText);
+            let reason = 'Nutrient-dense and wholesome.';
+            if (goal === 'lose' && (knowledge.includes('fiber') || knowledge.includes('protein'))) {
+                reason = 'Supports satiety with fiber/protein-rich nutrition.';
+            } else if (goal === 'gain' && (knowledge.includes('energy') || knowledge.includes('calorie'))) {
+                reason = 'Good for healthy calorie and energy support.';
+            } else if (knowledge.includes('heart') || knowledge.includes('omega')) {
+                reason = 'Useful for heart and overall wellness support.';
+            }
+            return {
+                name: p.name,
+                reason,
+                slug: p.slug,
+                image: p.image || p?.images?.[0] || p?.seoImage
+            };
+        });
         return {
             bmiSummary: bmi ? `Your BMI is ${bmi} (${bmiCategory}).` : 'Your BMI is not available.',
             recommendations: list
