@@ -745,18 +745,18 @@ const ProductDetailPage = () => {
                         <div className="h-px bg-gray-200 w-full mb-6"></div>
 
                         {/* Selection Area */}
-                        <div className="flex flex-wrap items-end gap-x-8 gap-y-4 mb-8">
+                        <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-4 md:gap-x-8 md:gap-y-4 mb-8">
                             {/* Quantity */}
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2 w-full md:w-auto">
                                 <span className="text-sm text-gray-600 font-medium">Quantity</span>
-                                <div className="flex items-center border border-gray-200 rounded h-[42px] bg-white">
+                                <div className="inline-flex w-fit items-center border border-gray-200 rounded-md h-10 md:h-[42px] bg-white">
                                     <button
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black text-xl transition-colors"
+                                        className="w-9 md:w-10 h-full flex items-center justify-center text-gray-500 hover:text-black text-lg md:text-xl transition-colors"
                                     >
                                         −
                                     </button>
-                                    <div className="w-10 flex items-center justify-center font-bold text-gray-800 text-sm">
+                                    <div className="w-9 md:w-10 flex items-center justify-center font-bold text-gray-800 text-sm">
                                         {quantity}
                                     </div>
                                     <button
@@ -767,7 +767,7 @@ const ProductDetailPage = () => {
                                             }
                                             setQuantity(quantity + 1);
                                         }}
-                                        className={`w-10 h-full flex items-center justify-center text-xl transition-colors ${quantity >= currentStock ? 'text-gray-200 cursor-not-allowed' : 'text-gray-500 hover:text-black'}`}
+                                        className={`w-9 md:w-10 h-full flex items-center justify-center text-lg md:text-xl transition-colors ${quantity >= currentStock ? 'text-gray-200 cursor-not-allowed' : 'text-gray-500 hover:text-black'}`}
                                     >
                                         +
                                     </button>
@@ -790,12 +790,12 @@ const ProductDetailPage = () => {
 
                             {/* Pack Sizes */}
                             {isGroupProduct ? (
-                                <div className="flex gap-3">
+                                <div className="flex flex-wrap gap-2.5 md:gap-3 w-full md:w-auto">
                                     {product.variants.map((variant) => (
                                         <div
                                             key={variant.id}
                                             onClick={() => setSelectedVariant(variant)}
-                                            className={`border rounded-lg px-4 py-2 cursor-pointer transition-all min-w-[100px] text-center relative ${selectedVariant?.id === variant.id
+                                            className={`border rounded-lg px-3 md:px-4 py-2 cursor-pointer transition-all min-w-[88px] md:min-w-[100px] text-center relative ${selectedVariant?.id === variant.id
                                                 ? 'border-primary bg-primary/10 text-primary shadow-sm'
                                                 : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
                                                 }`}
@@ -806,7 +806,7 @@ const ProductDetailPage = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="border border-primary bg-primary/10 text-primary rounded-lg px-4 py-2 min-w-[100px] text-center shadow-sm">
+                                <div className="border border-primary bg-primary/10 text-primary rounded-lg px-3 md:px-4 py-2 min-w-[88px] md:min-w-[100px] text-center shadow-sm w-fit">
                                     <div className="text-sm font-bold mb-0.5">{product.weight || '500g'}</div>
                                     <div className="text-xs font-bold">₹{product.price}</div>
                                 </div>
@@ -814,7 +814,7 @@ const ProductDetailPage = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-8">
                             <button
                                 onClick={() => {
                                     const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
@@ -870,7 +870,7 @@ const ProductDetailPage = () => {
                                     if (!user) return navigate('/login');
                                     addToSaved(user.id, skuId);
                                 }}
-                                className={`flex-none w-12 h-12 flex items-center justify-center rounded-lg border transition-all active:scale-95 ${isSaved ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 text-gray-400 hover:text-primary hover:border-primary'}`}
+                                className={`w-full sm:w-12 h-11 sm:h-12 flex items-center justify-center rounded-lg border transition-all active:scale-95 ${isSaved ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 text-gray-400 hover:text-primary hover:border-primary'}`}
                                 title={isSaved ? "Saved in Vault" : "Save to Vault"}
                             >
                                 <Bookmark size={20} fill={isSaved ? "currentColor" : "none"} />
@@ -879,7 +879,7 @@ const ProductDetailPage = () => {
 
                         {/* Pincode & Service Area */}
                         <div className="mb-6">
-                            <div className="flex items-center bg-white border border-gray-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-1.5 max-w-[350px]">
+                            <div className="flex items-center bg-white border border-gray-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-1.5 w-full md:max-w-[350px]">
                                 <input
                                     type="text"
                                     placeholder="Enter Pincode"
@@ -907,10 +907,10 @@ const ProductDetailPage = () => {
                             )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-8 mt-5">
+                        <div className="flex flex-wrap items-start md:items-center gap-4 md:gap-8 mt-5">
                             <div className="flex items-center gap-2 text-[#374151] font-bold text-[11px] uppercase tracking-wide">
                                 <Truck size={17} className="text-primary" />
-                                <span>
+                                <span className="leading-snug">
                                     {deliveryCheck.checked
                                         ? (deliveryCheck.serviceable ? deliveryCheck.message : 'Not serviceable for this pincode')
                                         : 'Estimate delivery time'}
@@ -927,31 +927,33 @@ const ProductDetailPage = () => {
                 {/* BOTTOM SECTION - Tabs */}
                 <div className="mt-10" id="product-tabs">
                     {/* Tab Navigation */}
-                    <div className="flex items-center justify-between w-full mb-8 border-b border-gray-200 pb-0 px-4 md:px-0">
-                        {tabs.map((tab, index) => (
-                            <React.Fragment key={tab}>
-                                <button
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`flex-1 py-3 md:py-4 text-sm md:text-base transition-all relative text-center
-                                        ${activeTab === tab
-                                            ? 'font-semibold text-black'
-                                            : 'font-medium text-gray-500 hover:text-black'
-                                        }
-                                    `}
-                                >
-                                    {tab}
-                                    {activeTab === tab && (
-                                        <motion.div
-                                            layoutId="activeTab"
-                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                                        />
+                    <div className="w-full mb-8 border-b border-gray-200 pb-0 px-2 md:px-0 overflow-x-auto">
+                        <div className="flex items-center gap-2 md:gap-0 min-w-max md:min-w-0 md:w-full">
+                            {tabs.map((tab, index) => (
+                                <React.Fragment key={tab}>
+                                    <button
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`flex-shrink-0 md:flex-1 px-2 md:px-0 py-3 md:py-4 text-sm md:text-base transition-all relative text-center whitespace-nowrap
+                                            ${activeTab === tab
+                                                ? 'font-semibold text-black'
+                                                : 'font-medium text-gray-500 hover:text-black'
+                                            }
+                                        `}
+                                    >
+                                        {tab}
+                                        {activeTab === tab && (
+                                            <motion.div
+                                                layoutId="activeTab"
+                                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                                            />
+                                        )}
+                                    </button>
+                                    {index < tabs.length - 1 && (
+                                        <span className="hidden md:inline-block text-gray-200 font-extralight">|</span>
                                     )}
-                                </button>
-                                {index < tabs.length - 1 && (
-                                    <span className="hidden md:inline-block text-gray-200 font-extralight">|</span>
-                                )}
-                            </React.Fragment>
-                        ))}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Content */}

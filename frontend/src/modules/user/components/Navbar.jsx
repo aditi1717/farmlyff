@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown, Menu, Home, Package } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, LayoutGrid, Bookmark, ChevronDown, Menu, Home, Package, Bell, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useCategories, useSubCategories, useProducts, useComboCategories } from '../../../hooks/useProducts';
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 import logo from '../../../assets/logo.png';
 
@@ -18,6 +19,9 @@ const Navbar = () => {
     const cartItemsMap = useCartStore(state => state.cartItems);
     const wishlistMap = useUserStore(state => state.wishlist);
     const savedItemsMap = useUserStore(state => state.saveForLater);
+    const notificationsMap = useUserStore(state => state.notifications);
+    const markAllNotificationsRead = useUserStore(state => state.markAllNotificationsRead);
+    const clearNotifications = useUserStore(state => state.clearNotifications);
 
     const cartItems = cartItemsMap[user?.id || 'guest'] || [];
     const wishlist = wishlistMap[user?.id] || [];
@@ -27,6 +31,55 @@ const Navbar = () => {
     const { data: rawCategories = [] } = useCategories();
     const { data: rawSubCategories = [] } = useSubCategories();
     const { data: products = [] } = useProducts();
+    const { data: publicNotifications = [] } = useQuery({
+        queryKey: ['public-notifications-feed'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/notifications/public`, { credentials: 'include' });
+            if (!res.ok) return [];
+            return res.json();
+        },
+        refetchInterval: 15000
+    });
+
+    const notificationItems = React.useMemo(() => {
+        const guestItems = notificationsMap.guest || [];
+        const userClearKey = `farmlyf_notif_feed_cleared_at_${user?.id || 'guest'}`;
+        const guestClearKey = 'farmlyf_notif_feed_cleared_at_guest';
+        const userClearedAt = localStorage.getItem(userClearKey);
+        const guestClearedAt = localStorage.getItem(guestClearKey);
+        const clearCutoffMs = Math.max(
+            userClearedAt ? new Date(userClearedAt).getTime() : 0,
+            guestClearedAt ? new Date(guestClearedAt).getTime() : 0
+        );
+
+        const serverItems = (publicNotifications || [])
+            .filter((n) => {
+                const createdAtMs = new Date(n.createdAt || 0).getTime();
+                return !clearCutoffMs || createdAtMs > clearCutoffMs;
+            })
+            .map((n) => ({
+            id: `server_${n._id || n.createdAt}`,
+            title: n.heading || 'New Notification',
+            body: n.message || '',
+            createdAt: n.createdAt || new Date().toISOString(),
+            read: true,
+            data: { target: n.target, source: 'server' }
+        }));
+
+        const combined = user?.id
+            ? [...(notificationsMap[user.id] || []), ...guestItems, ...serverItems]
+            : [...guestItems, ...serverItems];
+
+        const deduped = new Map();
+        combined.forEach((item) => {
+            const key = `${item.title}::${item.body}::${item.createdAt}`;
+            if (!deduped.has(key)) {
+                deduped.set(key, item);
+            }
+        });
+
+        return [...deduped.values()].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }, [notificationsMap, user?.id, publicNotifications]);
 
     // Fetch Combo Categories from centralized hook
     const { data: comboCategories = [] } = useComboCategories();
@@ -64,6 +117,10 @@ const Navbar = () => {
     const [hoveredCategoryInMenu, setHoveredCategoryInMenu] = React.useState(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const [expandedMenu, setExpandedMenu] = React.useState(null); // Accordion State
+    const [showNotifications, setShowNotifications] = React.useState(false);
+    const notificationDropdownRef = React.useRef(null);
+    const mobileNotificationDropdownRef = React.useRef(null);
+    const [showMobileSearch, setShowMobileSearch] = React.useState(false);
 
     const { filteredProducts, filteredCats, filteredSubs, filteredCombos } = React.useMemo(() => {
         if (!searchQuery) return { filteredProducts: [], filteredCats: [], filteredSubs: [], filteredCombos: [] };
@@ -121,6 +178,33 @@ const Navbar = () => {
     const savedItemsCount = savedItems.length;
     const cartCount = cartItems.length;
     const wishlistCount = wishlist.length;
+    const unreadNotificationCount = notificationItems.filter((item) => !item.read).length;
+
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!showNotifications) return;
+            const clickedDesktop = notificationDropdownRef.current?.contains(event.target);
+            const clickedMobile = mobileNotificationDropdownRef.current?.contains(event.target);
+            if (!clickedDesktop && !clickedMobile) {
+                setShowNotifications(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showNotifications]);
+
+    const toggleNotifications = () => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        const nextValue = !showNotifications;
+        setShowNotifications(nextValue);
+        if (nextValue && unreadNotificationCount > 0) {
+            markAllNotificationsRead(user.id);
+            markAllNotificationsRead('guest');
+        }
+    };
 
     return (
         <nav className="bg-white sticky top-0 md:relative border-b border-gray-100 py-2.5 md:py-4 px-4 md:px-12" style={{ zIndex: 10005 }}>
@@ -311,6 +395,76 @@ const Navbar = () => {
                         </span>
                     </Link>
 
+                    <div ref={notificationDropdownRef} className="relative flex flex-col items-center gap-0.5 text-textPrimary">
+                        <button
+                            onClick={toggleNotifications}
+                            className="relative flex flex-col items-center gap-0.5 text-textPrimary hover:text-primary transition-colors group"
+                            aria-label="Notifications"
+                        >
+                            <div className="relative">
+                                <Bell size={22} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
+                                {unreadNotificationCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[9px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border-2 border-white">
+                                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-[10px] font-medium hidden md:block">Alerts</span>
+                        </button>
+
+                        <AnimatePresence>
+                            {showNotifications && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 8 }}
+                                    className="absolute top-full right-0 mt-3 w-[360px] bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden"
+                                    style={{ zIndex: 10007 }}
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                        <div>
+                                            <p className="text-xs font-black text-footerBg uppercase tracking-wider">Notifications</p>
+                                            <p className="text-[10px] text-gray-400 font-semibold">
+                                                {unreadNotificationCount} unread • {notificationItems.length} in history
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const now = new Date().toISOString();
+                                                localStorage.setItem(`farmlyf_notif_feed_cleared_at_${user?.id || 'guest'}`, now);
+                                                localStorage.setItem('farmlyf_notif_feed_cleared_at_guest', now);
+                                                clearNotifications(user?.id);
+                                                clearNotifications('guest');
+                                            }}
+                                            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-500 hover:text-red-600"
+                                        >
+                                            <Trash2 size={12} /> Clear
+                                        </button>
+                                    </div>
+
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {notificationItems.length === 0 ? (
+                                            <div className="px-4 py-10 text-center text-xs text-gray-400 font-semibold">
+                                                No notifications yet.
+                                            </div>
+                                        ) : (
+                                            notificationItems.map((item) => (
+                                                <div key={item.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                                                    <p className="text-sm font-bold text-footerBg">{item.title}</p>
+                                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.body}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-2">
+                                                        {new Date(item.createdAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <Link to="/wishlist" className="relative flex flex-col items-center gap-0.5 text-textPrimary hover:text-red-500 transition-colors group">
                         <div className="relative">
                             <Heart size={22} strokeWidth={1.5} className="group-hover:scale-110 group-hover:fill-current transition-transform" />
@@ -369,7 +523,11 @@ const Navbar = () => {
 
                 {/* Right Icons */}
                 <div className="flex items-center gap-4">
-                    <button className="p-1 text-black">
+                    <button
+                        className="p-1 text-black"
+                        onClick={() => setShowMobileSearch((prev) => !prev)}
+                        aria-label="Open search"
+                    >
                         <Search size={22} strokeWidth={2.5} />
                     </button>
                     <Link to="/cart" className="relative p-1 text-black">
@@ -380,8 +538,131 @@ const Navbar = () => {
                             </span>
                         )}
                     </Link>
+                    <div ref={mobileNotificationDropdownRef} className="relative">
+                        <button
+                            className="relative p-1 text-black"
+                            onClick={toggleNotifications}
+                            aria-label="Open notifications"
+                        >
+                            <Bell size={22} strokeWidth={2.5} />
+                            {unreadNotificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-primary text-white text-[8px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white">
+                                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <AnimatePresence>
+                            {showNotifications && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 8 }}
+                                    className="absolute top-full right-0 mt-2 w-[88vw] max-w-[340px] bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden"
+                                    style={{ zIndex: 10012 }}
+                                >
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                        <div>
+                                            <p className="text-xs font-black text-footerBg uppercase tracking-wider">Notifications</p>
+                                            <p className="text-[10px] text-gray-400 font-semibold">
+                                                {unreadNotificationCount} unread • {notificationItems.length} in history
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const now = new Date().toISOString();
+                                                localStorage.setItem(`farmlyf_notif_feed_cleared_at_${user?.id || 'guest'}`, now);
+                                                localStorage.setItem('farmlyf_notif_feed_cleared_at_guest', now);
+                                                clearNotifications(user?.id);
+                                                clearNotifications('guest');
+                                            }}
+                                            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-500 hover:text-red-600"
+                                        >
+                                            <Trash2 size={12} /> Clear
+                                        </button>
+                                    </div>
+
+                                    <div className="max-h-72 overflow-y-auto">
+                                        {notificationItems.length === 0 ? (
+                                            <div className="px-4 py-10 text-center text-xs text-gray-400 font-semibold">
+                                                No notifications yet.
+                                            </div>
+                                        ) : (
+                                            notificationItems.map((item) => (
+                                                <div key={item.id} className="px-4 py-3 border-b border-gray-50 last:border-0">
+                                                    <p className="text-sm font-bold text-footerBg">{item.title}</p>
+                                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.body}</p>
+                                                    <p className="text-[10px] text-gray-400 mt-2">
+                                                        {new Date(item.createdAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
+
+            {/* Mobile Search Bar */}
+            <AnimatePresence>
+                {showMobileSearch && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="md:hidden mt-2 relative z-[10006]"
+                    >
+                        <form
+                            onSubmit={(e) => {
+                                handleSearch(e);
+                                setShowMobileSearch(false);
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button
+                                type="submit"
+                                className="px-3 py-2 bg-footerBg text-white rounded-xl text-xs font-bold uppercase tracking-wide"
+                            >
+                                Search
+                            </button>
+                        </form>
+
+                        {searchQuery.length > 0 && (
+                            <div className="mt-2 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.slice(0, 5).map((p) => (
+                                        <Link
+                                            key={p.id}
+                                            to={`/product/${p.slug || p.id}`}
+                                            onClick={() => {
+                                                setShowMobileSearch(false);
+                                                setSearchQuery('');
+                                            }}
+                                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                                        >
+                                            <img src={p.image} alt="" className="w-8 h-8 object-contain" />
+                                            <span className="text-sm font-semibold text-footerBg">{p.name}</span>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-3 text-sm text-gray-400">No products found.</div>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile Menu Sidebar (Drawer) */}
             <AnimatePresence>

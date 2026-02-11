@@ -204,8 +204,8 @@ const HeroSection = () => {
                         </div>
                     )}
 
-                    {/* Slider Controls (Hover) */}
-                    <div className="absolute inset-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between px-4 pointer-events-none">
+                    {/* Slider Controls (Desktop Hover) */}
+                    <div className="hidden md:flex absolute inset-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-between px-4 pointer-events-none">
                         <button
                             onClick={prevSlide}
                             className="pointer-events-auto p-2 md:p-3 rounded-full bg-white/10 hover:bg-white hover:text-black text-white transition-all backdrop-blur-md border border-white/20 shadow-lg"
@@ -217,6 +217,24 @@ const HeroSection = () => {
                             className="pointer-events-auto p-2 md:p-3 rounded-full bg-white/10 hover:bg-white hover:text-black text-white transition-all backdrop-blur-md border border-white/20 shadow-lg"
                         >
                             <ChevronRight size={24} />
+                        </button>
+                    </div>
+
+                    {/* Slider Controls (Mobile Always Visible) */}
+                    <div className="md:hidden absolute inset-y-0 left-0 right-0 z-30 flex items-center justify-between px-2 pointer-events-none">
+                        <button
+                            onClick={prevSlide}
+                            className="pointer-events-auto p-2 rounded-full bg-black/35 text-white backdrop-blur-sm border border-white/25 shadow-md active:scale-95"
+                            aria-label="Previous banner"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <button
+                            onClick={nextSlide}
+                            className="pointer-events-auto p-2 rounded-full bg-black/35 text-white backdrop-blur-sm border border-white/25 shadow-md active:scale-95"
+                            aria-label="Next banner"
+                        >
+                            <ChevronRight size={20} />
                         </button>
                     </div>
 

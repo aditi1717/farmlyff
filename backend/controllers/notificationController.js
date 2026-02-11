@@ -165,3 +165,18 @@ export const getNotificationHistory = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Public notification feed (latest broadcasts)
+export const getPublicNotificationFeed = async (req, res) => {
+  try {
+    const notifications = await Notification.find()
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .select('heading message target createdAt');
+
+    res.json(notifications);
+  } catch (error) {
+    console.error('Get public notification feed error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};

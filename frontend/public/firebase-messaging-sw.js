@@ -29,6 +29,16 @@ messaging.onBackgroundMessage((payload) => {
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+
+  // Sync background notifications with open app tabs so in-app history can update.
+  self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clientList.forEach((client) => {
+      client.postMessage({
+        type: 'PUSH_NOTIFICATION',
+        payload
+      });
+    });
+  });
 });
 
 // Handle notification click
