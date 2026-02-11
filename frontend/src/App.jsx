@@ -146,6 +146,7 @@ function App() {
                 <Route path="combo-categories" element={<ComboListPage />} />
                 <Route path="combo-products" element={<ComboProductsPage />} />
                 <Route path="combo-products/add" element={<ComboFormPage />} />
+                <Route path="combo-products/edit/:id" element={<ComboFormPage />} />
                 <Route path="combos/add" element={<ComboFormPage />} />
                 <Route path="combos/edit/:id" element={<ComboFormPage />} />
                 <Route path="orders" element={<OrderListPage />} />

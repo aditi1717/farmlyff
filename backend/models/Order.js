@@ -28,6 +28,8 @@ const orderSchema = new mongoose.Schema({
   razorpayPaymentId: String,
   razorpaySignature: String,
   amount: Number,
+  subtotal: Number,
+  deliveryCharges: { type: Number, default: 0 },
   paymentMethod: String,
   courierPartner: String,
   trackingId: String,
@@ -47,6 +49,14 @@ const orderSchema = new mongoose.Schema({
   },
   appliedCoupon: String, // Coupon or Referral code
   discount: { type: Number, default: 0 }, // Discount amount
+  shippingQuote: {
+    source: String,
+    courierName: String,
+    courierId: String,
+    estimatedDays: Number,
+    shippingCharge: Number,
+    weight: Number
+  },
   statusHistory: [statusHistorySchema],
   // Cancellation and refund fields
   refundId: String,

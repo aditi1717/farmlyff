@@ -2,6 +2,37 @@ import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
 import Order from '../models/Order.js';
 
+// @desc    Get shipping quote for checkout
+// @route   POST /api/shipments/quote
+// @access  Public
+export const getShippingQuote = asyncHandler(async (req, res) => {
+  const {
+    deliveryPincode,
+    paymentMethod = 'cod',
+    items = [],
+    orderAmount = 0,
+    packageDimensions = {}
+  } = req.body || {};
+
+  if (!deliveryPincode) {
+    return res.status(400).json({ message: 'Delivery pincode is required' });
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Cart items are required to calculate shipping' });
+  }
+
+  const quote = await shiprocketService.getShippingQuote({
+    deliveryPincode,
+    paymentMethod,
+    items,
+    orderAmount,
+    packageDimensions
+  });
+
+  res.json(quote);
+});
+
 // @desc    Get tracking details for an order
 // @route   GET /api/orders/:orderId/tracking
 // @access  Public

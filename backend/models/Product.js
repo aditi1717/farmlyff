@@ -25,6 +25,7 @@ const productSchema = new mongoose.Schema({
   name: String,
   category: String,
   subcategory: String,
+  type: { type: String, default: 'product' }, // 'product' or 'combo'
   image: String,
   images: [String],
   description: String,

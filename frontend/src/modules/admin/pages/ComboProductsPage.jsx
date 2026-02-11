@@ -4,24 +4,18 @@ import {
     Search,
     Edit2,
     Trash2,
-    Package,
     Boxes,
-    CheckCircle2,
     Star,
     ChevronDown,
-    ChevronUp,
-    Image as ImageIcon
+    ChevronUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Pagination from '../components/Pagination';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
-import { useDeleteProduct, useProducts, useCategories } from '../../../hooks/useProducts';
-import toast from 'react-hot-toast';
+import { useDeleteProduct, useProducts, useComboCategories } from '../../../hooks/useProducts';
 
 const ComboProductsPage = () => {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
     const deleteProductMutation = useDeleteProduct();
 
     // Fetch all products
@@ -35,29 +29,30 @@ const ComboProductsPage = () => {
 
     const itemsPerPage = 8;
 
-    // Fetch categories to find combo category
-    const { data: categories = [] } = useCategories();
+    // Fetch categories and combo categories
+    const { data: comboCategories = [] } = useComboCategories();
 
-    // Find the Combos & Packs category
-    const combosCategory = useMemo(() => {
-        return categories.find(cat =>
-            cat.slug === 'combos-packs' ||
-            cat.name?.toLowerCase().includes('combo') ||
-            cat.name?.toLowerCase().includes('pack')
-        );
-    }, [categories]);
+    const activeComboCategoryNames = useMemo(() => {
+        return comboCategories
+            .filter(c => c.status === 'Active')
+            .map(c => (c.name || '').toLowerCase().trim());
+    }, [comboCategories]);
 
-    // Get all COMBOS from database (filter by combos category)
+    // Get all combos from DB. Support legacy records where `type` is missing.
     const combos = useMemo(() => {
-        if (!combosCategory) return [];
+        return allProducts.filter((p) => {
+            const type = (p.type || '').toLowerCase().trim();
+            const category = (p.category || '').toLowerCase().trim();
+            const subcategory = (p.subcategory || '').toLowerCase().trim();
 
-        const combosCategoryId = combosCategory._id || combosCategory.id;
-
-        return allProducts.filter(p => {
-            const productCategoryId = p.category?._id || p.category;
-            return productCategoryId && String(productCategoryId) === String(combosCategoryId);
+            return (
+                type === 'combo' ||
+                category === 'combos-packs' ||
+                category === 'combos & packs' ||
+                activeComboCategoryNames.includes(subcategory)
+            );
         });
-    }, [allProducts, combosCategory]);
+    }, [allProducts, activeComboCategoryNames]);
 
     const filteredCombos = useMemo(() => {
         return combos.filter(combo => {
@@ -69,7 +64,7 @@ const ComboProductsPage = () => {
             const matchesCategory = filterCategory === 'All' || combo.subcategory === filterCategory;
 
             return matchesSearch && matchesCategory;
-        }).sort((a, b) => (b.id?.localeCompare(a.id) || 0));
+        }).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     }, [combos, searchTerm, filterCategory]);
 
     const paginatedCombos = useMemo(() => {
@@ -78,7 +73,7 @@ const ComboProductsPage = () => {
     }, [filteredCombos, currentPage]);
 
     const totalPages = Math.ceil(filteredCombos.length / itemsPerPage);
-    const subCategories = ['All', ...new Set(combos.map(p => p.subcategory).filter(Boolean))];
+    const subCategories = ['All', ...comboCategories.filter(c => c.status === 'Active').map(c => c.name)];
 
     // --- Helpers ---
     const getPriceRange = (variants) => {
@@ -229,18 +224,19 @@ const ComboProductsPage = () => {
                     </AdminTableHeader>
                     <AdminTableBody>
                         {paginatedCombos.map((combo) => {
+                            const comboKey = combo.id || combo._id;
                             const status = getStockStatus(combo.variants);
-                            const isExpanded = expandedComboId === combo.id;
-                            const isSelected = selectedProducts.includes(combo.id || combo._id);
+                            const isExpanded = expandedComboId === comboKey;
+                            const isSelected = selectedProducts.includes(comboKey);
 
                             return (
-                                <React.Fragment key={combo.id || combo._id}>
+                                <React.Fragment key={comboKey}>
                                     <AdminTableRow
                                         className={`${isExpanded ? 'bg-gray-50' : ''} ${isSelected ? 'bg-green-50/30' : ''}`}
-                                        onClick={() => toggleExpand(combo.id)}
+                                        onClick={() => toggleExpand(comboKey)}
                                     >
                                         <AdminTableCell onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => toggleExpand(combo.id)} className="p-1.5 text-gray-400 hover:text-primary transition-colors">
+                                            <button onClick={() => toggleExpand(comboKey)} className="p-1.5 text-gray-400 hover:text-primary transition-colors">
                                                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </button>
                                         </AdminTableCell>
@@ -248,7 +244,7 @@ const ComboProductsPage = () => {
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
-                                                onChange={() => toggleSelectProduct(combo.id || combo._id)}
+                                                onChange={() => toggleSelectProduct(comboKey)}
                                                 className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                                             />
                                         </AdminTableCell>
@@ -301,14 +297,14 @@ const ComboProductsPage = () => {
                                         <AdminTableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => navigate(`/admin/combo-products/edit/${combo.id || combo._id}`)}
+                                                    onClick={() => navigate(`/admin/combo-products/edit/${comboKey}`)}
                                                     className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-all"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(combo.id || combo._id)}
+                                                    onClick={() => handleDelete(comboKey)}
                                                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                     title="Delete"
                                                 >

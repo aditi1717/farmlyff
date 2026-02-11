@@ -6,6 +6,8 @@ class ShiprocketService {
   constructor() {
     this.token = null;
     this.tokenExpiry = null;
+    this.pickupPostcode = null;
+    this.pickupPostcodeFetchedAt = null;
   }
 
   getDefaultDimensions() {
@@ -77,6 +79,23 @@ class ShiprocketService {
     return { orderItems, totalWeightKg };
   }
 
+  getFallbackShipping(orderAmount = 0, reason = 'fallback_rate') {
+    const freeAbove = Number(process.env.FREE_SHIPPING_ABOVE || 1500);
+    const flatCharge = Number(process.env.FLAT_SHIPPING_CHARGE || 99);
+    const safeAmount = Number(orderAmount || 0);
+    const shippingCharge = safeAmount >= freeAbove ? 0 : flatCharge;
+
+    return {
+      source: 'fallback',
+      reason,
+      shippingCharge,
+      courierName: shippingCharge === 0 ? 'Free Shipping Offer' : 'Standard Shipping',
+      estimatedDays: null,
+      serviceable: true,
+      currency: 'INR'
+    };
+  }
+
   /**
    * Check if Shiprocket credentials are configured
    */
@@ -137,6 +156,48 @@ class ShiprocketService {
     };
   }
 
+  async resolvePickupPostcode(headers = null) {
+    const envPostcode = String(process.env.SHIPROCKET_PICKUP_PINCODE || '').trim();
+    if (/^\d{6}$/.test(envPostcode)) {
+      return envPostcode;
+    }
+
+    const cacheAgeMs = 60 * 60 * 1000; // 1 hour
+    if (this.pickupPostcode && this.pickupPostcodeFetchedAt && (Date.now() - this.pickupPostcodeFetchedAt) < cacheAgeMs) {
+      return this.pickupPostcode;
+    }
+
+    try {
+      const authHeaders = headers || await this.getHeaders();
+      const response = await axios.get(`${SHIPROCKET_BASE_URL}/settings/company/pickup`, { headers: authHeaders });
+      const pickupLocationName = String(process.env.SHIPROCKET_PICKUP_LOCATION || '').trim().toLowerCase();
+      const addresses = response.data?.data?.shipping_address || response.data?.data || [];
+
+      const matchAddress = addresses.find((address) => {
+        const byLocation = String(address?.pickup_location || '').trim().toLowerCase();
+        const byCode = String(address?.pickup_code || '').trim().toLowerCase();
+        return pickupLocationName && (byLocation === pickupLocationName || byCode === pickupLocationName);
+      }) || addresses[0];
+
+      const resolved = String(
+        matchAddress?.pin_code ||
+        matchAddress?.pincode ||
+        matchAddress?.postal_code ||
+        ''
+      ).trim();
+
+      if (/^\d{6}$/.test(resolved)) {
+        this.pickupPostcode = resolved;
+        this.pickupPostcodeFetchedAt = Date.now();
+        return resolved;
+      }
+    } catch (error) {
+      console.error('Shiprocket Pickup Resolve Error:', error.response?.data || error.message);
+    }
+
+    return '';
+  }
+
   /**
    * Create order in Shiprocket
    * @param {Object} orderData - Order details from our database
@@ -184,6 +245,138 @@ class ShiprocketService {
     } catch (error) {
       console.error('Shiprocket Order Creation Error:', error.response?.data || error.message);
       throw new Error(error.response?.data?.message || 'Failed to create order in Shiprocket');
+    }
+  }
+
+  /**
+   * Get shipping quote for checkout
+   * @param {Object} payload
+   * @param {String|Number} payload.deliveryPincode
+   * @param {String} payload.paymentMethod - cod | online
+   * @param {Array} payload.items
+   * @param {Number} payload.orderAmount
+   * @returns {Object}
+   */
+  async getShippingQuote(payload = {}) {
+    const {
+      deliveryPincode,
+      paymentMethod = 'cod',
+      items = [],
+      orderAmount = 0,
+      packageDimensions = {}
+    } = payload;
+
+    const normalizedDeliveryPincode = String(deliveryPincode || '').trim();
+    if (!/^\d{6}$/.test(normalizedDeliveryPincode)) {
+      throw new Error('A valid 6-digit delivery pincode is required');
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('At least one cart item is required');
+    }
+
+    const defaults = this.getDefaultDimensions();
+    const freeAbove = Number(process.env.FREE_SHIPPING_ABOVE || 1500);
+    const { totalWeightKg } = this.buildOrderItems(items);
+    const weight = totalWeightKg > 0 ? Number(totalWeightKg.toFixed(3)) : defaults.weight;
+    const length = Number(packageDimensions.length || defaults.length);
+    const breadth = Number(packageDimensions.breadth || defaults.breadth);
+    const height = Number(packageDimensions.height || defaults.height);
+    if (!this.isConfigured()) {
+      return {
+        ...this.getFallbackShipping(orderAmount, 'shiprocket_not_configured'),
+        request: {
+          deliveryPincode: normalizedDeliveryPincode,
+          paymentMethod,
+          weight,
+          length,
+          breadth,
+          height
+        }
+      };
+    }
+
+    try {
+      const headers = await this.getHeaders();
+      const pickupPostcode = await this.resolvePickupPostcode(headers);
+      if (!pickupPostcode) {
+        return {
+          ...this.getFallbackShipping(orderAmount, 'missing_pickup_pincode'),
+          request: {
+            deliveryPincode: normalizedDeliveryPincode,
+            paymentMethod,
+            weight,
+            length,
+            breadth,
+            height
+          }
+        };
+      }
+
+      const params = {
+        pickup_postcode: pickupPostcode,
+        delivery_postcode: normalizedDeliveryPincode,
+        cod: paymentMethod === 'cod' ? 1 : 0,
+        weight,
+        declared_value: Math.max(Number(orderAmount || 0), 1),
+        length,
+        breadth,
+        height
+      };
+
+      const response = await axios.get(`${SHIPROCKET_BASE_URL}/courier/serviceability/`, {
+        headers,
+        params
+      });
+
+      const companies = response.data?.data?.available_courier_companies || [];
+      if (!companies.length) {
+        return {
+          ...this.getFallbackShipping(orderAmount, 'no_courier_available'),
+          serviceable: false,
+          availableCourierCount: 0,
+          request: params
+        };
+      }
+
+      const pickCheapest = (currentBest, company) => {
+        const currentRate = Number(currentBest?.rate ?? currentBest?.freight_charge ?? Infinity);
+        const companyRate = Number(company?.rate ?? company?.freight_charge ?? Infinity);
+        return companyRate < currentRate ? company : currentBest;
+      };
+
+      const bestCourier = companies.reduce(pickCheapest, null);
+      const shippingCharge = Number(bestCourier?.rate ?? bestCourier?.freight_charge ?? 0);
+      const estimatedDays = Number(bestCourier?.estimated_delivery_days || 0) || null;
+      const freeShippingApplied = Number(orderAmount || 0) >= freeAbove;
+
+      return {
+        source: 'shiprocket',
+        serviceable: true,
+        shippingCharge: freeShippingApplied ? 0 : (Number.isFinite(shippingCharge) ? shippingCharge : 0),
+        courierName: bestCourier?.courier_name || null,
+        courierId: bestCourier?.courier_company_id || null,
+        estimatedDays,
+        weight,
+        availableCourierCount: companies.length,
+        freeShippingApplied,
+        currency: 'INR',
+        request: params
+      };
+    } catch (error) {
+      console.error('Shiprocket Shipping Quote Error:', error.response?.data || error.message);
+      return {
+        ...this.getFallbackShipping(orderAmount, 'shiprocket_quote_error'),
+        serviceable: true,
+        request: {
+          deliveryPincode: normalizedDeliveryPincode,
+          paymentMethod,
+          weight,
+          length,
+          breadth,
+          height
+        }
+      };
     }
   }
 

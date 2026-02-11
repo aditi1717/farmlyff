@@ -15,6 +15,7 @@ import { useUserProfile } from '../../../hooks/useUser';
 import { usePlaceOrder, useVerifyPayment } from '../../../hooks/useOrders';
 import { useActiveCoupons } from '../../../hooks/useCoupons';
 import { useValidateReferral } from '../../../hooks/useReferrals';
+import { API_BASE_URL } from '@/lib/apiUrl';
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -120,6 +121,16 @@ const CheckoutPage = () => {
     }).filter(Boolean);
 
     const subtotal = enrichedCart.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0);
+    const shippingItemsPayload = enrichedCart.map((item) => ({
+        id: item.id,
+        productId: item.productId || item.id,
+        name: item.name,
+        qty: Number(item.qty) || 0,
+        price: Number(item.price) || 0,
+        weight: item.weight,
+        sku: item.id
+    }));
+    const shippingItemsSignature = JSON.stringify(shippingItemsPayload);
     // const cartCategories = [...new Set(enrichedCart.map(item => item.category))]; // Unused variable warning potentially, check usage. Used in original code? Line 46.
     // Line 46 in original was: const cartCategories = [...new Set(enrichedCart.map(item => item.category))]; 
     // It seems unused in the view_file output I saw (lines 1-447). I'll keep it commented or remove if I am sure.
@@ -141,6 +152,16 @@ const CheckoutPage = () => {
     const [paymentMethod, setPaymentMethod] = useState('cod');
     const [loading, setLoading] = useState(false);
     const [detectingLocation, setDetectingLocation] = useState(false);
+    const [shippingQuote, setShippingQuote] = useState({
+        loading: false,
+        shippingCharge: 0,
+        source: 'fallback',
+        courierName: null,
+        courierId: null,
+        estimatedDays: null,
+        weight: null,
+        error: ''
+    });
 
     const handleDetectLocation = () => {
         if (!navigator.geolocation) {
@@ -252,7 +273,79 @@ const CheckoutPage = () => {
         }
     }, [userData]);
 
-    const total = subtotal - couponDiscount;
+    useEffect(() => {
+        const pincode = String(formData.pincode || '').trim();
+        if (!enrichedCart.length || pincode.length !== 6) {
+            setShippingQuote(prev => ({
+                ...prev,
+                loading: false,
+                shippingCharge: 0,
+                source: 'fallback',
+                courierName: null,
+                courierId: null,
+                estimatedDays: null,
+                weight: null,
+                error: ''
+            }));
+            return;
+        }
+
+        let isCancelled = false;
+        const timer = setTimeout(async () => {
+            setShippingQuote(prev => ({ ...prev, loading: true, error: '' }));
+
+            try {
+                const payload = {
+                    deliveryPincode: pincode,
+                    paymentMethod,
+                    orderAmount: Math.max(0, subtotal - couponDiscount),
+                    items: shippingItemsPayload
+                };
+
+                const res = await fetch(`${API_BASE_URL}/shipments/quote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.message || 'Failed to fetch shipping quote');
+                }
+
+                if (!isCancelled) {
+                    setShippingQuote({
+                        loading: false,
+                        shippingCharge: Number(data.shippingCharge || 0),
+                        source: data.source || 'fallback',
+                        courierName: data.courierName || null,
+                        courierId: data.courierId ? String(data.courierId) : null,
+                        estimatedDays: data.estimatedDays || null,
+                        weight: data.weight || null,
+                        error: ''
+                    });
+                }
+            } catch (error) {
+                if (!isCancelled) {
+                    setShippingQuote(prev => ({
+                        ...prev,
+                        loading: false,
+                        source: prev.source || 'fallback',
+                        error: error.message || 'Unable to fetch shipping quote'
+                    }));
+                }
+            }
+        }, 450);
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(timer);
+        };
+    }, [formData.pincode, paymentMethod, subtotal, couponDiscount, shippingItemsSignature]);
+
+    const shippingCharge = Number(shippingQuote.shippingCharge || 0);
+    const total = Math.max(0, subtotal - couponDiscount + shippingCharge);
 
     const getActiveCoupons = () => {
         if (!activeCoupons) return [];
@@ -351,6 +444,16 @@ const CheckoutPage = () => {
             items: enrichedCart,
             shippingAddress: formData,
             paymentMethod: paymentMethod,
+            subtotal,
+            deliveryCharges: shippingCharge,
+            shippingQuote: {
+                source: shippingQuote.source,
+                courierName: shippingQuote.courierName,
+                courierId: shippingQuote.courierId,
+                estimatedDays: shippingQuote.estimatedDays,
+                shippingCharge,
+                weight: shippingQuote.weight
+            },
             amount: total,
             currency: 'INR',
             appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
@@ -707,8 +810,28 @@ const CheckoutPage = () => {
                                 </div>
                                 <div className="flex justify-between text-gray-500 text-[11px] md:text-sm">
                                     <span>Delivery</span>
-                                    <span className="text-emerald-500 font-bold italic">FREE</span>
+                                    <span className={`${shippingCharge > 0 ? 'text-footerBg' : 'text-emerald-500'} font-bold italic`}>
+                                        {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? `Rs ${shippingCharge}` : 'FREE'}
+                                    </span>
                                 </div>
+                                {(shippingQuote.courierName || shippingQuote.error || shippingQuote.source) && (
+                                    <div className="text-[9px] md:text-[11px] text-gray-400">
+                                        {shippingQuote.loading && <span>Checking live shipping rates...</span>}
+                                        {!shippingQuote.loading && shippingQuote.source === 'shiprocket' && (
+                                            <span>
+                                                Live rate via {shippingQuote.courierName || 'Shiprocket'}
+                                                {shippingQuote.estimatedDays ? ` | ETA ${shippingQuote.estimatedDays} day(s)` : ''}
+                                                {shippingQuote.weight ? ` | ${shippingQuote.weight} kg` : ''}
+                                            </span>
+                                        )}
+                                        {!shippingQuote.loading && shippingQuote.source !== 'shiprocket' && (
+                                            <span>
+                                                Standard shipping applied
+                                                {shippingQuote.error ? ` (${shippingQuote.error})` : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                                 {couponDiscount > 0 && (
                                     <div className="flex justify-between text-emerald-500 text-[11px] md:text-sm font-black">
                                         <span>Saving ({appliedCoupon.code})</span>
@@ -725,10 +848,10 @@ const CheckoutPage = () => {
                             <button
                                 form="checkout-form"
                                 type="submit"
-                                disabled={loading || !isProfileComplete}
+                                disabled={loading || !isProfileComplete || shippingQuote.loading}
                                 className="w-full bg-footerBg text-white py-3 md:py-4 rounded-xl font-black text-[11px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg mt-5 md:mt-8 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
                             >
-                                {loading ? 'Securing Order...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order • ₹${total}`}
+                                {loading ? 'Securing Order...' : shippingQuote.loading ? 'Calculating Shipping...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order - Rs ${total}`}
                             </button>
 
                             <p className="text-[9px] md:text-xs text-center text-gray-400 mt-3 md:mt-4">
