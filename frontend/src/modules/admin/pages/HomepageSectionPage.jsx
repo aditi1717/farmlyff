@@ -8,6 +8,7 @@ import {
     GripVertical,
     X
 } from 'lucide-react';
+import { Reorder } from 'framer-motion';
 import { AdminTable, AdminTableHeader, AdminTableHead, AdminTableBody, AdminTableRow, AdminTableCell } from '../components/AdminTable';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
@@ -29,12 +30,37 @@ const HomepageSectionPage = () => {
 
     const products = sectionData?.products || [];
 
+
     const paginatedProducts = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         return products.slice(startIndex, startIndex + itemsPerPage);
     }, [products, currentPage]);
 
     const totalPages = Math.ceil(products.length / itemsPerPage);
+
+    const [orderedProducts, setOrderedProducts] = useState([]);
+
+    useEffect(() => {
+        setOrderedProducts(paginatedProducts);
+    }, [paginatedProducts]);
+
+    const handleReorder = (newOrder) => {
+        setOrderedProducts(newOrder);
+        
+        // Construct the new full list of IDs
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const newGlobalList = [...products];
+        newGlobalList.splice(startIndex, itemsPerPage, ...newOrder);
+        
+        const updatedProductIds = newGlobalList.map(p => p._id || p.id);
+        
+        // Debounce update? For now direct update to see responsiveness.
+        // Optimistic UI is handled by local state.
+        updateSectionMutation.mutate({
+            id: sectionData._id,
+            data: { products: updatedProductIds }
+        });
+    };
 
     // Get section title based on ID
     const getSectionTitle = () => {
@@ -187,44 +213,52 @@ const HomepageSectionPage = () => {
                             <AdminTableHead>Price</AdminTableHead>
                             <AdminTableHead className="text-right">Action</AdminTableHead>
                         </AdminTableHeader>
-                        <AdminTableBody>
-                            {paginatedProducts.map((product, index) => (
-                                <AdminTableRow key={product._id || product.id} className="group">
-                                    <AdminTableCell>
-                                        <div className="text-gray-300 cursor-move group-hover:text-gray-500">
-                                            <GripVertical size={16} />
-                                        </div>
-                                    </AdminTableCell>
-                                    <AdminTableCell>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
-                                                <img src={product.image} className="w-full h-full object-contain" />
+                        <Reorder.Group as="tbody" axis="y" values={orderedProducts} onReorder={handleReorder} className="divide-y divide-gray-100">
+                            {orderedProducts.map((product) => {
+                                const price = product.price || product.variants?.[0]?.price || product.variants?.[0]?.mrp || 'N/A';
+                                return (
+                                    <Reorder.Item
+                                        as="tr"
+                                        key={product._id || product.id}
+                                        value={product}
+                                        className="group border-b border-gray-50 transition-colors hover:bg-gray-50/50"
+                                    >
+                                        <AdminTableCell>
+                                            <div className="text-gray-300 cursor-move group-hover:text-gray-500">
+                                                <GripVertical size={16} />
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
-                                                <p className="text-xs text-gray-500 font-mono">{product.sku || product._id || product.id}</p>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                                                    <img src={product.image} className="w-full h-full object-contain" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-gray-900 text-sm line-clamp-1">{product.name}</p>
+                                                    <p className="text-xs text-gray-500 font-mono">{product.sku || product._id || product.id}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </AdminTableCell>
-                                    <AdminTableCell>
-                                        <span className="text-sm text-gray-600">{product.category && typeof product.category === 'object' ? product.category.name : product.category}</span>
-                                    </AdminTableCell>
-                                    <AdminTableCell>
-                                        <span className="text-sm font-bold text-gray-900">
-                                            {product.price ? `₹${product.price}` : 'N/A'}
-                                        </span>
-                                    </AdminTableCell>
-                                    <AdminTableCell className="text-right">
-                                        <button
-                                            onClick={() => handleRemoveProduct(product._id || product.id)}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </AdminTableCell>
-                                </AdminTableRow>
-                            ))}
-                        </AdminTableBody>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className="text-sm text-gray-600">{product.category && typeof product.category === 'object' ? product.category.name : product.category}</span>
+                                        </AdminTableCell>
+                                        <AdminTableCell>
+                                            <span className="text-sm font-bold text-gray-900">
+                                                {price !== 'N/A' ? `₹${price}` : 'N/A'}
+                                            </span>
+                                        </AdminTableCell>
+                                        <AdminTableCell className="text-right">
+                                            <button
+                                                onClick={() => handleRemoveProduct(product._id || product.id)}
+                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </AdminTableCell>
+                                    </Reorder.Item>
+                                );
+                            })}
+                        </Reorder.Group>
                     </AdminTable>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-96 text-center text-gray-400">
