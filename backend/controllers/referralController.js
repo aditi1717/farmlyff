@@ -165,9 +165,10 @@ const getReferralOrders = asyncHandler(async (req, res) => {
     // Import Order model
     const Order = (await import('../models/Order.js')).default;
 
-    // Find all orders that used this referral code
+    // Find all orders that used this referral code and are not cancelled
     const orders = await Order.find({ 
-        appliedCoupon: referral.code 
+        appliedCoupon: referral.code,
+        status: { $ne: 'Cancelled' }
     }).sort({ createdAt: -1 });
 
     // Calculate commission for each order

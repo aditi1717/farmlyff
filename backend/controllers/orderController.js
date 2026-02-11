@@ -1,4 +1,6 @@
 import Order from '../models/Order.js';
+import Referral from '../models/Referral.js';
+import Product from '../models/Product.js';
 import Razorpay from 'razorpay';
 import shiprocketService from '../utils/shiprocketService.js';
 import asyncHandler from 'express-async-handler';
@@ -146,6 +148,67 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     order.refundId = refundId;
     order.refundStatus = refundStatus;
     order.refundAmount = refundInitiated ? order.amount : null;
+
+    // 4. Decrement Referral Stats if a coupon/code was used
+    if (order.appliedCoupon) {
+        try {
+            const referral = await Referral.findOne({ code: order.appliedCoupon });
+            if (referral) {
+                referral.usageCount = Math.max(0, (referral.usageCount || 0) - 1);
+                // Deduct the gross amount from totalSales
+                const saleAmount = order.amount + (order.discount || 0);
+                referral.totalSales = Math.max(0, (referral.totalSales || 0) - saleAmount);
+                await referral.save();
+                console.log(`Referral stats updated for code ${order.appliedCoupon}: usageCount=${referral.usageCount}, totalSales=${referral.totalSales}`);
+            }
+        } catch (referralError) {
+            console.error('Failed to update referral stats on cancellation:', referralError.message);
+        }
+    }
+
+    // 5. Restock Items
+    if (order.items && order.items.length > 0) {
+        try {
+            for (const item of order.items) {
+                const productId = item.productId;
+                const weight = item.weight; // Using weight to identify variant in this schema
+                const qty = item.qty || 0;
+
+                if (qty <= 0) continue;
+
+                // Find product
+                const product = await Product.findOne({ id: productId });
+                if (!product) {
+                    console.error(`Product ${productId} not found for restocking`);
+                    continue;
+                }
+
+                if (product.variants && product.variants.length > 0) {
+                    // Restock variant
+                    const variant = product.variants.find(v => v.weight === weight || v.id === weight); 
+                    if (variant) {
+                        variant.stock = (variant.stock || 0) + qty;
+                    } else {
+                        console.error(`Variant ${weight} not found for product ${productId} during restocking`);
+                    }
+                } else if (product.stock) {
+                    // Restock base product
+                    product.stock.quantity = (product.stock.quantity || 0) + qty;
+                }
+
+                // Update inStock flag
+                const hasStock = product.variants?.length > 0
+                    ? product.variants.some(v => Number(v.stock || 0) > 0)
+                    : Number(product.stock?.quantity || 0) > 0;
+                product.inStock = hasStock;
+
+                await product.save();
+                console.log(`Restocked ${qty} of product ${productId}${weight ? ` (${weight})` : ''}`);
+            }
+        } catch (restockError) {
+            console.error('Failed to restock items on cancellation:', restockError.message);
+        }
+    }
 
     // Add to status history
     if (!order.statusHistory) {

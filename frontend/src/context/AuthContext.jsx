@@ -224,6 +224,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        // Set a flag to indicate manual logout is in progress
+        // This prevents redundant "Please login" toasts in protected pages
+        sessionStorage.setItem('farmlyf_logout_pending', 'true');
+
         try {
             await fetch(`${API_URL}/users/logout`, {
                 method: 'POST',
@@ -249,6 +253,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('farmlyf_wishlist');
         localStorage.removeItem('farmlyf_recently_viewed');
         localStorage.removeItem('farmlyf_save_for_later');
+
+        // Note: farmlyf_logout_pending will be cleared by the protected pages
+        // that would otherwise show a login prompt.
     };
 
     return (
