@@ -114,6 +114,14 @@ const ProductDetailPage = () => {
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [pincode, setPincode] = useState('');
+    const [deliveryCheck, setDeliveryCheck] = useState({
+        loading: false,
+        checked: false,
+        serviceable: null,
+        message: '',
+        etaDays: null,
+        courierName: null
+    });
     const [activeTab, setActiveTab] = useState('Description');
     const [copiedCouponId, setCopiedCouponId] = useState(null);
     const [previewCouponCode, setPreviewCouponCode] = useState('');
@@ -250,13 +258,89 @@ const ProductDetailPage = () => {
         setShowShareDropdown(false);
     };
 
-    const checkPincode = () => {
-        if (!pincode || pincode.length !== 6) {
+    const checkPincode = async () => {
+        const normalizedPincode = String(pincode || '').trim();
+        if (!/^\d{6}$/.test(normalizedPincode)) {
             toast.error('Please enter a valid 6-digit pincode');
             return;
         }
-        // Mock pincode check - replace with actual API call
-        toast.success('Delivery available! Expected by ' + new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString());
+
+        try {
+            setDeliveryCheck({
+                loading: true,
+                checked: false,
+                serviceable: null,
+                message: '',
+                etaDays: null,
+                courierName: null
+            });
+
+            const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
+            const weightValue = (isGroupProduct && selectedVariant)
+                ? (selectedVariant.weight || `${selectedVariant.quantity || ''} ${selectedVariant.unit || ''}`.trim())
+                : (product.weight || '');
+
+            const payload = {
+                deliveryPincode: normalizedPincode,
+                paymentMethod: 'cod',
+                orderAmount: Number(currentPrice || 0),
+                items: [
+                    {
+                        id: skuId,
+                        productId: product.id,
+                        name: product.name,
+                        qty: 1,
+                        price: Number(currentPrice || 0),
+                        weight: weightValue
+                    }
+                ]
+            };
+
+            const res = await fetch(`${API_BASE_URL}/shipments/quote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Unable to check delivery for this pincode');
+            }
+
+            const isServiceable = data.serviceable !== false;
+            const etaDays = Number(data.estimatedDays || 0) || null;
+            const etaDate = etaDays
+                ? new Date(Date.now() + (etaDays * 24 * 60 * 60 * 1000)).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                : null;
+
+            setDeliveryCheck({
+                loading: false,
+                checked: true,
+                serviceable: isServiceable,
+                message: isServiceable
+                    ? (etaDate ? `Delivery by ${etaDate}` : 'Delivery available')
+                    : 'Delivery currently unavailable for this pincode',
+                etaDays,
+                courierName: data.courierName || null
+            });
+
+            if (isServiceable) {
+                toast.success(etaDate ? `Delivery expected by ${etaDate}` : 'Delivery available');
+            } else {
+                toast.error('Delivery not available for this pincode');
+            }
+        } catch (error) {
+            setDeliveryCheck({
+                loading: false,
+                checked: true,
+                serviceable: false,
+                message: error.message || 'Unable to check delivery right now',
+                etaDays: null,
+                courierName: null
+            });
+            toast.error(error.message || 'Unable to check delivery right now');
+        }
     };
 
     if (isProductLoading) {
@@ -715,22 +799,36 @@ const ProductDetailPage = () => {
                                     placeholder="Enter Pincode"
                                     className="flex-1 px-3 text-sm outline-none text-gray-700 placeholder:text-gray-400 bg-transparent"
                                     value={pincode}
-                                    onChange={(e) => setPincode(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && checkPincode()}
+                                    onChange={(e) => {
+                                        const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                        setPincode(digits);
+                                    }}
+                                    onKeyDown={(e) => e.key === 'Enter' && checkPincode()}
                                 />
                                 <button
                                     onClick={checkPincode}
+                                    disabled={deliveryCheck.loading}
                                     className="bg-[#212121] text-white px-6 py-2 rounded-md font-bold text-[10px] hover:bg-black transition-all uppercase tracking-wider ml-2"
                                 >
-                                    CHECK
+                                    {deliveryCheck.loading ? 'CHECKING' : 'CHECK'}
                                 </button>
                             </div>
+                            {deliveryCheck.checked && (
+                                <p className={`mt-2 text-xs font-bold ${deliveryCheck.serviceable ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    {deliveryCheck.message}
+                                    {deliveryCheck.serviceable && deliveryCheck.courierName ? ` | ${deliveryCheck.courierName}` : ''}
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-8 mt-5">
                             <div className="flex items-center gap-2 text-[#374151] font-bold text-[11px] uppercase tracking-wide">
                                 <Truck size={17} className="text-primary" />
-                                <span>Estimate delivery time</span>
+                                <span>
+                                    {deliveryCheck.checked
+                                        ? (deliveryCheck.serviceable ? deliveryCheck.message : 'Not serviceable for this pincode')
+                                        : 'Estimate delivery time'}
+                                </span>
                             </div>
                             <div className="flex items-center gap-2 text-[#374151] font-bold text-[11px] uppercase tracking-wide">
                                 <RotateCcw size={17} className="text-primary" />

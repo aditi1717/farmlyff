@@ -82,7 +82,6 @@ const HealthBenefitsSectionPage = () => {
     };
 
     const handleSave = async () => {
-        console.log('Attempting to save Health Benefits with data:', formData);
         setIsSaving(true);
         try {
             const payload = {
@@ -96,13 +95,11 @@ const HealthBenefitsSectionPage = () => {
                 })),
                 isActive: formData.isActive !== false
             };
-            const result = await updateHealthMutation.mutateAsync({ 
+            await updateHealthMutation.mutateAsync({ 
                 data: payload
             });
-            console.log('Save successful, result:', result);
             toast.success('Changes saved successfully to database!');
         } catch (error) {
-            console.error('Save failed with error:', error);
             toast.error(error.message || 'Failed to save changes to database');
         } finally {
             setIsSaving(false);
@@ -121,7 +118,6 @@ const HealthBenefitsSectionPage = () => {
     };
 
     const saveCard = () => {
-        console.log('Updating card in saveCard:', editModal);
         let matchFound = false;
         const updatedBenefits = formData.benefits.map(b => {
             const isMatch = (b._id && b._id === editModal._id) || (b.id && b.id === editModal.id);
@@ -135,7 +131,6 @@ const HealthBenefitsSectionPage = () => {
             return;
         }
 
-        console.log('New benefits array preview:', updatedBenefits);
         setFormData(prev => ({ ...prev, benefits: updatedBenefits }));
         setEditModal(null);
         toast.success('Card updated locally (Save Changes to persist)');
