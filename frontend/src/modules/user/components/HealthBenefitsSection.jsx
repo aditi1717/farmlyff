@@ -39,7 +39,7 @@ const HealthBenefitsSection = ({ data }) => {
             <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#C08552]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 w-full h-full max-w-4xl bg-gradient-to-tr from-[#902D45]/5 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
-            <div className="w-full px-4 md:px-12 relative z-10">
+            <div className="container mx-auto px-2 md:px-4 max-w-screen-2xl relative z-10">
                 {/* Section Header */}
                 <div className="text-center mb-8 md:mb-14 space-y-2 md:space-y-3">
                     <motion.h2
@@ -84,7 +84,7 @@ const HealthBenefitsSection = ({ data }) => {
                                             transition={{ duration: 0.4, ease: "easeInOut" }}
                                             className="absolute -top-10 md:-top-16 left-1/2 -translate-x-1/2 z-20"
                                         >
-                                            <div 
+                                            <div
                                                 style={benefit.borderStyle}
                                                 className={`relative bg-white rounded-full w-20 h-20 md:w-32 md:h-32 flex items-center justify-center shadow-lg border-2`}
                                             >

@@ -50,13 +50,13 @@ const ReviewSection = () => {
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
                 </div>
 
-                <div className="w-full relative z-10 px-4 md:px-12">
+                <div className="w-full relative z-10 px-4 md:px-24">
                     {/* Slider Container */}
                     <div className="relative group w-full">
                         {/* Left Navigation Button */}
                         <button
                             onClick={() => scroll('left')}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-transparent border-2 border-gray-800/10 text-gray-800 p-2 md:p-3 rounded-full hover:bg-black hover:text-white transition-all active:scale-90 hidden md:flex items-center justify-center"
+                            className="absolute -left-2 md:-left-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -64,7 +64,7 @@ const ReviewSection = () => {
                         {/* Reviews Scroll Container */}
                         <div
                             ref={scrollRef}
-                            className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth px-4 py-4"
+                            className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth py-4"
                         >
                             {reviews.map((review, index) => (
                                 <motion.div
@@ -106,7 +106,7 @@ const ReviewSection = () => {
                         {/* Right Navigation Button */}
                         <button
                             onClick={() => scroll('right')}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-transparent border-2 border-gray-800/10 text-gray-800 p-2 md:p-3 rounded-full hover:bg-black hover:text-white transition-all active:scale-90 hidden md:flex items-center justify-center"
+                            className="absolute -right-2 md:-right-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                         >
                             <ChevronRight size={24} />
                         </button>

@@ -21,7 +21,7 @@ const TopSellingProducts = () => {
     if (topProducts.length === 0) return null;
 
     return (
-        <section className="bg-white pt-6 pb-4 md:py-6 px-4 md:px-12 relative overflow-hidden bg-gradient-to-b from-white to-gray-50/50">
+        <section className="bg-white pt-6 pb-4 md:py-6 px-4 md:px-24 relative overflow-hidden bg-gradient-to-b from-white to-gray-50/50">
             <div className="container mx-auto">
                 <div className="text-center mb-4 md:mb-14 space-y-2">
                     <motion.h2
@@ -38,7 +38,7 @@ const TopSellingProducts = () => {
                     {/* Left Navigation Button */}
                     <button
                         onClick={() => scroll('left')}
-                        className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
+                        className="absolute -left-2 md:-left-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                     >
                         <ChevronLeft size={24} />
                     </button>
@@ -65,7 +65,7 @@ const TopSellingProducts = () => {
                     {/* Right Navigation Button */}
                     <button
                         onClick={() => scroll('right')}
-                        className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
+                        className="absolute -right-2 md:-right-20 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full text-footerBg hover:bg-primary hover:text-white transition-all active:scale-90 border border-gray-100 hidden md:flex items-center justify-center"
                     >
                         <ChevronRight size={24} />
                     </button>

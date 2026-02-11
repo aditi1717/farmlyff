@@ -50,7 +50,7 @@ const FAQSection = () => {
 
     return (
         <section className="bg-white pt-0 pb-2 md:pt-0 md:pb-12">
-            <div className="container mx-auto px-4 md:px-12">
+            <div className="container mx-auto px-2 md:px-4">
 
                 {/* Centered Heading */}
                 <div className="text-center mb-8 md:mb-14">
@@ -66,8 +66,8 @@ const FAQSection = () => {
                 </div>
 
                 {/* Centered FAQ List */}
-                <div className="max-w-7xl mx-auto">
-                    <div className="bg-gray-50/50 rounded-3xl p-4 md:p-6 border border-gray-100">
+                <div className="max-w-screen-2xl mx-auto">
+                    <div className="bg-gray-50/50 rounded-3xl py-8 md:py-12 px-6 md:px-12 border border-gray-100">
                         {faqs.map((faq, index) => (
                             <FAQItem
                                 key={faq._id || faq.id || index}

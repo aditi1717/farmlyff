@@ -46,6 +46,7 @@ import LoginPage from './modules/admin/pages/LoginPage';
 import BannerListPage from './modules/admin/pages/BannerListPage';
 import ReelsPage from './modules/admin/pages/ReelsPage';
 import AdminReviewsPage from './modules/admin/pages/AdminReviewsPage';
+import AdminProfilePage from './modules/admin/pages/AdminProfilePage';
 import InfluencerDetailPage from './modules/admin/pages/InfluencerDetailPage';
 import StockAdjustmentPage from './modules/admin/pages/StockAdjustmentPage';
 import StockHistoryPage from './modules/admin/pages/StockHistoryPage';
@@ -183,6 +184,7 @@ function App() {
                 <Route path="blogs" element={<BlogListPage />} />
                 <Route path="blogs/add" element={<BlogFormPage />} />
                 <Route path="blogs/edit/:id" element={<BlogFormPage />} />
+                <Route path="profile" element={<AdminProfilePage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
