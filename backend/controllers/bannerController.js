@@ -33,7 +33,7 @@ export const getBannerById = async (req, res) => {
 // @access  Private (Admin)
 export const createBanner = async (req, res) => {
   const { title, subtitle, badgeText, ctaText, image, publicId, slides, link, section, order } = req.body;
-  
+
   try {
     const banner = new Banner({
       title,

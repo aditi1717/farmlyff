@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Loader, ExternalLink, Edit2, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,10 +92,10 @@ const BannerListPage = () => {
                 setFormData(prev => {
                     const updatedSlides = [...(prev.slides || [])];
                     if (updatedSlides[activeSlideIndex]) {
-                        updatedSlides[activeSlideIndex] = { 
-                            ...updatedSlides[activeSlideIndex], 
-                            image: res.url, 
-                            publicId: res.publicId 
+                        updatedSlides[activeSlideIndex] = {
+                            ...updatedSlides[activeSlideIndex],
+                            image: res.url,
+                            publicId: res.publicId
                         };
                     }
                     const rootUpdates = activeSlideIndex === 0 ? { image: res.url, publicId: res.publicId } : {};
@@ -122,8 +122,8 @@ const BannerListPage = () => {
     };
 
     const handleEdit = (banner) => {
-        const migratedSlides = (banner.slides && banner.slides.length > 0) 
-            ? banner.slides.map(s => ({ ...s, link: s.link || banner.link || '/', ctaText: s.ctaText || banner.ctaText || 'Shop Now' })) 
+        const migratedSlides = (banner.slides && banner.slides.length > 0)
+            ? banner.slides.map(s => ({ ...s, link: s.link || banner.link || '/', ctaText: s.ctaText || banner.ctaText || 'Shop Now' }))
             : (banner.image ? [{ image: banner.image, publicId: banner.publicId, link: banner.link || '/', ctaText: banner.ctaText || 'Shop Now' }] : []);
 
         setFormData({
@@ -150,8 +150,8 @@ const BannerListPage = () => {
         });
     };
 
-    const filteredOfferLinks = offers.filter(o => 
-        o.title.toLowerCase().includes(linkSearch.toLowerCase()) || 
+    const filteredOfferLinks = offers.filter(o =>
+        o.title.toLowerCase().includes(linkSearch.toLowerCase()) ||
         o.targetLink.toLowerCase().includes(linkSearch.toLowerCase())
     );
 
@@ -241,159 +241,159 @@ const BannerListPage = () => {
 
                         {editMode === 'banner' ? (
                             <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-bold text-gray-800 uppercase tracking-tighter">Slides ({formData.slides.length})</label>
-                                    <div className="relative h-8 px-3 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors group">
-                                        <input type="file" onChange={handleAddSlide} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
-                                        {uploadImageMutation.isPending ? <Loader size={14} className="animate-spin text-primary" /> : <div className="flex items-center gap-1.5"><Plus size={14} className="text-primary group-hover:scale-125 transition-transform" /><span className="text-[10px] font-bold text-primary">ADD</span></div>}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-bold text-gray-800 uppercase tracking-tighter">Slides ({formData.slides.length})</label>
+                                        <div className="relative h-8 px-3 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors group">
+                                            <input type="file" onChange={handleAddSlide} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                            {uploadImageMutation.isPending ? <Loader size={14} className="animate-spin text-primary" /> : <div className="flex items-center gap-1.5"><Plus size={14} className="text-primary group-hover:scale-125 transition-transform" /><span className="text-[10px] font-bold text-primary">ADD</span></div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                        {(formData.slides || []).map((slide, idx) => (
+                                            <div key={idx} onClick={() => setActiveSlideIndex(idx)} className={`relative shrink-0 w-16 h-11 rounded-lg overflow-hidden cursor-pointer transition-all ${activeSlideIndex === idx ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-gray-100 opacity-60'}`}>
+                                                <img src={slide.image} className="w-full h-full object-cover" alt="" />
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeSlide(idx); }} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"><X size={8} /></button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                                    {(formData.slides || []).map((slide, idx) => (
-                                        <div key={idx} onClick={() => setActiveSlideIndex(idx)} className={`relative shrink-0 w-16 h-11 rounded-lg overflow-hidden cursor-pointer transition-all ${activeSlideIndex === idx ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-gray-100 opacity-60'}`}>
-                                            <img src={slide.image} className="w-full h-full object-cover" alt="" />
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); removeSlide(idx); }} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"><X size={8}/></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                {activeSlide && (
+                                    <div className="space-y-4 pt-4 border-t border-gray-50">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Slide</label>
+                                                <div className="relative h-7 px-2 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors group">
+                                                    <input type="file" onChange={handleReplaceSlideImage} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                    <div className="flex items-center gap-1"><ImageIcon size={10} className="text-gray-500" /><span className="text-[9px] font-bold text-gray-600">CHANGE IMAGE</span></div>
+                                                </div>
+                                            </div>
+                                            <input type="text" value={activeSlide.ctaText ?? ''} onChange={(e) => updateActiveSlide('ctaText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Button Label" />
+                                            <div className="relative group/link">
+                                                <div className="flex items-center gap-2 mb-1 justify-between">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Redirect URL</label>
+                                                    {offers.some(o => o.targetLink === activeSlide.link) && (
+                                                        <span className="bg-primary text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase shadow-sm shadow-primary/20">Offer Linked</span>
+                                                    )}
+                                                </div>
+                                                <div className="relative">
+                                                    <ExternalLink size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10" />
+                                                    <input
+                                                        type="text"
+                                                        value={activeSlide.link ?? ''}
+                                                        onChange={(e) => {
+                                                            updateActiveSlide('link', e.target.value);
+                                                            setLinkSearch(e.target.value);
+                                                        }}
+                                                        onFocus={() => setOfferDropdownOpen(true)}
+                                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all"
+                                                        placeholder="URL or select offer..."
+                                                    />
 
-                            {activeSlide && (
-                                <div className="space-y-4 pt-4 border-t border-gray-50">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Slide</label>
-                                            <div className="relative h-7 px-2 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors group">
-                                                <input type="file" onChange={handleReplaceSlideImage} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
-                                                <div className="flex items-center gap-1"><ImageIcon size={10} className="text-gray-500" /><span className="text-[9px] font-bold text-gray-600">CHANGE IMAGE</span></div>
-                                            </div>
-                                        </div>
-                                        <input type="text" value={activeSlide.ctaText ?? ''} onChange={(e)=>updateActiveSlide('ctaText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Button Label" />
-                                        <div className="relative group/link">
-                                            <div className="flex items-center gap-2 mb-1 justify-between">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Redirect URL</label>
-                                                {offers.some(o => o.targetLink === activeSlide.link) && (
-                                                    <span className="bg-primary text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase shadow-sm shadow-primary/20">Offer Linked</span>
-                                                )}
-                                            </div>
-                                            <div className="relative">
-                                                <ExternalLink size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10" />
-                                                <input 
-                                                    type="text" 
-                                                    value={activeSlide.link ?? ''} 
-                                                    onChange={(e)=>{
-                                                        updateActiveSlide('link', e.target.value);
-                                                        setLinkSearch(e.target.value);
-                                                    }} 
-                                                    onFocus={() => setOfferDropdownOpen(true)}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" 
-                                                    placeholder="URL or select offer..." 
-                                                />
-                                                
-                                                <AnimatePresence>
-                                                    {offerDropdownOpen && (
-                                                        <>
-                                                            <div className="fixed inset-0 z-20" onClick={() => setOfferDropdownOpen(false)} />
-                                                            <motion.div 
-                                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-30 overflow-hidden max-h-[250px] overflow-y-auto custom-scrollbar"
-                                                            >
-                                                                <div className="p-2 border-b border-gray-50 bg-gray-50/50">
-                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Available Offers</p>
-                                                                </div>
-                                                                {filteredOfferLinks.length > 0 ? (
-                                                                    filteredOfferLinks.map(offer => (
+                                                    <AnimatePresence>
+                                                        {offerDropdownOpen && (
+                                                            <>
+                                                                <div className="fixed inset-0 z-20" onClick={() => setOfferDropdownOpen(false)} />
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                    className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-30 overflow-hidden max-h-[250px] overflow-y-auto custom-scrollbar"
+                                                                >
+                                                                    <div className="p-2 border-b border-gray-50 bg-gray-50/50">
+                                                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Available Offers</p>
+                                                                    </div>
+                                                                    {filteredOfferLinks.length > 0 ? (
+                                                                        filteredOfferLinks.map(offer => (
+                                                                            <button
+                                                                                key={offer._id}
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    updateActiveSlide('link', offer.targetLink);
+                                                                                    setOfferDropdownOpen(false);
+                                                                                }}
+                                                                                className="w-full flex items-center gap-3 p-3 hover:bg-primary/5 text-left transition-colors border-b border-gray-50 last:border-0 group"
+                                                                            >
+                                                                                <div className="w-8 h-8 rounded-lg bg-gray-50 overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
+                                                                                    {offer.products?.[0]?.image ? (
+                                                                                        <img src={offer.products[0].image} className="w-full h-full object-contain" alt="" />
+                                                                                    ) : (
+                                                                                        <ImageIcon size={14} className="text-gray-300" />
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <p className="text-xs font-bold text-gray-900 truncate group-hover:text-primary transition-colors">{offer.title}</p>
+                                                                                    <p className="text-[9px] font-medium text-gray-400 truncate">{offer.targetLink}</p>
+                                                                                </div>
+                                                                            </button>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="p-4 text-center">
+                                                                            <p className="text-[10px] font-bold text-gray-300 uppercase italic">No matching offers</p>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="p-2 border-t border-gray-50 bg-gray-50/50">
+                                                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Quick Links</p>
+                                                                    </div>
+                                                                    {[
+                                                                        { label: 'Home Page', path: '/' },
+                                                                        { label: 'Product Catalog', path: '/catalog' },
+                                                                        { label: 'User Profile', path: '/profile' }
+                                                                    ].map(link => (
                                                                         <button
-                                                                            key={offer._id}
+                                                                            key={link.path}
                                                                             type="button"
                                                                             onClick={() => {
-                                                                                updateActiveSlide('link', offer.targetLink);
+                                                                                updateActiveSlide('link', link.path);
                                                                                 setOfferDropdownOpen(false);
                                                                             }}
-                                                                            className="w-full flex items-center gap-3 p-3 hover:bg-primary/5 text-left transition-colors border-b border-gray-50 last:border-0 group"
+                                                                            className="w-full p-2.5 px-4 text-left hover:bg-primary/5 transition-colors"
                                                                         >
-                                                                            <div className="w-8 h-8 rounded-lg bg-gray-50 overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center">
-                                                                                {offer.products?.[0]?.image ? (
-                                                                                    <img src={offer.products[0].image} className="w-full h-full object-contain" alt="" />
-                                                                                ) : (
-                                                                                    <ImageIcon size={14} className="text-gray-300" />
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-xs font-bold text-gray-900 truncate group-hover:text-primary transition-colors">{offer.title}</p>
-                                                                                <p className="text-[9px] font-medium text-gray-400 truncate">{offer.targetLink}</p>
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span className="text-[11px] font-bold text-gray-700">{link.label}</span>
+                                                                                <span className="text-[9px] font-medium text-gray-400">{link.path}</span>
                                                                             </div>
                                                                         </button>
-                                                                    ))
-                                                                ) : (
-                                                                    <div className="p-4 text-center">
-                                                                        <p className="text-[10px] font-bold text-gray-300 uppercase italic">No matching offers</p>
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                <div className="p-2 border-t border-gray-50 bg-gray-50/50">
-                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2">Quick Links</p>
-                                                                </div>
-                                                                {[
-                                                                    { label: 'Home Page', path: '/' },
-                                                                    { label: 'Product Catalog', path: '/catalog' },
-                                                                    { label: 'User Profile', path: '/profile' }
-                                                                ].map(link => (
-                                                                    <button
-                                                                        key={link.path}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            updateActiveSlide('link', link.path);
-                                                                            setOfferDropdownOpen(false);
-                                                                        }}
-                                                                        className="w-full p-2.5 px-4 text-left hover:bg-primary/5 transition-colors"
-                                                                    >
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-bold text-gray-700">{link.label}</span>
-                                                                            <span className="text-[9px] font-medium text-gray-400">{link.path}</span>
-                                                                        </div>
-                                                                    </button>
-                                                                ))}
-                                                            </motion.div>
-                                                        </>
-                                                    )}
-                                                </AnimatePresence>
+                                                                    ))}
+                                                                </motion.div>
+                                                            </>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info (Current Slide)</label>
+                                            <input type="text" value={activeSlide.title ?? ''} onChange={(e) => updateActiveSlide('title', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
+                                            <input type="text" value={activeSlide.subtitle ?? ''} onChange={(e) => updateActiveSlide('subtitle', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Subtitle" />
+                                            <input type="text" value={activeSlide.badgeText ?? ''} onChange={(e) => updateActiveSlide('badgeText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
+                                            <label className="relative inline-flex items-center cursor-pointer scale-75">
+                                                <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))} />
+                                                <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banner Info (Current Slide)</label>
-                                        <input type="text" value={activeSlide.title ?? ''} onChange={(e)=>updateActiveSlide('title', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Title" />
-                                        <input type="text" value={activeSlide.subtitle ?? ''} onChange={(e)=>updateActiveSlide('subtitle', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Subtitle" />
-                                        <input type="text" value={activeSlide.badgeText ?? ''} onChange={(e)=>updateActiveSlide('badgeText', e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:bg-white focus:border-primary transition-all" placeholder="Badge" />
-                                    </div>
-                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Banner Active</span>
-                                        <label className="relative inline-flex items-center cursor-pointer scale-75">
-                                            <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={(e)=>setFormData(prev=>({...prev, isActive:e.target.checked}))} />
-                                            <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
+                                )}
 
-                            <div className="flex gap-3 pt-2 text-left">
-                                {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
-                                <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                                    {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-3 pt-2 text-left">
+                                    {isEditing && <button type="button" onClick={resetForm} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all">Discard</button>}
+                                    <button type="submit" disabled={addBannerMutation.isPending || updateBannerMutation.isPending || (formData.slides && formData.slides.length === 0)} className="flex-[2] bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                                        {(addBannerMutation.isPending || updateBannerMutation.isPending) ? <Loader size={16} className="animate-spin" /> : (isEditing ? 'Save Changes' : 'Publish Banner')}
+                                    </button>
+                                </div>
+                            </form>
                         ) : (
                             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 mb-4">
                                     <span className="text-[10px] font-bold text-gray-500 uppercase">Offer Box Visible</span>
                                     <label className="relative inline-flex items-center cursor-pointer scale-75">
-                                        <input type="checkbox" className="sr-only peer" checked={promoForm.isVisible} onChange={(e)=>setPromoForm(prev=>({...prev, isVisible:e.target.checked}))} />
+                                        <input type="checkbox" className="sr-only peer" checked={promoForm.isVisible} onChange={(e) => setPromoForm(prev => ({ ...prev, isVisible: e.target.checked }))} />
                                         <div className="w-10 h-5.5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-full"></div>
                                     </label>
                                 </div>
@@ -402,32 +402,32 @@ const BannerListPage = () => {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Top Badge</label>
-                                            <input type="text" value={promoForm.topBadge} onChange={(e)=>setPromoForm(prev=>({...prev, topBadge:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={promoForm.topBadge} onChange={(e) => setPromoForm(prev => ({ ...prev, topBadge: e.target.value }))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Discount Title</label>
-                                            <input type="text" value={promoForm.discountTitle} onChange={(e)=>setPromoForm(prev=>({...prev, discountTitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={promoForm.discountTitle} onChange={(e) => setPromoForm(prev => ({ ...prev, discountTitle: e.target.value }))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Text</label>
-                                        <input type="text" value={promoForm.extraDiscountSubtitle} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscountSubtitle:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                        <input type="text" value={promoForm.extraDiscountSubtitle} onChange={(e) => setPromoForm(prev => ({ ...prev, extraDiscountSubtitle: e.target.value }))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Extra Discount Value</label>
-                                            <input type="text" value={promoForm.extraDiscount} onChange={(e)=>setPromoForm(prev=>({...prev, extraDiscount:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
+                                            <input type="text" value={promoForm.extraDiscount} onChange={(e) => setPromoForm(prev => ({ ...prev, extraDiscount: e.target.value }))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all" />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Coupon Code</label>
-                                            <input type="text" value={promoForm.couponCode} onChange={(e)=>setPromoForm(prev=>({...prev, couponCode:e.target.value}))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all uppercase" />
+                                            <input type="text" value={promoForm.couponCode} onChange={(e) => setPromoForm(prev => ({ ...prev, couponCode: e.target.value }))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-semibold outline-none focus:bg-white focus:border-primary transition-all uppercase" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <button 
+                                <button
                                     type="button"
-                                    onClick={() => updatePromoMutation.mutate(promoForm)} 
+                                    onClick={() => updatePromoMutation.mutate(promoForm)}
                                     disabled={updatePromoMutation.isPending}
                                     className="w-full bg-primary hover:bg-primaryDeep disabled:opacity-70 text-white text-[10px] font-black uppercase tracking-tighter py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mt-4"
                                 >
@@ -459,7 +459,7 @@ const BannerListPage = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <button 
+                                            <button
                                                 onClick={() => updateBannerMutation.mutate({ id: banner._id || banner.id, data: { ...banner, isActive: banner.isActive === false } })}
                                                 className={`text-[8px] font-black px-1.5 py-0.5 rounded tracking-tighter border transition-all hover:scale-105 active:scale-95 ${banner.isActive !== false ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
                                             >
@@ -470,8 +470,8 @@ const BannerListPage = () => {
                                         <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold italic truncate"><ExternalLink size={10} className="text-primary" />{banner.link || '/'}</div>
                                     </div>
                                     <div className="flex items-center gap-2 pr-2">
-                                        <button onClick={()=>handleEdit(banner)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all border border-gray-50"><Edit2 size={16} /></button>
-                                        <button onClick={()=>handleDelete(banner._id)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-gray-50"><Trash2 size={16} /></button>
+                                        <button onClick={() => handleEdit(banner)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all border border-gray-50"><Edit2 size={16} /></button>
+                                        <button onClick={() => handleDelete(banner._id)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-gray-50"><Trash2 size={16} /></button>
                                     </div>
                                 </div>
                             ))}
