@@ -18,7 +18,7 @@ const OrderDetailPage = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const { user, getAuthHeaders } = useAuth();
-    
+
     // Hooks
     const { data: orders = [] } = useOrders(user?.id);
     const { data: returns = [] } = useReturns(user?.id);
@@ -26,7 +26,7 @@ const OrderDetailPage = () => {
     const { mutate: updateStatus } = useUpdateOrderStatus();
     const { mutate: cancelOrderMutation, isPending: isCancelling } = useCancelOrder();
     const { data: products = [] } = useProducts();
-    
+
     const [order, setOrder] = useState(null);
     const [availableItemsCount, setAvailableItemsCount] = useState(0);
     const [liveTracking, setLiveTracking] = useState(null);
@@ -39,7 +39,7 @@ const OrderDetailPage = () => {
             const foundOrder = orders.find(o => o.id === orderId);
             if (foundOrder) {
                 setOrder(foundOrder);
-                
+
                 // Calculate returns
                 const orderReturns = returns.filter(r => r.orderId === orderId && r.status !== 'Rejected');
                 const returnedPackIds = new Set();
@@ -55,7 +55,7 @@ const OrderDetailPage = () => {
 
     const getProductImage = (item) => {
         if (item.image) return item.image;
-        
+
         // Fallback: Find in products
         // Try by ID (variant ID)
         let product = products.find(p => p.variants?.some(v => v.id === item.id));
@@ -78,13 +78,13 @@ const OrderDetailPage = () => {
     useEffect(() => {
         const fetchLiveTracking = async () => {
             if (!order?.awbCode) return; // Only fetch if AWB is assigned
-            
+
             setTrackingLoading(true);
             try {
                 const response = await fetch(`${API_URL}/orders/${order.id}/tracking`, {
                     headers: getAuthHeaders()
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     setLiveTracking(data);
@@ -150,7 +150,7 @@ const OrderDetailPage = () => {
     // Get refund status display
     const getRefundStatusBadge = () => {
         if (!isCancelled) return null;
-        
+
         switch (order.refundStatus) {
             case 'pending':
                 return (
@@ -238,7 +238,7 @@ const OrderDetailPage = () => {
                                 </div>
                                 <div className="sm:text-right">
                                     {order.awbCode && (
-                                        <a 
+                                        <a
                                             href={`https://www.shiprocket.co/tracking/${order.awbCode}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -452,20 +452,6 @@ const OrderDetailPage = () => {
                             </button>
                         )}
 
-                        {/* Status Demo (Bottom Anchor) */}
-                        <div className="pt-4 opacity-30 hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => {
-                                    const modes = ['Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
-                                    const nextIndex = Math.min(currentStepIndex + 1, modes.length - 1);
-                                    updateOrderStatus(user.id, order.id, modes[nextIndex]);
-                                    window.location.reload();
-                                }}
-                                className="w-full py-2 text-[8px] font-black uppercase tracking-widest border border-dashed border-slate-200 text-slate-400 rounded-lg"
-                            >
-                                Simulation: Next Stage
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
