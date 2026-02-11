@@ -48,6 +48,12 @@ const CheckoutPage = () => {
         });
     };
 
+    const formatINR = (amount) => new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0
+    }).format(Number(amount || 0));
+
     // Helpers
     const getProductById = (pid) => products.find(p => p.id === pid);
     // Legacy support for getPackById, getVariantById - mapped to products
@@ -64,7 +70,7 @@ const CheckoutPage = () => {
         // First check actual coupons
         const coupon = activeCoupons.find(c => c.code === code);
         if (coupon) {
-            if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of â‚¹${coupon.minOrderValue} required` };
+            if (orderValue < coupon.minOrderValue) return { valid: false, error: `Minimum order value of ${formatINR(coupon.minOrderValue)} required` };
 
             let discount = 0;
             if (coupon.type === 'percent') {
@@ -784,7 +790,7 @@ const CheckoutPage = () => {
                                         </div>
                                         <div>
                                             <p className="font-black text-emerald-600 text-[10px] md:text-sm uppercase tracking-wider">{appliedCoupon.code}</p>
-                                            <p className="text-[9px] md:text-xs text-emerald-500 font-bold">Saved â‚¹{couponDiscount}!</p>
+                                            <p className="text-[9px] md:text-xs text-emerald-500 font-bold">Saved {formatINR(couponDiscount)}!</p>
                                         </div>
                                     </div>
                                     <button
@@ -821,7 +827,7 @@ const CheckoutPage = () => {
                                                     <span className="text-[10px] md:text-xs text-gray-400">Qty: {item.qty}</span>
                                                     {item.weight && <span className="text-[10px] text-primary font-bold">{item.weight}</span>}
                                                 </div>
-                                                <span className="text-xs md:text-sm font-black text-footerBg">â‚¹{item.price * item.qty}</span>
+                                                <span className="text-xs md:text-sm font-black text-footerBg">{formatINR(item.price * item.qty)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -831,7 +837,7 @@ const CheckoutPage = () => {
                             <div className="space-y-3 pt-3 md:pt-4 border-t border-gray-100">
                                 <div className="flex justify-between text-[13px] md:text-base text-gray-700">
                                     <span className="font-medium">MRP (incl. of all taxes)</span>
-                                    <span className="font-semibold text-footerBg">₹{mrpTotal}</span>
+                                    <span className="font-semibold text-footerBg">{formatINR(mrpTotal)}</span>
                                 </div>
 
                                 <div className="pt-1">
@@ -839,20 +845,20 @@ const CheckoutPage = () => {
                                     <div className="space-y-2 text-[12px] md:text-sm text-gray-500">
                                         <div className="flex justify-between">
                                             <span>Payment Handling Fee</span>
-                                            <span className="font-semibold text-footerBg">₹{paymentHandlingFee}</span>
+                                            <span className="font-semibold text-footerBg">{formatINR(paymentHandlingFee)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Platform Fee</span>
-                                            <span className="font-semibold text-footerBg">₹{platformFee}</span>
+                                            <span className="font-semibold text-footerBg">{formatINR(platformFee)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Handling Fee</span>
-                                            <span className="font-semibold text-footerBg">₹{handlingFee}</span>
+                                            <span className="font-semibold text-footerBg">{formatINR(handlingFee)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Delivery Fee</span>
                                             <span className={`${shippingCharge > 0 ? 'text-footerBg' : 'text-emerald-500'} font-semibold`}>
-                                                {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? `₹${shippingCharge}` : 'FREE'}
+                                                {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? formatINR(shippingCharge) : 'FREE'}
                                             </span>
                                         </div>
                                     </div>
@@ -882,13 +888,13 @@ const CheckoutPage = () => {
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">MRP Discount</span>
                                             <span className={`${mrpDiscount > 0 ? 'text-emerald-600' : 'text-gray-400'} font-semibold`}>
-                                                {mrpDiscount > 0 ? `-₹${mrpDiscount}` : '₹0'}
+                                                {mrpDiscount > 0 ? `-${formatINR(mrpDiscount)}` : formatINR(0)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">Coupons for you</span>
                                             <span className={`${couponDiscount > 0 ? 'text-emerald-600' : 'text-gray-400'} font-semibold`}>
-                                                {couponDiscount > 0 ? `-₹${couponDiscount}` : '₹0'}
+                                                {couponDiscount > 0 ? `-${formatINR(couponDiscount)}` : formatINR(0)}
                                             </span>
                                         </div>
                                     </div>
@@ -896,7 +902,7 @@ const CheckoutPage = () => {
 
                                 <div className="flex justify-between text-xl md:text-2xl font-black text-blue-600 pt-2 border-t border-gray-100">
                                     <span className="text-base md:text-lg">Total Amount</span>
-                                    <span>₹{total}</span>
+                                    <span>{formatINR(total)}</span>
                                 </div>
                             </div>
 
@@ -906,7 +912,7 @@ const CheckoutPage = () => {
                                 disabled={loading || !isProfileComplete || shippingQuote.loading}
                                 className="w-full bg-footerBg text-white py-3 md:py-4 rounded-xl font-black text-[11px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg mt-5 md:mt-8 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
                             >
-                                {loading ? 'Securing Order...' : shippingQuote.loading ? 'Calculating Shipping...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order - ₹${total}`}
+                                {loading ? 'Securing Order...' : shippingQuote.loading ? 'Calculating Shipping...' : !isProfileComplete ? 'Please Complete Profile' : `Place Order - ${formatINR(total)}`}
                             </button>
 
                             <p className="text-[9px] md:text-xs text-center text-gray-400 mt-3 md:mt-4">

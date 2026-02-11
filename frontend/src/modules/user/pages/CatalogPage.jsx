@@ -280,8 +280,14 @@ const CatalogPage = () => {
         // Availability Filter
         if (selectedAvailability.length > 0) {
             result = result.filter(p => {
-                const isInStock = p.inStock || (p.stock?.quantity > 0);
-                return selectedAvailability.includes(isInStock ? 'In Stock' : 'Out of Stock');
+                let stock = 0;
+                if (p.variants && p.variants.length > 0) {
+                     stock = p.variants[0].stock || 0;
+                } else {
+                     stock = p.stock?.quantity || 0;
+                }
+                const status = stock > 0 ? 'In Stock' : 'Out of Stock';
+                return selectedAvailability.includes(status);
             });
         }
 
