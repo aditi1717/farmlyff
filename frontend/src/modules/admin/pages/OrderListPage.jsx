@@ -87,9 +87,10 @@ const OrderListPage = () => {
     };
 
     const stats = [
-        { label: 'Total Orders', value: allOrders.length, icon: Package, color: 'bg-indigo-50 text-indigo-500' },
-        { label: 'Pending', value: allOrders.filter(o => o.status === 'Processing').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
-        { label: 'Completed', value: allOrders.filter(o => o.status === 'Delivered').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-500' }
+        { label: 'All Order', value: allOrders.length, icon: Package, color: 'bg-indigo-50 text-indigo-500' },
+        { label: 'Pending Order', value: allOrders.filter(o => o.status === 'Processing' || o.status === 'pending').length, icon: Clock, color: 'bg-amber-50 text-amber-500' },
+        { label: 'Delivered Order', value: allOrders.filter(o => o.status === 'Delivered').length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-500' },
+        { label: 'Cancelled Order', value: allOrders.filter(o => o.status === 'Cancelled').length, icon: XCircle, color: 'bg-red-50 text-red-500' }
     ];
 
     return (
@@ -107,7 +108,7 @@ const OrderListPage = () => {
 
             {/* Stats Overview */}
             {statusFilter === 'All' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {stats.map((stat, i) => (
                         <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group">
                             <div className="flex items-center justify-between gap-4">
@@ -139,14 +140,14 @@ const OrderListPage = () => {
                 {statusFilter === 'All' && (
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 overflow-x-auto no-scrollbar">
-                            {['All', 'Processing', 'Received', 'Processed', 'Shipped', 'OutForDelivery', 'Delivered', 'Cancelled'].map(s => (
+                            {['All', 'Processing', 'Delivered', 'Cancelled'].map(s => (
                                 <button
                                     key={s}
                                     onClick={() => navigate(`/admin/orders?status=${s}`)}
                                     className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === s ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-footerBg'
                                         }`}
                                 >
-                                    {s === 'Processing' ? 'Pending' : s === 'OutForDelivery' ? 'Out For Delivery' : s}
+                                    {s === 'Processing' ? 'Pending' : s}
                                 </button>
                             ))}
                         </div>
