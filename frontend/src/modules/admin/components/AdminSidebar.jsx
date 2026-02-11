@@ -677,16 +677,6 @@ const AdminSidebar = () => {
                         {settingsExpanded && (
                             <div className="mt-1 ml-4 pl-4 border-l border-white/10 space-y-1">
                                 <Link
-                                    to="/admin/settings?tab=profile"
-                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/settings' && (!new URLSearchParams(location.search).get('tab') || new URLSearchParams(location.search).get('tab') === 'profile')
-                                        ? 'bg-primary/20 text-white'
-                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                        }`}
-                                >
-                                    <User size={16} />
-                                    <span className="font-semibold">My Profile</span>
-                                </Link>
-                                <Link
                                     to="/admin/settings?tab=general"
                                     className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/settings' && new URLSearchParams(location.search).get('tab') === 'general'
                                         ? 'bg-primary/20 text-white'

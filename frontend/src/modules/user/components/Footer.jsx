@@ -152,7 +152,7 @@ const Footer = () => {
                     { icon: 'ShieldCheck', text: 'Secure Checkout' },
                     { icon: 'RotateCcw', text: '7-Day Return' }
                 ]).map((badge, index) => {
-                    const IconComponent = { Award, Truck, ShieldCheck, RotateCcw, Star }[badge.icon] || Star;
+                    const IconComponent = { Award, Truck, ShieldCheck, RotateCcw, Star, Leaf, Zap, Heart, ThumbsUp }[badge.icon] || Star;
                     return (
                         <div key={index} className="flex items-center gap-2 md:gap-3 text-[10px] md:text-sm text-gray-400 bg-white/5 px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl">
                             <IconComponent className="text-primary" size={16} md:size={20} />
