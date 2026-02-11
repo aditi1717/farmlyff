@@ -7,9 +7,12 @@ import {
     Twitter,
     Plus,
     Trash2,
+    Edit2,
     Save,
     Move,
     MapPin,
+    Heart,
+    ThumbsUp,
     Phone,
     Mail,
     Globe,
@@ -20,9 +23,7 @@ import {
     ShieldCheck,
     Star,
     Leaf,
-    Zap,
-    Heart,
-    ThumbsUp
+    Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebsiteContent, useUpdateWebsiteContent } from '../../../hooks/useContent';
@@ -78,6 +79,7 @@ const FooterManagerPage = () => {
     const { data: serverConfig, isLoading } = useWebsiteContent('footer-config');
     const updateMutation = useUpdateWebsiteContent('footer-config');
     const [config, setConfig] = useState(DEFAULT_FOOTER_CONFIG);
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         if (serverConfig?.content) {
@@ -92,6 +94,7 @@ const FooterManagerPage = () => {
                 content: config,
                 slug: 'footer-config'
             });
+            setIsEditing(false);
         } catch (error) {
             console.error("Failed to save footer config", error);
         }
@@ -160,7 +163,7 @@ const FooterManagerPage = () => {
     const AVAILABLE_ICONS = ['Award', 'Truck', 'ShieldCheck', 'RotateCcw', 'Star', 'Leaf', 'Zap', 'Heart', 'ThumbsUp'];
 
     return (
-        <div className="space-y-8 font-['Inter'] pb-32">
+        <div className="space-y-8 font-['Inter'] pb-32 relative">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
@@ -180,21 +183,32 @@ const FooterManagerPage = () => {
                     <button
                         onClick={handleReset}
                         className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 flex items-center gap-2"
+                        disabled={!isEditing}
                     >
                         <RotateCcw size={16} />
                         Reset Default
                     </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
-                    >
-                        <Save size={16} />
-                        Save Changes
-                    </button>
+                    {!isEditing ? (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="px-6 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-all flex items-center gap-2 shadow-lg shadow-gray-200"
+                        >
+                            <Edit2 size={16} />
+                            Edit Footer
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSave}
+                            className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primaryDeep transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
+                        >
+                            <Save size={16} />
+                            Save Changes
+                        </button>
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${!isEditing ? 'opacity-80 pointer-events-none' : ''}`}>
                 {/* Brand & Socials Section */}
                 <div className="space-y-6">
                     <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
@@ -205,10 +219,11 @@ const FooterManagerPage = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Footer Description</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                     rows="3"
                                     value={config.brand.description}
                                     onChange={(e) => updateNestedState('brand.description', e.target.value)}
+                                    disabled={!isEditing}
                                 />
                             </div>
                         </div>
@@ -223,27 +238,30 @@ const FooterManagerPage = () => {
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Facebook size={12} /> Facebook URL</label>
                                 <input
                                     type="text"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                     value={config.socials.facebook}
                                     onChange={(e) => updateNestedState('socials.facebook', e.target.value)}
+                                    disabled={!isEditing}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Instagram size={12} /> Instagram URL</label>
                                 <input
                                     type="text"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                     value={config.socials.instagram}
                                     onChange={(e) => updateNestedState('socials.instagram', e.target.value)}
+                                    disabled={!isEditing}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Twitter size={12} /> Twitter URL</label>
                                 <input
                                     type="text"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                     value={config.socials.twitter}
                                     onChange={(e) => updateNestedState('socials.twitter', e.target.value)}
+                                    disabled={!isEditing}
                                 />
                             </div>
                         </div>
@@ -260,10 +278,11 @@ const FooterManagerPage = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"><MapPin size={10} className="inline mr-1" /> Address</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                     rows="3"
                                     value={config.contact.address}
                                     onChange={(e) => updateNestedState('contact.address', e.target.value)}
+                                    disabled={!isEditing}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -271,21 +290,23 @@ const FooterManagerPage = () => {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"><Phone size={10} className="inline mr-1" /> Phone</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                         value={config.contact.phone}
                                         onChange={(e) => {
                                             const value = e.target.value.replace(/\D/g, '').slice(0, 10);
                                             updateNestedState('contact.phone', value);
                                         }}
+                                        disabled={!isEditing}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"><Mail size={10} className="inline mr-1" /> Email</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium text-footerBg outline-none focus:border-black transition-all disabled:bg-gray-100 disabled:text-gray-500"
                                         value={config.contact.email}
                                         onChange={(e) => updateNestedState('contact.email', e.target.value)}
+                                        disabled={!isEditing}
                                     />
                                 </div>
                             </div>
@@ -295,7 +316,7 @@ const FooterManagerPage = () => {
             </div>
 
             {/* Dynamic Link Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${!isEditing ? 'opacity-80 pointer-events-none' : ''}`}>
                 {config.columns.map((col, colIndex) => (
                     <div key={col.id} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm h-full">
                         <div className="flex items-center justify-between mb-6">
@@ -306,8 +327,9 @@ const FooterManagerPage = () => {
                                 type="text"
                                 value={col.title}
                                 onChange={(e) => updateColumnTitle(colIndex, e.target.value)}
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-black w-40 text-center"
+                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-black w-40 text-center disabled:bg-gray-100 disabled:text-gray-500"
                                 placeholder="Section Title"
+                                disabled={!isEditing}
                             />
                         </div>
 
@@ -320,50 +342,58 @@ const FooterManagerPage = () => {
                                             placeholder="Label (e.g. About Us)"
                                             value={link.label}
                                             onChange={(e) => updateLink(colIndex, linkIndex, 'label', e.target.value)}
-                                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-medium text-footerBg focus:bg-white focus:border-primary transition-all"
+                                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-medium text-footerBg focus:bg-white focus:border-primary transition-all disabled:bg-gray-100 disabled:text-gray-500"
+                                            disabled={!isEditing}
                                         />
                                         <input
                                             type="text"
                                             placeholder="URL (e.g. /about)"
                                             value={link.url}
                                             onChange={(e) => updateLink(colIndex, linkIndex, 'url', e.target.value)}
-                                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-medium text-gray-500 focus:bg-white focus:border-primary transition-all"
+                                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-medium text-gray-500 focus:bg-white focus:border-primary transition-all disabled:bg-gray-100 disabled:text-gray-500"
+                                            disabled={!isEditing}
                                         />
                                     </div>
-                                    <button
-                                        onClick={() => removeLink(colIndex, linkIndex)}
-                                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    {isEditing && (
+                                        <button
+                                            onClick={() => removeLink(colIndex, linkIndex)}
+                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
-                        <button
-                            onClick={() => addLink(colIndex)}
-                            className="mt-6 w-full py-3 border border-dashed border-gray-200 rounded-xl text-xs font-bold text-gray-400 uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Plus size={14} /> Add Link
-                        </button>
+                        {isEditing && (
+                            <button
+                                onClick={() => addLink(colIndex)}
+                                className="mt-6 w-full py-3 border border-dashed border-gray-200 rounded-xl text-xs font-bold text-gray-400 uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Plus size={14} /> Add Link
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
 
             {/* Trust Badges Management */}
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+            <div className={`bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm ${!isEditing ? 'opacity-80 pointer-events-none' : ''}`}>
                 <h3 className="text-sm font-black text-orange-500 uppercase tracking-widest flex items-center gap-2 mb-6">
                     <Award size={18} /> Trust Badges
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {config.badges.map((badge, index) => (
                         <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-xl relative group">
-                            <button
-                                onClick={() => removeBadge(index)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Trash2 size={12} />
-                            </button>
+                            {isEditing && (
+                                <button
+                                    onClick={() => removeBadge(index)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            )}
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Icon</label>
                                 <div className="flex gap-2 flex-wrap mb-2">
@@ -371,8 +401,9 @@ const FooterManagerPage = () => {
                                         <button
                                             key={iconName}
                                             onClick={() => updateBadge(index, 'icon', iconName)}
-                                            className={`p-1.5 rounded-lg border transition-all ${badge.icon === iconName ? 'bg-primary text-white border-primary' : 'bg-white text-gray-400 border-gray-200 hover:border-primary'}`}
+                                            className={`p-1.5 rounded-lg border transition-all ${badge.icon === iconName ? 'bg-primary text-white border-primary' : 'bg-white text-gray-400 border-gray-200 hover:border-primary'} ${!isEditing ? 'cursor-not-allowed opacity-75' : ''}`}
                                             title={iconName}
+                                            disabled={!isEditing}
                                         >
                                             {React.createElement({ Award, Truck, ShieldCheck, RotateCcw, Star, Leaf, Zap, Heart, ThumbsUp }[iconName], { size: 14 })}
                                         </button>
@@ -383,18 +414,21 @@ const FooterManagerPage = () => {
                                     type="text"
                                     value={badge.text}
                                     onChange={(e) => updateBadge(index, 'text', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-footerBg outline-none focus:border-primary transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-footerBg outline-none focus:border-primary transition-all disabled:bg-gray-100 disabled:text-gray-500"
+                                    disabled={!isEditing}
                                 />
                             </div>
                         </div>
                     ))}
-                    <button
-                        onClick={addBadge}
-                        className="p-4 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all min-h-[160px]"
-                    >
-                        <Plus size={24} />
-                        <span className="text-xs font-bold uppercase tracking-widest">Add Badge</span>
-                    </button>
+                    {isEditing && (
+                        <button
+                            onClick={addBadge}
+                            className="p-4 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all min-h-[160px]"
+                        >
+                            <Plus size={24} />
+                            <span className="text-xs font-bold uppercase tracking-widest">Add Badge</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
