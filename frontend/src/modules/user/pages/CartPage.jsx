@@ -77,10 +77,10 @@ const CartPage = () => {
     // For now, simple random or dummy
     const getRecommendations = (userId, limit) => {
         if (!products.length) return [];
-        
+
         // Get unique products by ID first to avoid data duplicates
         const uniqueById = Array.from(new Map(products.map(p => [p._id || p.id, p])).values());
-        
+
         // Shuffle the unique products
         const shuffled = [...uniqueById].sort(() => 0.5 - Math.random());
         return shuffled.slice(0, limit);
@@ -496,9 +496,9 @@ const CartPage = () => {
                 {user && (() => {
                     const cartItemIds = new Set(enrichedCart.map(item => item.productId || item.id));
                     const cartItemNames = new Set(enrichedCart.map(item => item.name.toLowerCase()));
-                    
-                    const allRecs = getRecommendations(user.id, products.length); 
-                    
+
+                    const allRecs = getRecommendations(user.id, products.length);
+
                     const uniqueRecs = [];
                     const seenNames = new Set();
                     const seenIds = new Set();
@@ -506,10 +506,10 @@ const CartPage = () => {
                     for (const p of allRecs) {
                         const id = p._id || p.id;
                         const name = p.name.toLowerCase();
-                        
-                        if (!cartItemIds.has(id) && 
-                            !cartItemNames.has(name) && 
-                            !seenIds.has(id) && 
+
+                        if (!cartItemIds.has(id) &&
+                            !cartItemNames.has(name) &&
+                            !seenIds.has(id) &&
                             !seenNames.has(name)) {
                             uniqueRecs.push(p);
                             seenNames.add(name);
@@ -517,7 +517,7 @@ const CartPage = () => {
                         }
                         if (uniqueRecs.length >= 4) break;
                     }
-                    
+
                     const displayItems = uniqueRecs.length > 0 ? uniqueRecs : DUMMY_PRODUCTS.slice(0, 4);
 
                     return (
@@ -527,7 +527,6 @@ const CartPage = () => {
                                     <h3 className="text-lg md:text-xl font-black text-footerBg uppercase tracking-tight">You Might Also Like</h3>
                                     <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Based on your personality & cart</p>
                                 </div>
-                                <button className="hidden md:block text-xs font-bold text-primary hover:underline">View All</button>
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-6">
                                 {displayItems.map((item) => (
