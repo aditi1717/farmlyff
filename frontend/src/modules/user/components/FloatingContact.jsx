@@ -32,7 +32,7 @@ const FloatingContact = () => {
         diet: 'balanced',
         allergies: ''
     });
-    const MAX_RECOMMENDATIONS = 1;
+    const MAX_RECOMMENDATIONS = 5;
 
     const normalizeText = (value) => (value || '').toString().toLowerCase().trim();
     const stripHtml = (value) => (value || '').toString().replace(/<[^>]*>/g, ' ');
@@ -212,6 +212,7 @@ const FloatingContact = () => {
         setMessages([]);
         setChatInput('');
         setRecommendations([]);
+        setLoading(false);
         setForm((prev) => ({
             ...prev,
             age: '',
@@ -261,11 +262,11 @@ Available products: ${JSON.stringify(productList)}
 
 Task:
 1) Explain BMI status in 1-2 sentences.
-2) Recommend only 1 best product from the list, with a short reason (max 1 line).
+2) Recommend 3-5 products from the list, with a short reason (max 1 line each).
 3) Analyze deeply using product description, benefits, specifications, nutrition, and FAQs.
 4) Do not recommend products outside the list.
 5) If allergies are listed, avoid those ingredients.
-4) Return JSON with keys: bmiSummary, recommendations (array with exactly 1 item: {name, reason, slug, image}).`;
+4) Return JSON with keys: bmiSummary, recommendations (array of {name, reason, slug, image}).`;
     };
 
     const runGemini = async (curatedProducts) => {
@@ -436,7 +437,7 @@ Task:
         pushMessage('assistant', `Hii ${name}, welcome to Farmlyf!`);
         askForStep(3);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, user]);
+    }, [isOpen, user, messages.length]);
 
     useEffect(() => {
         if (!isOpen) return;
