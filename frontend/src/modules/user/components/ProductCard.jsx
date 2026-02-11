@@ -5,7 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useNavigate } from 'react-router-dom';
-import { Star, Heart, Bookmark } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 
 const calculatePer100g = (price, quantity, unit, weightStr) => {
@@ -135,20 +135,6 @@ const ProductCard = ({ product, showVault = true }) => {
                         >
                             <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
                         </button>
-                        {showVault && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!user) {
-                                        return navigate('/login');
-                                    }
-                                    addToSaved(user.id, itemId);
-                                }}
-                                className={`transition-colors p-0.5 active:scale-95 ${isSaved ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
-                            >
-                                <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
-                            </button>
-                        )}
                     </div>
                 </div>
 

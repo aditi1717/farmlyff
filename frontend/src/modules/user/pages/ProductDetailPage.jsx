@@ -1060,25 +1060,28 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* Recently Viewed Section */}
-                {
-                    getRecentlyViewed(user?.id || 'guest').length > 0 && (
+                {(() => {
+                    const recentItems = getRecentlyViewed(user?.id || 'guest')
+                        .map(pid => getProductById(pid))
+                        .filter(p => p && p.id !== product.id);
+
+                    if (recentItems.length === 0) return null;
+
+                    return (
                         <div className="mt-12 pt-10 bg-[#FDFCF6] -mx-4 md:-mx-12 px-4 md:px-12 pb-6 rounded-t-[32px] border-x border-t border-orange-100/30">
                             <div className="mb-6 text-center">
                                 <h3 className="text-lg font-bold text-black font-semibold">Recently Viewed</h3>
                             </div>
                             <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-none">
-                                {getRecentlyViewed(user?.id || 'guest')
-                                    .map(pid => getProductById(pid))
-                                    .filter(p => p && p.id !== product.id)
-                                    .map((item) => (
-                                        <div key={item.id} className="min-w-[160px] md:min-w-[260px] w-[160px] md:w-[260px]">
-                                            <ProductCard product={item} />
-                                        </div>
-                                    ))}
+                                {recentItems.map((item) => (
+                                    <div key={item.id} className="min-w-[160px] md:min-w-[260px] w-[160px] md:w-[260px]">
+                                        <ProductCard product={item} />
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    )
-                }
+                    );
+                })()}
 
             </main >
 
