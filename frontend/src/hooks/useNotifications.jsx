@@ -69,6 +69,15 @@ export const useNotifications = () => {
 
     const unsubscribe = onMessageListener((payload) => {
       console.log('Foreground notification received:', payload);
+      
+      // Show native browser notification if permission is granted
+      if (Notification.permission === 'granted') {
+        new Notification(payload.notification?.title || 'New Notification', {
+          body: payload.notification?.body,
+          icon: '/logo.png' // Adjust icon path if needed
+        });
+      }
+
       toast.custom((t) => (
         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
           <div className="flex-1 w-0 p-4">

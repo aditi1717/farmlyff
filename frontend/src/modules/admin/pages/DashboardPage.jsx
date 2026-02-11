@@ -39,7 +39,8 @@ const DashboardPage = () => {
     const { data: orders = [] } = useAllOrders();
     const { data: returns = [] } = useAllReturns();
     const { data: products = [] } = useProducts();
-    const { data: users = [] } = useUsers();
+    const { data: userData } = useUsers();
+    const totalUsersCount = userData?.total || 0;
     const { data: categories = [] } = useCategories();
     const { data: subcategories = [] } = useSubCategories();
     const { data: coupons = [] } = useCoupons();
@@ -77,7 +78,7 @@ const DashboardPage = () => {
 
         return [
             // Section 1: Business Overview
-            { label: 'Total Users', value: users.length, icon: Users, color: 'text-blue-500', link: '/admin/users' },
+            { label: 'Total Users', value: totalUsersCount, icon: Users, color: 'text-blue-500', link: '/admin/users' },
             { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: Banknote, color: 'text-emerald-500', link: '/admin/orders' },
             { label: 'Total Categories', value: categories.length, icon: Layers, color: 'text-indigo-500', link: '/admin/categories' },
             { label: 'Total Subcategories', value: subcategories.length, icon: Layers, color: 'text-violet-500', link: '/admin/sub-categories' },
@@ -108,7 +109,7 @@ const DashboardPage = () => {
             { label: 'User Reviews', value: userReviews.length, icon: MessageSquare, color: 'text-blue-400', link: '/admin/reviews' },
             { label: 'Admin Reviews', value: adminReviews.length, icon: ShieldCheck, color: 'text-slate-600', link: '/admin/reviews' },
         ];
-    }, [orders, products, returns, users, categories, subcategories, coupons, referrals, userReviews, adminReviews]);
+    }, [orders, products, returns, userData, categories, subcategories, coupons, referrals, userReviews, adminReviews]);
 
     const quickActions = [
         { label: 'Add Product', icon: Plus, link: '/admin/products/add', color: 'bg-emerald-50 text-emerald-600' },

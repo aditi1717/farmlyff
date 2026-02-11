@@ -176,6 +176,20 @@ export const cancelOrder = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to cancel order', error: error.message });
   }
 });
+// @desc    Get orders for a specific user
+// @route   GET /api/orders/user/:userId
+// @access  Private/Admin
+export const getOrdersByUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error('Get User Orders Error:', error.message);
+    res.status(500).json({ message: 'Failed to fetch user orders', error: error.message });
+  }
+});
+
 // @desc    Update an order (status, delivery status, etc.)
 // @route   PUT /api/orders/:orderId
 // @access  Private/Admin
