@@ -23,7 +23,8 @@ import {
     Briefcase,
     Building2
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 const API_URL = API_BASE_URL;
 
@@ -31,6 +32,7 @@ const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { getAuthHeaders } = useAuth();
+    const queryClient = useQueryClient();
     const [showAllOrders, setShowAllOrders] = useState(false);
 
     // Fetch real user data
@@ -71,7 +73,7 @@ const UserDetailPage = () => {
                 const data = await res.json();
                 toast.success(data.message);
                 // Invalidate and refetch user data
-                navigate(0); // Simple way to refresh current route state
+                queryClient.invalidateQueries(['admin-user', id]);
             } else {
                 toast.error('Failed to update status');
             }

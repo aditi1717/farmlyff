@@ -88,7 +88,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     
     if (user && user.isBanned) {
-        return res.status(401).json({ message: 'Your account has been banned.' });
+        return res.status(401).json({ message: 'This account has been restricted. Please contact support.' });
     }
 
     if (user && (await bcrypt.compare(password, user.password))) {
@@ -393,6 +393,14 @@ export const sendOtpForLogin = asyncHandler(async (req, res) => {
     }
 
     const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+
+    // Check if user exists and is banned
+    const user = await User.findOne({ phone: normalizedPhone });
+    if (user && user.isBanned) {
+        res.status(401);
+        throw new Error('This account has been restricted. Please contact support.');
+    }
+
     const result = await sendOTP(normalizedPhone, 'Customer');
     res.json(result);
 });
@@ -452,7 +460,7 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
 
     if (user && user.isBanned) {
         res.status(401);
-        throw new Error('Your account has been banned');
+        throw new Error('This account has been restricted. Please contact support.');
     }
 
     // Login successful
