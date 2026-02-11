@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Referral from '../models/Referral.js';
+import Product from '../models/Product.js';
 import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
 
@@ -13,46 +14,177 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
 });
 
-// Helper function to deduct stock from products
-const deductStock = async (orderItems) => {
-  const Product = (await import('../models/Product.js')).default;
-  
-  for (const item of orderItems) {
-    try {
-      const product = await Product.findOne({ id: item.productId });
-      
-      if (!product) {
-        console.error(`Product not found: ${item.productId}`);
-        continue;
-      }
+const aggregateOrderItems = (orderItems = []) => {
+  const aggregated = new Map();
 
-      // Check if it's a variant product or simple product
-      if (item.id && item.id.includes('_')) {
-        // Variant product (format: productId_variantId)
-        const variantId = item.id.split('_')[1];
-        const variant = product.variants.find(v => v.id === variantId);
-        
-        if (variant) {
-          variant.stock = Math.max(0, (variant.stock || 0) - item.qty);
-          console.log(`Deducted ${item.qty} from variant ${variantId} of ${product.name}. New stock: ${variant.stock}`);
-        }
-      } else {
-        // Simple product
-        product.stock.quantity = Math.max(0, (product.stock.quantity || 0) - item.qty);
-        console.log(`Deducted ${item.qty} from ${product.name}. New stock: ${product.stock.quantity}`);
-      }
-
-      // Update inStock flag
-      const hasStock = product.variants.length > 0
-        ? product.variants.some(v => (v.stock || 0) > 0)
-        : (product.stock.quantity || 0) > 0;
-      
-      product.inStock = hasStock;
-
-      await product.save();
-    } catch (error) {
-      console.error(`Error deducting stock for item ${item.id}:`, error.message);
+  for (const rawItem of orderItems) {
+    const qty = Number(rawItem?.qty || 0);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error(`Invalid quantity for item "${rawItem?.name || rawItem?.id || 'unknown'}"`);
     }
+
+    const productId = String(rawItem?.productId || rawItem?.id || '').trim();
+    if (!productId) {
+      throw new Error(`Missing product id for item "${rawItem?.name || 'unknown'}"`);
+    }
+
+    const variantIdCandidate = rawItem?.variantId
+      ? String(rawItem.variantId)
+      : (rawItem?.productId && rawItem?.id && String(rawItem.id) !== String(rawItem.productId))
+        ? String(rawItem.id)
+        : null;
+
+    const key = `${productId}::${variantIdCandidate || 'base'}`;
+    if (!aggregated.has(key)) {
+      aggregated.set(key, {
+        productId,
+        variantId: variantIdCandidate,
+        qty: 0,
+        displayName: rawItem?.name || productId
+      });
+    }
+    aggregated.get(key).qty += qty;
+  }
+
+  return [...aggregated.values()];
+};
+
+const resolveProductAndVariant = async ({ productId, variantId }) => {
+  let product = await Product.findOne({ id: productId }).lean();
+  if (!product && variantId) {
+    product = await Product.findOne({ 'variants.id': variantId }).lean();
+  }
+  if (!product) return null;
+
+  let resolvedVariantId = variantId || null;
+  if (!resolvedVariantId && product.variants?.length > 0) {
+    const candidate = product.variants.find(v => String(v.id) === String(productId));
+    if (candidate) {
+      resolvedVariantId = String(candidate.id);
+    }
+  }
+
+  if (!resolvedVariantId && product.variants?.length > 0 && String(product.id) !== String(productId)) {
+    const candidate = product.variants.find(v => String(v.id) === String(productId));
+    if (candidate) {
+      resolvedVariantId = String(candidate.id);
+    }
+  }
+
+  return { product, variantId: resolvedVariantId };
+};
+
+const validateOrderStock = async (orderItems = []) => {
+  const aggregatedItems = aggregateOrderItems(orderItems);
+
+  for (const item of aggregatedItems) {
+    const resolved = await resolveProductAndVariant(item);
+    if (!resolved?.product) {
+      return { ok: false, message: `Product not found for "${item.displayName}"` };
+    }
+
+    const { product, variantId } = resolved;
+
+    if (product.variants?.length > 0) {
+      if (!variantId) {
+        return { ok: false, message: `Variant is required for "${product.name}"` };
+      }
+
+      const variant = product.variants.find(v => String(v.id) === String(variantId));
+      if (!variant) {
+        return { ok: false, message: `Variant not found for "${product.name}"` };
+      }
+
+      const available = Number(variant.stock || 0);
+      if (available < item.qty) {
+        return {
+          ok: false,
+          message: `Insufficient stock for "${product.name}" (${variant.weight || variant.id}). Available: ${available}, requested: ${item.qty}`
+        };
+      }
+    } else {
+      const available = Number(product.stock?.quantity || 0);
+      if (available < item.qty) {
+        return {
+          ok: false,
+          message: `Insufficient stock for "${product.name}". Available: ${available}, requested: ${item.qty}`
+        };
+      }
+    }
+  }
+
+  return { ok: true };
+};
+
+const deductStock = async (orderItems = []) => {
+  const aggregatedItems = aggregateOrderItems(orderItems);
+  const touchedProductIds = new Set();
+  const appliedDeductions = [];
+
+  try {
+    for (const item of aggregatedItems) {
+      const resolved = await resolveProductAndVariant(item);
+      if (!resolved?.product) {
+        throw new Error(`Product not found for "${item.displayName}"`);
+      }
+
+      const { product, variantId } = resolved;
+      touchedProductIds.add(product.id);
+
+      if (product.variants?.length > 0) {
+        if (!variantId) {
+          throw new Error(`Variant is required for "${product.name}"`);
+        }
+
+        const updateResult = await Product.updateOne(
+          { id: product.id, 'variants.id': variantId, 'variants.stock': { $gte: item.qty } },
+          { $inc: { 'variants.$.stock': -item.qty } }
+        );
+
+        if (!updateResult.modifiedCount) {
+          throw new Error(`Stock changed for "${product.name}". Please review your cart and try again.`);
+        }
+
+        appliedDeductions.push({ productId: product.id, variantId, qty: item.qty });
+      } else {
+        const updateResult = await Product.updateOne(
+          { id: product.id, 'stock.quantity': { $gte: item.qty } },
+          { $inc: { 'stock.quantity': -item.qty } }
+        );
+
+        if (!updateResult.modifiedCount) {
+          throw new Error(`Stock changed for "${product.name}". Please review your cart and try again.`);
+        }
+
+        appliedDeductions.push({ productId: product.id, variantId: null, qty: item.qty });
+      }
+    }
+  } catch (error) {
+    // Best-effort rollback so partial deduction does not leave inventory inconsistent.
+    for (const applied of appliedDeductions.reverse()) {
+      if (applied.variantId) {
+        await Product.updateOne(
+          { id: applied.productId, 'variants.id': applied.variantId },
+          { $inc: { 'variants.$.stock': applied.qty } }
+        );
+      } else {
+        await Product.updateOne(
+          { id: applied.productId },
+          { $inc: { 'stock.quantity': applied.qty } }
+        );
+      }
+    }
+    throw error;
+  }
+
+  for (const productId of touchedProductIds) {
+    const product = await Product.findOne({ id: productId });
+    if (!product) continue;
+    const hasStock = product.variants?.length > 0
+      ? product.variants.some(v => Number(v.stock || 0) > 0)
+      : Number(product.stock?.quantity || 0) > 0;
+    product.inStock = hasStock;
+    await product.save();
   }
 };
 
@@ -60,7 +192,7 @@ const deductStock = async (orderItems) => {
 // @route   POST /api/payments/order
 // @access  Public (or Private if auth is needed)
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount, currency = 'INR', receipt, userId } = req.body;
+  const { amount, currency = 'INR', receipt, userId, orderData } = req.body;
 
   // Validation: Check if user profile is complete
   if (userId) {
@@ -77,6 +209,15 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
       // return a mock response if the user just wants to see the UI.
       // But for production safety, we should error.
       // return res.status(400).json({ message: 'Razorpay keys not configured' });
+  }
+
+  if (!orderData?.items?.length) {
+    return res.status(400).json({ message: 'Cart is empty' });
+  }
+
+  const stockCheck = await validateOrderStock(orderData.items);
+  if (!stockCheck.ok) {
+    return res.status(409).json({ message: stockCheck.message });
   }
 
   const options = {
@@ -114,6 +255,11 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   if (razorpay_signature === expectedSign) {
     // Payment verified
     try {
+        const stockCheck = await validateOrderStock(orderData?.items || []);
+        if (!stockCheck.ok) {
+            return res.status(409).json({ message: stockCheck.message });
+        }
+
         // Generate unique order ID
         const timestamp = Date.now();
         const randomSuffix = Math.floor(Math.random() * 1000);
@@ -134,8 +280,13 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
         await newOrder.save();
 
-        // Deduct stock from products
-        await deductStock(orderData.items || []);
+        // Deduct stock from products after order creation; delete order if stock changes during deduction.
+        try {
+            await deductStock(orderData.items || []);
+        } catch (stockError) {
+            await Order.deleteOne({ _id: newOrder._id });
+            throw stockError;
+        }
 
         // Update Referral Stats if a coupon/code was used
         if (orderData.appliedCoupon) {
@@ -203,7 +354,8 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         res.status(200).json({ message: "Payment verified successfully", orderId: newOrder.id });
     } catch (dbError) {
         console.error('DB Order Creation Error after payment verification:', dbError);
-        res.status(500).json({ message: "Payment verified but failed to save order", error: dbError.message });
+        const status = /stock|variant|required|not found/i.test(dbError.message) ? 409 : 500;
+        res.status(status).json({ message: dbError.message || "Payment verified but failed to save order", error: dbError.message });
     }
   } else {
     res.status(400).json({ message: "Invalid signature sent!" });
@@ -227,6 +379,11 @@ export const createCODOrder = asyncHandler(async (req, res) => {
     }
 
     try {
+        const stockCheck = await validateOrderStock(orderData?.items || []);
+        if (!stockCheck.ok) {
+            return res.status(409).json({ message: stockCheck.message });
+        }
+
         // Generate unique order ID
         const timestamp = Date.now();
         const randomSuffix = Math.floor(Math.random() * 1000);
@@ -244,8 +401,13 @@ export const createCODOrder = asyncHandler(async (req, res) => {
 
         await newOrder.save();
 
-        // Deduct stock from products
-        await deductStock(orderData.items || []);
+        // Deduct stock from products after order creation; delete order if stock changes during deduction.
+        try {
+            await deductStock(orderData.items || []);
+        } catch (stockError) {
+            await Order.deleteOne({ _id: newOrder._id });
+            throw stockError;
+        }
 
         // Update Referral Stats if a coupon/code was used
         if (orderData.appliedCoupon) {
@@ -310,6 +472,7 @@ export const createCODOrder = asyncHandler(async (req, res) => {
 
         res.status(201).json({ message: "Order placed successfully", orderId: newOrder.id });
     } catch (error) {
-        res.status(500).json({ message: "Failed to place COD order", error: error.message });
+        const status = /stock|variant|required|not found/i.test(error.message) ? 409 : 500;
+        res.status(status).json({ message: error.message || "Failed to place COD order", error: error.message });
     }
 });

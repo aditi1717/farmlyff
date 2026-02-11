@@ -122,7 +122,7 @@ function App() {
                 <Route path="profile/:tab?" element={<ProfilePage />} />
                 <Route path="about-us" element={<InfoPage type="about-us" />} />
                 <Route path="privacy-policy" element={<InfoPage type="privacy-policy" />} />
-                <Route path="terms-and-conditions" element={<InfoPage type="terms-conditions" />} />
+                <Route path="terms-conditions" element={<InfoPage type="terms-conditions" />} />
                 <Route path="contact-us" element={<InfoPage type="contact-us" />} />
                 <Route path="blog/:slug" element={<BlogDetailPage />} />
                 <Route path="login" element={<AuthPage />} />

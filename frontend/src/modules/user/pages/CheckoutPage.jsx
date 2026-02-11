@@ -102,7 +102,8 @@ const CheckoutPage = () => {
                 image: variantData.product.image,
                 category: variantData.product.category,
                 subcategory: variantData.product.subcategory,
-                productId: variantData.product.id
+                productId: variantData.product.id,
+                stock: variantData.stock || 0
             };
         }
 
@@ -335,6 +336,13 @@ const CheckoutPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const insufficientItem = enrichedCart.find(item => (Number(item.qty) || 0) > (Number(item.stock) || 0));
+        if (insufficientItem) {
+            toast.error(`Insufficient stock for ${insufficientItem.name}. Available: ${insufficientItem.stock || 0}`);
+            return;
+        }
+
         setLoading(true);
 
         const orderData = {

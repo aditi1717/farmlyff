@@ -150,33 +150,30 @@ const CategoryNav = () => {
 
     return (
         <div className="bg-footerBg text-white py-3.5 hidden md:block border-t border-gray-800 shadow-lg relative" style={{ zIndex: 10000 }}>
-            <div className="w-full flex items-center justify-start overflow-x-auto no-scrollbar px-4 lg:px-12 text-[10px] lg:text-[11px] font-black tracking-widest uppercase gap-8 lg:gap-12">
-                {navItems.map((cat, index) => {
-                    const Icon = cat.icon;
-                    return (
-                        <div
-                            key={index}
-                            className="flex items-center shrink-0"
-                            onMouseEnter={() => cat.hasMenu && setActiveMenu(cat.name)}
-                            onMouseLeave={() => cat.hasMenu && setActiveMenu(null)}
-                        >
-                            <Link
-                                to={cat.path}
-                                onClick={() => setActiveMenu(null)}
-                                className={`flex items-center gap-2 py-1 transition-all duration-300 ${activeMenu === cat.name ? 'text-primary' : 'hover:text-primary text-white/90'}`}
+            <div className="w-full overflow-x-auto no-scrollbar px-4 lg:px-12">
+                <div className="w-max min-w-full flex items-center justify-between gap-6 lg:gap-8 text-[10px] lg:text-[11px] font-black tracking-widest uppercase">
+                    {navItems.map((cat, index) => {
+                        const Icon = cat.icon;
+                        return (
+                            <div
+                                key={index}
+                                className="flex items-center shrink-0"
+                                onMouseEnter={() => cat.hasMenu && setActiveMenu(cat.name)}
+                                onMouseLeave={() => cat.hasMenu && setActiveMenu(null)}
                             >
-                                <Icon size={14} className={`transition-colors duration-300 ${activeMenu === cat.name ? 'text-primary' : 'text-primary/70'}`} />
-                                <span className="whitespace-nowrap">{cat.name}</span>
-                                {cat.hasMenu && <ChevronDown size={11} className={`ml-0.5 transition-transform duration-300 ${activeMenu === cat.name ? 'rotate-180' : ''}`} />}
-                            </Link>
-
-                            {/* Vertical Divider - Optional: maybe remove or keep with spacing */}
-                            {/* {index !== navItems.length - 1 && (
-                                <div className="h-4 w-[1px] bg-white/10 ml-4 lg:ml-8" />
-                            )} */}
-                        </div>
-                    );
-                })}
+                                <Link
+                                    to={cat.path}
+                                    onClick={() => setActiveMenu(null)}
+                                    className={`flex items-center gap-2 py-1 transition-all duration-300 ${activeMenu === cat.name ? 'text-primary' : 'hover:text-primary text-white/90'}`}
+                                >
+                                    <Icon size={14} className={`transition-colors duration-300 ${activeMenu === cat.name ? 'text-primary' : 'text-primary/70'}`} />
+                                    <span className="whitespace-nowrap">{cat.name}</span>
+                                    {cat.hasMenu && <ChevronDown size={11} className={`ml-0.5 transition-transform duration-300 ${activeMenu === cat.name ? 'rotate-180' : ''}`} />}
+                                </Link>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Popup Mega Menu */}

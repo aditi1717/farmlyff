@@ -13,8 +13,8 @@ const BottomNavbar = () => {
     const cartItemsMap = useCartStore(state => state.cartItems);
 
     // safe access to user's cart
-    const userCart = user ? (cartItemsMap[user.id] || []) : [];
-    const cartCount = userCart.reduce((total, item) => total + item.qty, 0); // Or .length if just item count desired
+    const userCart = cartItemsMap[user?.id || 'guest'] || [];
+    const cartCount = userCart.length;
 
     const isActive = (path) => location.pathname === path;
 

@@ -303,6 +303,11 @@ const ProductDetailPage = () => {
     const currentStock = (isGroupProduct && selectedVariant) ? (selectedVariant.stock || 0) : (product.stock?.quantity || 0);
     const isOutOfStock = currentStock <= 0;
 
+    const savedMap = useUserStore(state => state.saveForLater);
+    const userSaved = user ? (savedMap[user.id] || []) : [];
+    const skuId = (isGroupProduct && selectedVariant) ? selectedVariant.id : product.id;
+    const isSaved = userSaved.some(item => String(item.packId) === String(skuId));
+
     const tabs = ['Description', 'Benefits', 'Specifications', 'Reviews', 'FAQ', 'Nutrition Info'];
 
     const isCombo = product.category === 'combos-packs' || product.category === 'Combos';
@@ -689,6 +694,16 @@ const ProductDetailPage = () => {
                                         : 'bg-[#111827] text-white hover:bg-black'}`}
                             >
                                 {isOutOfStock ? 'OUT OF STOCK' : 'BUY NOW'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!user) return navigate('/login');
+                                    addToSaved(user.id, skuId);
+                                }}
+                                className={`flex-none w-12 h-12 flex items-center justify-center rounded-lg border transition-all active:scale-95 ${isSaved ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 text-gray-400 hover:text-primary hover:border-primary'}`}
+                                title={isSaved ? "Saved in Vault" : "Save to Vault"}
+                            >
+                                <Bookmark size={20} fill={isSaved ? "currentColor" : "none"} />
                             </button>
                         </div>
 

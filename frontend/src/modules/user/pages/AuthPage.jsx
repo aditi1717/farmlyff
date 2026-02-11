@@ -136,7 +136,7 @@ const AuthPage = () => {
 
                     <div className="mt-auto pt-6 text-center">
                         <p className="text-gray-400 text-[10px] leading-relaxed">
-                            By continuing, you agree to our <Link to="/terms-and-conditions" className="text-gray-600 font-bold hover:text-primary transition-colors">Terms of Service</Link> and <Link to="/privacy-policy" className="text-gray-600 font-bold hover:text-primary transition-colors">Privacy Policy</Link>.
+                            By continuing, you agree to our <Link to="/terms-conditions" className="text-gray-600 font-bold hover:text-primary transition-colors">Terms of Service</Link> and <Link to="/privacy-policy" className="text-gray-600 font-bold hover:text-primary transition-colors">Privacy Policy</Link>.
                         </p>
                     </div>
                 </div>

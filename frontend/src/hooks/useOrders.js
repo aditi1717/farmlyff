@@ -101,6 +101,8 @@ export const usePlaceOrder = () => {
         onSuccess: (data, variables) => {
             if (variables.orderData.paymentMethod === 'cod') {
                 queryClient.invalidateQueries({ queryKey: ['orders', variables.userId] });
+                queryClient.invalidateQueries({ queryKey: ['products'] });
+                queryClient.invalidateQueries({ queryKey: ['product'] });
                 toast.success('Order placed successfully!');
             }
         }
@@ -125,6 +127,8 @@ export const useVerifyPayment = () => {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['orders', variables.userId] });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['product'] });
             toast.success('Payment verified and order placed!');
         }
     });

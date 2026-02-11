@@ -40,6 +40,7 @@ const InfoPage = ({ type }) => {
                 </div>
             )
         },
+
         'contact-us': {
             title: "Contact Us",
             subtitle: "We're here to help",
