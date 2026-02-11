@@ -88,7 +88,7 @@ const FAQSectionPage = () => {
                 });
             }
             cancelEdit();
-        } catch (error) {}
+        } catch (error) { }
     };
 
     const startAdd = () => {
@@ -196,9 +196,9 @@ const FAQSectionPage = () => {
                 <div className="space-y-3">
                     {faqs.map((faq, index) => (
                         <div
-                            key={faq._id || faq.id}
+                            key={faq.id || faq._id}
                             className={`bg-white rounded-2xl border p-5 transition-all
-                                ${editingId === (faq._id || faq.id) ? 'border-primary ring-1 ring-primary shadow-md opacity-50 pointer-events-none' : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'}
+                                ${editingId === (faq.id || faq._id) ? 'border-primary ring-1 ring-primary shadow-md opacity-50 pointer-events-none' : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'}
                             `}
                         >
                             <div className="flex items-start gap-4">
@@ -219,7 +219,7 @@ const FAQSectionPage = () => {
                                         <Edit2 size={16} />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(faq._id || faq.id)}
+                                        onClick={() => handleDelete(faq.id || faq._id)}
                                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                         title="Delete"
                                         disabled={editingId !== null}

@@ -73,7 +73,7 @@ const BlogDetailPage = () => {
                         className="inline-flex items-center gap-2 text-gray-500 hover:text-black mb-4 transition-colors group"
                     >
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-bold text-xs uppercase tracking-widest">Back to Blogs</span>
+                        <span className="font-bold text-xs uppercase tracking-widest">Back</span>
                     </Link>
 
                     <div className="flex flex-wrap items-center gap-4 text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-2">
