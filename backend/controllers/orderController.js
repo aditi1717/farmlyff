@@ -2,6 +2,7 @@ import Order from '../models/Order.js';
 import Razorpay from 'razorpay';
 import shiprocketService from '../utils/shiprocketService.js';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 
 // Initialize Razorpay for refunds
 const razorpay = new Razorpay({
@@ -173,5 +174,47 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error('Order cancellation error:', error.message);
     res.status(500).json({ message: 'Failed to cancel order', error: error.message });
+  }
+});
+// @desc    Update an order (status, delivery status, etc.)
+// @route   PUT /api/orders/:orderId
+// @access  Private/Admin
+export const updateOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { status, deliveryStatus, paymentStatus, awbCode, courierName, trackingId } = req.body;
+
+  try {
+    let order = await Order.findOne({ id: orderId });
+    if (!order && mongoose.isValidObjectId(orderId)) {
+      order = await Order.findById(orderId);
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Update fields if provided
+    if (status) order.status = status;
+    if (deliveryStatus) order.deliveryStatus = deliveryStatus;
+    if (paymentStatus) order.paymentStatus = paymentStatus;
+    if (awbCode) order.awbCode = awbCode;
+    if (courierName) order.courierName = courierName;
+    if (trackingId) order.trackingId = trackingId;
+
+    // Add to status history if status changed
+    if (status && status !== order.status) {
+      if (!order.statusHistory) order.statusHistory = [];
+      order.statusHistory.push({
+        status: status,
+        timestamp: new Date(),
+        info: `Order status manually updated to ${status}`
+      });
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    console.error('Update Order Error:', error.message);
+    res.status(500).json({ message: 'Failed to update order', error: error.message });
   }
 });

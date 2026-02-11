@@ -144,6 +144,8 @@ const OrderDetailPage = () => {
             case 'Shipped': return 'text-blue-600 bg-blue-50 border-blue-100';
             case 'Processing': return 'text-amber-600 bg-amber-50 border-amber-100';
             case 'Cancelled': return 'text-red-600 bg-red-50 border-red-100';
+            case 'ReturnInitiated': return 'text-rose-600 bg-rose-50 border-rose-100';
+            case 'Returned': return 'text-purple-600 bg-purple-50 border-purple-100';
             default: return 'text-gray-600 bg-gray-50 border-gray-100';
         }
     };

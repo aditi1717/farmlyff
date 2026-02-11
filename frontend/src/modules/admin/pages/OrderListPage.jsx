@@ -79,6 +79,8 @@ const OrderListPage = () => {
             case 'Received': return 'bg-sky-50 text-sky-600 border-sky-100';
             case 'Processed': return 'bg-teal-50 text-teal-600 border-teal-100';
             case 'OutForDelivery': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+            case 'ReturnInitiated': return 'bg-rose-50 text-rose-600 border-rose-100';
+            case 'Returned': return 'bg-purple-50 text-purple-600 border-purple-100';
             case 'Cancelled': return 'bg-red-50 text-red-600 border-red-100';
             default: return 'bg-gray-50 text-gray-500 border-gray-100';
         }
@@ -212,12 +214,24 @@ const OrderListPage = () => {
                                     </AdminTableCell>
                                     <AdminTableCell>
                                         {order.awbCode ? (
-                                            <div>
-                                                <span className="text-xs font-bold text-footerBg">{order.courierName || 'Courier'}</span>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-footerBg">{order.courierName || 'Courier'}</span>
+                                                    {order.deliveryStatus && (
+                                                        <div className={`px-1.5 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-tighter ${getStatusStyles(order.deliveryStatus)}`}>
+                                                            {order.deliveryStatus === 'OutForDelivery' ? 'Out For Delivery' : order.deliveryStatus}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <span className="block text-[10px] font-mono text-gray-400">{order.awbCode}</span>
                                             </div>
                                         ) : (
-                                            <span className="text-xs font-medium text-gray-400 uppercase">Pending</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-gray-400 uppercase">Pending</span>
+                                                {order.status === 'Cancelled' && (
+                                                    <span className="text-[8px] font-black text-red-400 uppercase px-1.5 py-0.5 rounded border border-red-100 bg-red-50">Cancelled</span>
+                                                )}
+                                            </div>
                                         )}
                                     </AdminTableCell>
                                     <AdminTableCell className="text-right">

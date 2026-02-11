@@ -95,18 +95,19 @@ export const shiprocketWebhook = asyncHandler(async (req, res) => {
 
     // Update order status based on webhook event
     const statusMapping = {
-      'PICKUP_COMPLETE': 'shipped',
-      'IN_TRANSIT': 'shipped',
-      'OUT_FOR_DELIVERY': 'out_for_delivery',
-      'DELIVERED': 'delivered',
-      'RTO_INITIATED': 'return_initiated',
-      'RTO_DELIVERED': 'returned',
-      'CANCELLED': 'cancelled'
+      'PICKUP_COMPLETE': 'Shipped',
+      'IN_TRANSIT': 'Shipped',
+      'OUT_FOR_DELIVERY': 'OutForDelivery',
+      'DELIVERED': 'Delivered',
+      'RTO_INITIATED': 'ReturnInitiated',
+      'RTO_DELIVERED': 'Returned',
+      'CANCELLED': 'Cancelled'
     };
 
     const newStatus = statusMapping[webhookData.current_status];
     if (newStatus) {
       order.status = newStatus;
+      order.deliveryStatus = newStatus;
       order.statusHistory.push({
         status: newStatus,
         timestamp: new Date(),
