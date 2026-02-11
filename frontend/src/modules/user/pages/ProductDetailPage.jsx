@@ -927,31 +927,33 @@ const ProductDetailPage = () => {
                 {/* BOTTOM SECTION - Tabs */}
                 <div className="mt-10" id="product-tabs">
                     {/* Tab Navigation */}
-                    <div className="flex items-center justify-between w-full mb-8 border-b border-gray-200 pb-0 px-4 md:px-0">
-                        {tabs.map((tab, index) => (
-                            <React.Fragment key={tab}>
-                                <button
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`flex-1 py-3 md:py-4 text-sm md:text-base transition-all relative text-center
-                                        ${activeTab === tab
-                                            ? 'font-semibold text-black'
-                                            : 'font-medium text-gray-500 hover:text-black'
-                                        }
-                                    `}
-                                >
-                                    {tab}
-                                    {activeTab === tab && (
-                                        <motion.div
-                                            layoutId="activeTab"
-                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                                        />
+                    <div className="w-full mb-8 border-b border-gray-200 pb-0 px-2 md:px-0 overflow-x-auto">
+                        <div className="flex items-center gap-2 md:gap-0 min-w-max md:min-w-0 md:w-full">
+                            {tabs.map((tab, index) => (
+                                <React.Fragment key={tab}>
+                                    <button
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`flex-shrink-0 md:flex-1 px-2 md:px-0 py-3 md:py-4 text-sm md:text-base transition-all relative text-center whitespace-nowrap
+                                            ${activeTab === tab
+                                                ? 'font-semibold text-black'
+                                                : 'font-medium text-gray-500 hover:text-black'
+                                            }
+                                        `}
+                                    >
+                                        {tab}
+                                        {activeTab === tab && (
+                                            <motion.div
+                                                layoutId="activeTab"
+                                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                                            />
+                                        )}
+                                    </button>
+                                    {index < tabs.length - 1 && (
+                                        <span className="hidden md:inline-block text-gray-200 font-extralight">|</span>
                                     )}
-                                </button>
-                                {index < tabs.length - 1 && (
-                                    <span className="hidden md:inline-block text-gray-200 font-extralight">|</span>
-                                )}
-                            </React.Fragment>
-                        ))}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Content */}
