@@ -34,7 +34,7 @@ const TopSellingProducts = () => {
                     <div className="w-40 md:w-72 h-1.5 bg-primary mx-auto rounded-full mt-2" />
                 </div>
 
-                <div className="relative group">
+                <div className="relative">
                     {/* Left Navigation Button */}
                     <button
                         onClick={() => scroll('left')}

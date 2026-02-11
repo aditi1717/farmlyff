@@ -82,7 +82,7 @@ const ProductCard = ({ product, showVault = true }) => {
         <motion.div
             layout
             onClick={() => navigate(`/product/${product.slug || product.id}`)}
-            className="group relative bg-white border border-gray-100 rounded-[0.7rem] md:rounded-[1rem] overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full"
+            className="group/product relative bg-white border border-gray-100 rounded-[0.7rem] md:rounded-[1rem] overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full"
         >
             {/* Image Header - Shorter Aspect Ratio to reduce overall card height */}
             <div className="relative aspect-[16/11] w-full overflow-hidden bg-[#FDFDFD] p-2 md:p-4 text-center">
@@ -104,7 +104,7 @@ const ProductCard = ({ product, showVault = true }) => {
                 <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover/product:scale-110"
                 />
             </div>
 

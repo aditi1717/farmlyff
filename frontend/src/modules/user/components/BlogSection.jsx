@@ -45,7 +45,7 @@ const BlogSection = () => {
                 </div>
 
                 {/* Slider Container */}
-                <div className="relative group">
+                <div className="relative">
                     {/* Left Navigation Button */}
                     <button
                         onClick={() => scroll('left')}
