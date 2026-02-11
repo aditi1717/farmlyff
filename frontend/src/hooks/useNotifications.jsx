@@ -8,7 +8,11 @@ import { API_BASE_URL } from '@/lib/apiUrl';
 const API_URL = API_BASE_URL;
 
 export const useNotifications = () => {
-  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+  const hasWindow = typeof window !== 'undefined';
+  const hasNotificationApi = hasWindow && typeof window.Notification !== 'undefined';
+  const [notificationPermission, setNotificationPermission] = useState(
+    hasNotificationApi ? window.Notification.permission : 'unsupported'
+  );
   const { user } = useAuth();
   const addNotification = useUserStore((state) => state.addNotification);
   const targetUserId = user?.id || 'guest';
@@ -39,7 +43,8 @@ export const useNotifications = () => {
   };
 
   const showForegroundSystemNotification = async (payload) => {
-    if (Notification.permission !== 'granted') return;
+    if (!hasNotificationApi) return;
+    if (window.Notification.permission !== 'granted') return;
     const { title, body } = getNotificationText(payload);
     const options = {
       body,
@@ -56,7 +61,7 @@ export const useNotifications = () => {
           return;
         }
       }
-      new Notification(title, options);
+      new window.Notification(title, options);
     } catch (error) {
       console.error('Failed to show foreground system notification:', error);
     }
@@ -88,6 +93,10 @@ export const useNotifications = () => {
   // Request permission and register token
   const initNotifications = async () => {
     try {
+      if (!hasNotificationApi) {
+        setNotificationPermission('unsupported');
+        return;
+      }
       if (notificationPermission === 'denied') {
         console.log('Notification permission already denied');
         return;
@@ -113,7 +122,7 @@ export const useNotifications = () => {
     if (user && notificationPermission === 'granted') {
         initNotifications();
     }
-  }, [user, notificationPermission]);
+  }, [user, notificationPermission, hasNotificationApi]);
 
   // Listen for foreground messages (continuous)
   useEffect(() => {
@@ -158,7 +167,7 @@ export const useNotifications = () => {
 
   // Capture push events forwarded by the service worker (background delivery path).
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
     const handleServiceWorkerMessage = (event) => {
       const data = event?.data;
