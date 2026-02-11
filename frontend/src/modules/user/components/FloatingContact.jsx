@@ -20,6 +20,9 @@ const FloatingContact = () => {
     const [messages, setMessages] = useState([]);
     const messagesEndRef = useRef(null);
     const chatScrollRef = useRef(null);
+    const typingTimersRef = useRef([]);
+    const [analysisStageIndex, setAnalysisStageIndex] = useState(0);
+    const [analysisDotCount, setAnalysisDotCount] = useState(1);
     const [products, setProducts] = useState([]);
     const [form, setForm] = useState({
         name: '',
@@ -32,7 +35,7 @@ const FloatingContact = () => {
         diet: 'balanced',
         allergies: ''
     });
-    const MAX_RECOMMENDATIONS = 1;
+    const MAX_RECOMMENDATIONS = 5;
 
     const normalizeText = (value) => (value || '').toString().toLowerCase().trim();
     const stripHtml = (value) => (value || '').toString().replace(/<[^>]*>/g, ' ');
@@ -203,15 +206,75 @@ const FloatingContact = () => {
         return 'Obese';
     }, [bmi]);
 
-    const pushMessage = (role, text) => {
-        setMessages((prev) => [...prev, { role, text }]);
+    const scheduleTypingStep = (callback, delay) => {
+        const timerId = setTimeout(() => {
+            typingTimersRef.current = typingTimersRef.current.filter((id) => id !== timerId);
+            callback();
+        }, delay);
+        typingTimersRef.current.push(timerId);
     };
 
+    const clearTypingTimers = () => {
+        typingTimersRef.current.forEach((id) => clearTimeout(id));
+        typingTimersRef.current = [];
+    };
+
+    const pushMessage = (role, text) => {
+        const safeText = String(text || '');
+        const id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        if (role !== 'assistant') {
+            setMessages((prev) => [...prev, { id, role, text: safeText }]);
+            return;
+        }
+
+        setMessages((prev) => [...prev, { id, role, text: safeText, displayText: '', isTyping: true }]);
+
+        const total = safeText.length;
+        if (!total) return;
+        const charsPerStep = total > 280 ? 4 : total > 140 ? 3 : 2;
+        const stepDelay = total > 280 ? 8 : total > 140 ? 10 : 12;
+
+        let current = 0;
+        const typeNext = () => {
+            current = Math.min(total, current + charsPerStep);
+            setMessages((prev) =>
+                prev.map((m) => (m.id === id
+                    ? {
+                        ...m,
+                        displayText: safeText.slice(0, current),
+                        isTyping: current < total
+                    }
+                    : m))
+            );
+
+            if (current < total) {
+                scheduleTypingStep(typeNext, stepDelay);
+            }
+        };
+
+        scheduleTypingStep(typeNext, 80);
+    };
+
+    const estimateTypingTimeMs = (text) => {
+        const safeText = String(text || '');
+        const total = safeText.length;
+        if (!total) return 0;
+        const charsPerStep = total > 280 ? 4 : total > 140 ? 3 : 2;
+        const stepDelay = total > 280 ? 8 : total > 140 ? 10 : 12;
+        const steps = Math.ceil(total / charsPerStep);
+        return 80 + (steps * stepDelay);
+    };
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+
     const resetChat = () => {
+        clearTypingTimers();
         setStep(0);
         setMessages([]);
         setChatInput('');
         setRecommendations([]);
+        setLoading(false);
         setForm((prev) => ({
             ...prev,
             age: '',
@@ -261,11 +324,11 @@ Available products: ${JSON.stringify(productList)}
 
 Task:
 1) Explain BMI status in 1-2 sentences.
-2) Recommend only 1 best product from the list, with a short reason (max 1 line).
+2) Recommend 3-5 products from the list, with a short reason (max 1 line each).
 3) Analyze deeply using product description, benefits, specifications, nutrition, and FAQs.
 4) Do not recommend products outside the list.
 5) If allergies are listed, avoid those ingredients.
-4) Return JSON with keys: bmiSummary, recommendations (array with exactly 1 item: {name, reason, slug, image}).`;
+4) Return JSON with keys: bmiSummary, recommendations (array of {name, reason, slug, image}).`;
     };
 
     const runGemini = async (curatedProducts) => {
@@ -350,7 +413,10 @@ Task:
                 'Recommended products:',
                 ...(enriched || []).map((r) => `- ${r.name} - ${r.reason}`)
             ].join('\n');
+
+            setLoading(false);
             pushMessage('assistant', reply);
+            await wait(estimateTypingTimeMs(reply) + 200);
             setRecommendations(enriched || []);
             setStep(10);
         } catch (err) {
@@ -361,7 +427,10 @@ Task:
                 'Recommended products:',
                 ...(enriched || []).map((r) => `- ${r.name} - ${r.reason}`)
             ].join('\n');
+
+            setLoading(false);
             pushMessage('assistant', reply);
+            await wait(estimateTypingTimeMs(reply) + 200);
             setRecommendations(enriched || []);
             setStep(10);
         } finally {
@@ -436,13 +505,41 @@ Task:
         pushMessage('assistant', `Hii ${name}, welcome to Farmlyf!`);
         askForStep(3);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, user]);
+    }, [isOpen, user, messages.length]);
 
     useEffect(() => {
         if (!isOpen) return;
         if (!chatScrollRef.current) return;
         chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }, [messages, isOpen, recommendations]);
+
+    useEffect(() => {
+        if (!loading) {
+            setAnalysisStageIndex(0);
+            setAnalysisDotCount(1);
+            return;
+        }
+
+        const stageTimer = setInterval(() => {
+            setAnalysisStageIndex((prev) => (prev + 1) % 3);
+        }, 1500);
+
+        const dotTimer = setInterval(() => {
+            setAnalysisDotCount((prev) => (prev % 3) + 1);
+        }, 450);
+
+        return () => {
+            clearInterval(stageTimer);
+            clearInterval(dotTimer);
+        };
+    }, [loading]);
+
+    useEffect(() => {
+        return () => {
+            clearTypingTimers();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     /* ── quick-reply option config ── */
     const quickOptions = useMemo(() => {
@@ -463,6 +560,12 @@ Task:
                 return [];
         }
     }, [step]);
+
+    const analyzingStages = [
+        'Analyzing your profile',
+        'Reading product descriptions',
+        'Finalizing best suggestions'
+    ];
 
     const handleQuickReply = (value) => {
         if (loading) return;
@@ -611,7 +714,7 @@ Task:
 
                     <div ref={chatScrollRef} className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
                         {messages.map((m, i) => (
-                            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div key={m.id || i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div
                                     className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed whitespace-pre-line ${
                                         m.role === 'user'
@@ -619,14 +722,15 @@ Task:
                                             : 'bg-gray-100 text-gray-700 rounded-bl-sm'
                                     }`}
                                 >
-                                    {m.text}
+                                    {(m.role === 'assistant' && typeof m.displayText === 'string') ? m.displayText : m.text}
+                                    {m.role === 'assistant' && m.isTyping ? <span className="ml-1 inline-block animate-pulse">|</span> : null}
                                 </div>
                             </div>
                         ))}
                         {loading && (
                             <div className="flex justify-start">
                                 <div className="max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-gray-100 text-gray-700 rounded-bl-sm">
-                                    Thinking... Analyzing products for you.
+                                    {analyzingStages[analysisStageIndex]}{'.'.repeat(analysisDotCount)}
                                 </div>
                             </div>
                         )}
