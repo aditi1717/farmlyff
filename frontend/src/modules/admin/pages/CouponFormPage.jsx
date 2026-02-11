@@ -146,6 +146,27 @@ const CouponFormPage = () => {
             return toast.error('Code and Value required');
         }
         setLoading(true);
+        
+        // Date Validation
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (formData.validUntil) {
+            const untilDate = new Date(formData.validUntil);
+            if (untilDate < today) {
+                setLoading(false);
+                return toast.error('End date cannot be in the past');
+            }
+            
+            if (formData.validFrom) {
+                const fromDate = new Date(formData.validFrom);
+                if (untilDate < fromDate) {
+                    setLoading(false);
+                    return toast.error('End date cannot be before start date');
+                }
+            }
+        }
+
         const payload = {
             ...formData,
             value: Number(formData.value),

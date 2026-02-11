@@ -11,6 +11,15 @@ export const createCoupon = async (req, res) => {
   try {
     const { code, id } = req.body;
     
+    // Check for past end date
+    if (req.body.validUntil) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(req.body.validUntil) < today) {
+        return res.status(400).json({ message: 'End date cannot be in the past' });
+      }
+    }
+
     // Check if code exists
     const couponExists = await Coupon.findOne({ code });
     if (couponExists) {
@@ -67,6 +76,13 @@ export const updateCoupon = async (req, res) => {
     let coupon = await Coupon.findOne({ id: req.params.id }) || await Coupon.findById(req.params.id);
 
     if (coupon) {
+      if (req.body.validUntil) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (new Date(req.body.validUntil) < today) {
+          return res.status(400).json({ message: 'End date cannot be in the past' });
+        }
+      }
       coupon.code = req.body.code || coupon.code;
       coupon.type = req.body.type || coupon.type;
       coupon.value = req.body.value !== undefined ? req.body.value : coupon.value;
