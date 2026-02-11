@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import toast from 'react-hot-toast';
+import useUserStore from './useUserStore';
 
 const useCartStore = create(
     persist(
@@ -31,9 +32,17 @@ const useCartStore = create(
                 const effectiveId = userId || 'guest';
                 const cart = get().cartItems;
                 if (cart[effectiveId]) {
-                    const updatedUserCart = cart[effectiveId].filter(item => item.packId !== packId);
+                    const removedItem = cart[effectiveId].find(item => String(item.packId) === String(packId));
+                    const updatedUserCart = cart[effectiveId].filter(item => String(item.packId) !== String(packId));
                     set({ cartItems: { ...cart, [effectiveId]: updatedUserCart } });
-                    toast.success("Item removed from cart");
+
+                    const canMoveToVault = Boolean(userId && effectiveId !== 'guest' && removedItem);
+                    if (canMoveToVault) {
+                        useUserStore.getState().addToSaved(effectiveId, removedItem.packId, removedItem.qty, { silent: true });
+                        toast.success("Item moved to Vault");
+                    } else {
+                        toast.success("Item removed from cart");
+                    }
                 }
             },
 
@@ -42,8 +51,13 @@ const useCartStore = create(
                 const cart = get().cartItems;
                 if (cart[effectiveId]) {
                     if (qty < 1) {
-                        const updatedUserCart = cart[effectiveId].filter(item => item.packId !== packId);
+                        const removedItem = cart[effectiveId].find(item => String(item.packId) === String(packId));
+                        const updatedUserCart = cart[effectiveId].filter(item => String(item.packId) !== String(packId));
                         set({ cartItems: { ...cart, [effectiveId]: updatedUserCart } });
+                        if (userId && effectiveId !== 'guest' && removedItem) {
+                            useUserStore.getState().addToSaved(effectiveId, removedItem.packId, removedItem.qty, { silent: true });
+                            toast.success("Item moved to Vault");
+                        }
                         return;
                     }
                     const updatedUserCart = cart[effectiveId].map(item =>

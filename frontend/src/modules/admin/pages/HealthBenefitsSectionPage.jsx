@@ -82,15 +82,22 @@ const HealthBenefitsSectionPage = () => {
     };
 
     const handleSave = async () => {
-        alert('Save Changes clicked! Checking console logs...');
         console.log('Attempting to save Health Benefits with data:', formData);
         setIsSaving(true);
         try {
-            const result = await updateMutation.mutateAsync({ 
-                data: {
-                    title: 'Health Benefits Section',
-                    content: formData
-                } 
+            const payload = {
+                title: formData.title,
+                subtitle: formData.subtitle,
+                benefits: (formData.benefits || []).map((benefit) => ({
+                    icon: benefit.icon,
+                    title: benefit.title,
+                    description: benefit.description,
+                    baseColor: benefit.baseColor
+                })),
+                isActive: formData.isActive !== false
+            };
+            const result = await updateHealthMutation.mutateAsync({ 
+                data: payload
             });
             console.log('Save successful, result:', result);
             toast.success('Changes saved successfully to database!');

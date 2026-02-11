@@ -43,18 +43,30 @@ const useUserStore = create(
                 set({ recentlyViewed: { ...allRecent, [userId]: userRecent } });
             },
 
-            addToSaved: (userId, packId, qty = 1) => {
+            addToSaved: (userId, packId, qty = 1, options = {}) => {
                 if (!userId) {
                     toast.error("Please login to save items");
                     return;
                 }
                 const allSaved = get().saveForLater;
-                const userSaved = allSaved[userId] || [];
+                const userSaved = [...(allSaved[userId] || [])];
+                const existingIndex = userSaved.findIndex(i => String(i.packId) === String(packId));
 
-                if (!userSaved.find(i => String(i.packId) === String(packId))) {
+                if (existingIndex > -1) {
+                    userSaved[existingIndex] = {
+                        ...userSaved[existingIndex],
+                        qty: Number(userSaved[existingIndex].qty || 0) + Number(qty || 1)
+                    };
+                    set({ saveForLater: { ...allSaved, [userId]: userSaved } });
+                    if (!options?.silent) {
+                        toast.success("Updated in vault");
+                    }
+                } else {
                     userSaved.push({ packId, qty });
                     set({ saveForLater: { ...allSaved, [userId]: userSaved } });
-                    toast.success("Saved for later");
+                    if (!options?.silent) {
+                        toast.success("Saved for later");
+                    }
                 }
             },
 

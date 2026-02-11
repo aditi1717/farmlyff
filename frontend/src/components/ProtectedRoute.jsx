@@ -6,7 +6,9 @@ import { useAuth } from '../context/AuthContext';
  * Redirects to login if user is not authenticated or not an admin
  */
 const ProtectedRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+    const auth = useAuth();
+    const user = auth?.user || null;
+    const loading = Boolean(auth?.loading);
 
     // Show loading state while checking authentication
     if (loading) {
@@ -18,6 +20,11 @@ const ProtectedRoute = ({ children }) => {
                 </div>
             </div>
         );
+    }
+
+    // If context is unavailable (outside provider), fail-safe to login.
+    if (!auth) {
+        return <Navigate to="/admin/login" replace />;
     }
 
     // Redirect to login if not authenticated

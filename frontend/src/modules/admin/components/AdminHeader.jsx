@@ -15,6 +15,7 @@ const AdminHeader = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const dropdownRef = useRef(null);
     const prevCountRef = useRef(0);
+    const hasUserInteractedRef = useRef(false);
 
     // Close on click outside
     useEffect(() => {
@@ -25,6 +26,20 @@ const AdminHeader = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const markInteracted = () => {
+            hasUserInteractedRef.current = true;
+        };
+
+        window.addEventListener('pointerdown', markInteracted, { once: true });
+        window.addEventListener('keydown', markInteracted, { once: true });
+
+        return () => {
+            window.removeEventListener('pointerdown', markInteracted);
+            window.removeEventListener('keydown', markInteracted);
+        };
     }, []);
 
     // Aggregate Notifications
@@ -93,9 +108,9 @@ const AdminHeader = () => {
 
     // Bell Sound Logic
     useEffect(() => {
-        if (unreadCount > prevCountRef.current) {
+        if (unreadCount > prevCountRef.current && hasUserInteractedRef.current) {
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked:', e));
+            audio.play().catch(() => {});
         }
         prevCountRef.current = unreadCount;
     }, [unreadCount]);
