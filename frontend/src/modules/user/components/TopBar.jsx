@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Phone } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { useAnnouncements } from '../../../hooks/useContent';
 
 const TopBar = () => {
@@ -11,7 +11,6 @@ const TopBar = () => {
     return (
         <div className="bg-footerBg text-surface text-[11px] py-1.5 px-4 md:px-12 flex justify-between items-center tracking-wide z-50 relative">
             <div className="flex items-center gap-2">
-                <Truck size={14} className="text-primary" />
                 <span className="font-medium">{displayText}</span>
             </div>
 
