@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { requestNotificationPermission, onMessageListener } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
+import useUserStore from '../store/useUserStore';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '@/lib/apiUrl';
 
@@ -9,6 +10,19 @@ const API_URL = API_BASE_URL;
 export const useNotifications = () => {
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const { user } = useAuth();
+  const addNotification = useUserStore((state) => state.addNotification);
+  const targetUserId = user?.id || 'guest';
+
+  const persistIncomingNotification = (payload) => {
+    const { title, body } = getNotificationText(payload || {});
+    addNotification(targetUserId, {
+      title,
+      body,
+      data: payload?.data || {},
+      createdAt: new Date().toISOString()
+    });
+    return { title, body };
+  };
 
   const getNotificationText = (payload) => {
     const title =
@@ -107,7 +121,7 @@ export const useNotifications = () => {
 
     const unsubscribe = onMessageListener((payload) => {
       console.log('Foreground notification received:', payload);
-      const { title, body } = getNotificationText(payload);
+      const { title, body } = persistIncomingNotification(payload);
 
       // Show a native notification in foreground so users see it even when actively browsing.
       showForegroundSystemNotification(payload);
@@ -140,7 +154,25 @@ export const useNotifications = () => {
 
     // Cleanup on unmount
     return () => unsubscribe && unsubscribe();
-  }, [notificationPermission]);
+  }, [notificationPermission, addNotification, targetUserId, user?.id]);
+
+  // Capture push events forwarded by the service worker (background delivery path).
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleServiceWorkerMessage = (event) => {
+      const data = event?.data;
+      if (!data || data.type !== 'PUSH_NOTIFICATION') return;
+
+      const payload = data.payload || {};
+      persistIncomingNotification(payload);
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, [addNotification, targetUserId]);
 
   return {
     notificationPermission,
