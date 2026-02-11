@@ -234,7 +234,9 @@ const UserDetailPage = () => {
                                             </div>
                                             <div>
                                                 <p className="text-xs font-black text-footerBg uppercase tracking-tighter">{order.id}</p>
-                                                <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{order.date} • {order.method}</p>
+                                                <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">
+                                                    {new Date(order.createdAt || order.date).toLocaleDateString()} • {order.paymentMethod}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-6">
