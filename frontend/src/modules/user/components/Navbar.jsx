@@ -19,7 +19,7 @@ const Navbar = () => {
     const wishlistMap = useUserStore(state => state.wishlist);
     const savedItemsMap = useUserStore(state => state.saveForLater);
 
-    const cartItems = cartItemsMap[user?.id] || [];
+    const cartItems = cartItemsMap[user?.id || 'guest'] || [];
     const wishlist = wishlistMap[user?.id] || [];
     const savedItems = savedItemsMap[user?.id] || [];
 
@@ -119,7 +119,7 @@ const Navbar = () => {
     };
 
     const savedItemsCount = savedItems.length;
-    const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
+    const cartCount = cartItems.length;
     const wishlistCount = wishlist.length;
 
     return (
