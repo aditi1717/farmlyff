@@ -5,7 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
 import { useNavigate } from 'react-router-dom';
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, Bookmark } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 
 const calculatePer100g = (price, quantity, unit, weightStr) => {
@@ -43,8 +43,11 @@ const ProductCard = ({ product }) => {
     const { addToCart, getCart } = useCartStore();
     // const { addToCart, toggleWishlist, isInWishlist } = useShop(); // Removed
     const toggleWishlist = useUserStore(state => state.toggleWishlist);
+    const addToSaved = useUserStore(state => state.addToSaved);
     const wishlistMap = useUserStore(state => state.wishlist);
+    const savedMap = useUserStore(state => state.saveForLater);
     const userWishlist = user ? (wishlistMap[user.id] || []) : [];
+    const userSaved = user ? (savedMap[user.id] || []) : [];
 
     // Handle products with variants (Flipkart style)
     const hasVariants = product.variants && product.variants.length > 0;
@@ -52,6 +55,7 @@ const ProductCard = ({ product }) => {
     // Helper to check wishlist
     const itemId = hasVariants ? product.variants[0].id : product.id;
     const isWishlisted = userWishlist.includes(itemId);
+    const isSaved = userSaved.some(item => String(item.packId) === String(itemId));
 
     // Get lowest price for "From ₹X" look
     const displayPrice = hasVariants
@@ -130,6 +134,18 @@ const ProductCard = ({ product }) => {
                             className="text-gray-300 hover:text-red-500 transition-colors p-0.5 active:scale-95"
                         >
                             <Heart size={16} fill={isWishlisted ? "#ef4444" : "none"} className={isWishlisted ? "text-red-500" : ""} />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!user) {
+                                    return navigate('/login');
+                                }
+                                addToSaved(user.id, itemId);
+                            }}
+                            className={`transition-colors p-0.5 active:scale-95 ${isSaved ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
+                        >
+                            <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
                         </button>
                     </div>
                 </div>

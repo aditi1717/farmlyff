@@ -29,6 +29,17 @@ const InfoPage = ({ type }) => {
                 </div>
             )
         },
+        'terms-conditions': {
+            title: "Terms & Conditions",
+            subtitle: "Guidelines for a better experience",
+            content: (
+                <div className="space-y-8 text-gray-600 leading-relaxed">
+                    <p>By using FarmLyf, you agree to these terms. Please read them carefully.</p>
+                    <h3 className="text-xl font-bold text-footerBg mb-2">1. Use of Services</h3>
+                    <p>Our services are provided for your personal and non-commercial use. You agree not to misuse our system or content.</p>
+                </div>
+            )
+        },
         'contact-us': {
             title: "Contact Us",
             subtitle: "We're here to help",
