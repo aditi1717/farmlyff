@@ -701,6 +701,16 @@ const AdminSidebar = () => {
                                     <Globe size={16} />
                                     <span className="font-semibold">Store General</span>
                                 </Link>
+                                <Link
+                                    to="/admin/settings?tab=invoice"
+                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${location.pathname === '/admin/settings' && new URLSearchParams(location.search).get('tab') === 'invoice'
+                                        ? 'bg-primary/20 text-white'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <FileText size={16} />
+                                    <span className="font-semibold">Invoice Settings</span>
+                                </Link>
                             </div>
                         )}
                     </div>

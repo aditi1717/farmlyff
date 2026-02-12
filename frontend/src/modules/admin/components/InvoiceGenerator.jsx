@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
+import { useSetting } from "../../../hooks/useSettings";
 
 /* ============================================
    INVOICE DISPLAY
@@ -13,6 +14,7 @@ export const InvoiceDisplay = React.forwardRef(
     const settings = {
         sellerName: apiSettings?.sellerName || "Farmlyf",
         sellerAddress: apiSettings?.sellerAddress || "123 E-com St, Digital City",
+        companyOfficeAddress: apiSettings?.companyOfficeAddress || apiSettings?.sellerAddress || "123 E-com St, Digital City",
         gstNumber: apiSettings?.gstNumber || "123456789",
         panNumber: apiSettings?.panNumber || "LBCPS9976F",
         logoUrl: apiSettings?.logoUrl || "",
@@ -235,7 +237,8 @@ export const InvoiceDisplay = React.forwardRef(
               <h2 style={{ fontSize: "12px", margin: "0 0 3px 0" }}>Tax Invoice</h2>
             </div>
             <div className="tax-header-item">
-              Order Id: <b>{order.displayId || order.id || order._id}</b><br />
+              <span style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", fontWeight: "bold" }}>Order ID</span><br />
+              <b style={{ fontSize: "14px" }}>{order.displayId || order.id || order._id}</b><br />
               <span style={{ fontSize: "7px" }}>{new Date(order.date || order.createdAt).toLocaleString()}</span>
             </div>
             <div className="tax-header-item">
@@ -252,7 +255,7 @@ export const InvoiceDisplay = React.forwardRef(
             <div className="addr-block">
               <span className="addr-title">Sold By</span>
               <div className="font-bold">{settings.sellerName}</div>
-              <div>{settings.sellerAddress}</div>
+              <div style={{ fontSize: "8.5px" }}>{settings.companyOfficeAddress}</div>
               <div style={{ marginTop: "3px" }}>GST: {settings.gstNumber}</div>
             </div>
             <div className="addr-block">
@@ -367,6 +370,7 @@ export const InvoiceDisplay = React.forwardRef(
 
 const InvoiceGenerator = ({ order, item, items, settings, customTrigger }) => {
   const componentRef = useRef(null);
+  const { data: invoiceSettings } = useSetting('invoice_settings');
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
@@ -398,7 +402,7 @@ const InvoiceGenerator = ({ order, item, items, settings, customTrigger }) => {
           order={order}
           item={item}
           items={items}
-          settings={settings || {}}
+          settings={settings || invoiceSettings?.value}
         />
       </div>
       {trigger}
@@ -412,6 +416,7 @@ const InvoiceGenerator = ({ order, item, items, settings, customTrigger }) => {
 
 export const BulkInvoiceGenerator = ({ orders, settings, customTrigger }) => {
   const componentRef = useRef(null);
+  const { data: invoiceSettings } = useSetting('invoice_settings');
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
@@ -444,7 +449,7 @@ export const BulkInvoiceGenerator = ({ orders, settings, customTrigger }) => {
               <InvoiceDisplay
                 order={order}
                 items={order.items || order.orderItems}
-                settings={settings || {}}
+                settings={settings || invoiceSettings?.value}
               />
             </div>
           ))}

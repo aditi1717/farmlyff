@@ -13,7 +13,8 @@ import {
     Eye,
     EyeOff,
     CheckCircle,
-    Shield
+    Shield,
+    FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -33,7 +34,17 @@ const SettingsPage = () => {
         platformFee: 0,
         handlingFee: 0
     });
+    const [invoiceSettings, setInvoiceSettings] = useState({
+        sellerName: '',
+        sellerAddress: '',
+        companyOfficeAddress: '',
+        gstNumber: '',
+        panNumber: '',
+        fssai: ''
+    });
+
     const { data: checkoutFeeConfigSetting } = useSetting('checkout_fee_config');
+    const { data: invoiceSettingsData } = useSetting('invoice_settings');
     const updateSettingMutation = useUpdateSetting();
 
     useEffect(() => {
@@ -52,6 +63,19 @@ const SettingsPage = () => {
             handlingFee: Number(value.handlingFee || 0)
         });
     }, [checkoutFeeConfigSetting]);
+
+    useEffect(() => {
+        const value = invoiceSettingsData?.value;
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+        setInvoiceSettings({
+            sellerName: value.sellerName || '',
+            sellerAddress: value.sellerAddress || '',
+            companyOfficeAddress: value.companyOfficeAddress || '',
+            gstNumber: value.gstNumber || '',
+            panNumber: value.panNumber || '',
+            fssai: value.fssai || ''
+        });
+    }, [invoiceSettingsData]);
 
     const handleSave = async () => {
         toast.success("Settings preferences saved! (Simulated)");
@@ -79,6 +103,19 @@ const SettingsPage = () => {
                 key: 'checkout_fee_config',
                 value: checkoutFees
             });
+            toast.success("Checkout fees saved successfully!");
+        } catch (error) {
+            // Error toast already handled in hook
+        }
+    };
+
+    const handleSaveInvoiceSettings = async () => {
+        try {
+            await updateSettingMutation.mutateAsync({
+                key: 'invoice_settings',
+                value: invoiceSettings
+            });
+            toast.success("Invoice settings saved successfully!");
         } catch (error) {
             // Error toast already handled in hook
         }
@@ -101,6 +138,32 @@ const SettingsPage = () => {
 
             {/* Content Area */}
             <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm min-h-[600px] relative overflow-hidden">
+                
+                {/* Tab Bar Internal Navigation (Optional but helpful for UI) */}
+                <div className="flex items-center gap-6 border-b border-gray-100 mb-8 pb-4">
+                    {[
+                        { id: 'profile', label: 'Profile', icon: User },
+                        { id: 'general', label: 'Store General', icon: Globe },
+                        { id: 'invoice', label: 'Invoice Settings', icon: FileText },
+                        { id: 'notifications', label: 'Notifications', icon: Bell }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => {
+                                setActiveTab(tab.id);
+                                setSearchParams({ tab: tab.id });
+                            }}
+                            className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all pb-4 -mb-4 border-b-2 ${
+                                activeTab === tab.id 
+                                ? 'border-black text-black' 
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            <tab.icon size={14} />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
 
                 {/* PROFILE TAB */}
                 {activeTab === 'profile' && (
@@ -339,6 +402,90 @@ const SettingsPage = () => {
                                 className="mt-5 bg-black text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg active:scale-95 disabled:opacity-60"
                             >
                                 {updateSettingMutation.isPending ? 'Saving...' : 'Save Checkout Fees'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* INVOICE TAB */}
+                {activeTab === 'invoice' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div>
+                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Invoice Configuration</h3>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Setup your billing & seller details</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Seller Name</label>
+                                <input 
+                                    type="text" 
+                                    value={invoiceSettings.sellerName}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, sellerName: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all" 
+                                    placeholder="FarmLyf Dryfruits"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">GSTIN Number</label>
+                                <input 
+                                    type="text" 
+                                    value={invoiceSettings.gstNumber}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, gstNumber: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all" 
+                                    placeholder="24AAAAA0000A1Z5"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">PAN Number</label>
+                                <input 
+                                    type="text" 
+                                    value={invoiceSettings.panNumber}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, panNumber: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all" 
+                                    placeholder="ABCDE1234F"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">FSSAI Number</label>
+                                <input 
+                                    type="text" 
+                                    value={invoiceSettings.fssai}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, fssai: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all" 
+                                    placeholder="12345678901234"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Seller Address (for Label)</label>
+                                <textarea 
+                                    rows="2"
+                                    value={invoiceSettings.sellerAddress}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, sellerAddress: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all resize-none" 
+                                    placeholder="123, Green Park, Delhi - 110016"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Company Registered/Office Address (for Invoice)</label>
+                                <textarea 
+                                    rows="2"
+                                    value={invoiceSettings.companyOfficeAddress}
+                                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, companyOfficeAddress: e.target.value })}
+                                    className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-black/5 transition-all resize-none" 
+                                    placeholder="FarmLyf PVT LTD, Corporate House, Mumbai - 400001"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <button
+                                type="button"
+                                onClick={handleSaveInvoiceSettings}
+                                disabled={updateSettingMutation.isPending}
+                                className="bg-black text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-black/10 active:scale-95 disabled:opacity-60 text-xs flex items-center gap-2"
+                            >
+                                {updateSettingMutation.isPending ? 'Saving...' : <><Save size={16} /> Save Invoice Settings</>}
                             </button>
                         </div>
                     </div>

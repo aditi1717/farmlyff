@@ -6,8 +6,9 @@ import { useAuth } from '../../../context/AuthContext';
 import { API_BASE_URL } from '@/lib/apiUrl';
 import {
     ArrowLeft, Package, MapPin, Phone, CreditCard,
-    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink, XCircle, Ban
+    Truck, CheckCircle, Clock, Archive, RefreshCw, AlertCircle, ExternalLink, XCircle, Ban, FileText
 } from 'lucide-react';
+import OrderInvoice from '../components/OrderInvoice';
 import { motion } from 'framer-motion';
 import { useOrders, useReturns, useUpdateOrderStatus, useCancelOrder } from '../../../hooks/useOrders';
 import { useProducts } from '../../../hooks/useProducts';
@@ -33,6 +34,7 @@ const OrderDetailPage = () => {
     const [trackingLoading, setTrackingLoading] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
+    const [showInvoice, setShowInvoice] = useState(false);
 
     useEffect(() => {
         if (orders.length > 0 && orderId) {
@@ -203,14 +205,23 @@ const OrderDetailPage = () => {
     return (
         <div className="bg-[#fcfcfc] min-h-screen py-4 md:py-12">
             <div className="container mx-auto px-3 md:px-12 max-w-4xl">
-                <div className="flex items-center gap-2 md:gap-4 mb-6 md:mb-10">
-                    <button onClick={() => navigate('/orders')} className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors text-footerBg/70">
-                        <ArrowLeft size={20} md:size={24} />
-                    </button>
-                    <div>
-                        <h1 className="text-xl md:text-3xl font-black text-footerBg uppercase tracking-tighter md:tracking-tight leading-none">Order Details</h1>
-                        <p className="text-[10px] md:text-sm font-mono text-slate-400 mt-1">#{order.id}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-10">
+                    <div className="flex items-center gap-2 md:gap-4">
+                        <button onClick={() => navigate('/orders')} className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors text-footerBg/70">
+                            <ArrowLeft size={20} md:size={24} />
+                        </button>
+                        <div>
+                            <h1 className="text-xl md:text-3xl font-black text-footerBg uppercase tracking-tighter md:tracking-tight leading-none">Order Details</h1>
+                            <p className="text-[10px] md:text-sm font-mono text-slate-400 mt-1">#{order.id}</p>
+                        </div>
                     </div>
+                    <button
+                        onClick={() => setShowInvoice(true)}
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 shrink-0"
+                    >
+                        <FileText size={16} />
+                        View Invoice
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
@@ -519,6 +530,12 @@ const OrderDetailPage = () => {
                     </motion.div>
                 </div>
             )}
+            {/* Invoice Modal */}
+            <OrderInvoice
+                order={order}
+                isOpen={showInvoice}
+                onClose={() => setShowInvoice(false)}
+            />
         </div>
     );
 };
