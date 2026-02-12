@@ -188,6 +188,29 @@ const deductStock = async (orderItems = []) => {
   }
 };
 
+const isNonEmpty = (value) => typeof value === 'string' && value.trim().length > 0;
+
+const hasAddressFields = (address = {}) => {
+  return isNonEmpty(address.address)
+    && isNonEmpty(address.city)
+    && isNonEmpty(address.state)
+    && isNonEmpty(String(address.pincode || ''));
+};
+
+const hasProfileForCheckout = (user, orderData) => {
+  const shippingAddress = orderData?.shippingAddress || {};
+  const userAddresses = Array.isArray(user?.addresses) ? user.addresses : [];
+
+  const hasPhone = isNonEmpty(shippingAddress.phone)
+    || isNonEmpty(user?.phone)
+    || userAddresses.some((addr) => isNonEmpty(addr?.phone));
+
+  const hasAddress = hasAddressFields(shippingAddress)
+    || userAddresses.some((addr) => hasAddressFields(addr));
+
+  return hasPhone && hasAddress;
+};
+
 // @desc    Create Razorpay Order
 // @route   POST /api/payments/order
 // @access  Public (or Private if auth is needed)
@@ -197,7 +220,7 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
   // Validation: Check if user profile is complete
   if (userId) {
       const user = await User.findOne({ id: userId });
-      if (!user || !user.phone || !user.addresses || user.addresses.length === 0) {
+      if (!user || !hasProfileForCheckout(user, orderData)) {
           return res.status(400).json({ 
               message: 'Please complete your profile (Mobile Number and Address) before placing an order.' 
           });
@@ -371,7 +394,7 @@ export const createCODOrder = asyncHandler(async (req, res) => {
     // Validation: Check if user profile is complete
     if (userId) {
         const user = await User.findOne({ id: userId });
-        if (!user || !user.phone || !user.addresses || user.addresses.length === 0) {
+        if (!user || !hasProfileForCheckout(user, orderData)) {
             return res.status(400).json({ 
                 message: 'Please complete your profile (Mobile Number and Address) before placing an order.' 
             });

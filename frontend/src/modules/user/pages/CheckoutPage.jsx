@@ -32,8 +32,6 @@ const CheckoutPage = () => {
     const { data: activeCoupons = [] } = useActiveCoupons();
     const { data: userData } = useUserProfile();
     const { data: checkoutFeeSetting } = useSetting('checkout_fee_config');
-    const hasAddress = userData?.addresses && userData?.addresses.length > 0;
-    const isProfileComplete = !!(hasAddress && (userData?.phone || userData.addresses.some(a => a.phone)));
     const { mutateAsync: validateReferralMutate } = useValidateReferral();
     const { mutateAsync: placeOrderMutate } = usePlaceOrder();
     const { mutateAsync: verifyPaymentMutate } = useVerifyPayment();
@@ -161,6 +159,36 @@ const CheckoutPage = () => {
         state: '',
         pincode: '',
     });
+
+    const isFilled = (value) => typeof value === 'string' && value.trim().length > 0;
+    const hasRequiredAddress = (address = {}) => (
+        isFilled(address.address)
+        && isFilled(address.city)
+        && isFilled(address.state)
+        && isFilled(String(address.pincode || ''))
+    );
+
+    const getMissingCheckoutFields = () => {
+        const userAddresses = Array.isArray(userData?.addresses) ? userData.addresses : [];
+        const hasAnyPhone = isFilled(formData.phone)
+            || isFilled(userData?.phone)
+            || userAddresses.some(a => isFilled(a?.phone));
+        const hasAnyAddress = hasRequiredAddress(formData)
+            || userAddresses.some(a => hasRequiredAddress(a));
+
+        const missing = [];
+        if (!hasAnyPhone) missing.push('phone number');
+        if (!hasAnyAddress) {
+            missing.push('address');
+            missing.push('city');
+            missing.push('state');
+            missing.push('pincode');
+        }
+        return missing;
+    };
+
+    const missingCheckoutFields = getMissingCheckoutFields();
+    const isProfileComplete = missingCheckoutFields.length === 0;
 
     const [paymentMethod, setPaymentMethod] = useState('cod');
     const [loading, setLoading] = useState(false);
@@ -556,7 +584,16 @@ const CheckoutPage = () => {
                 rzp.open();
             }
         } catch (error) {
-            toast.error(error.message || 'Something went wrong');
+            const backendMessage = String(error?.message || '');
+            if (/complete your profile/i.test(backendMessage)) {
+                if (missingCheckoutFields.length > 0) {
+                    toast.error(`Please add ${missingCheckoutFields.join(', ')} before placing the order.`);
+                } else {
+                    toast.error('Please check your profile details and try again.');
+                }
+            } else {
+                toast.error(error.message || 'Something went wrong');
+            }
         } finally {
             if (paymentMethod === 'cod') setLoading(false);
         }

@@ -17,7 +17,32 @@ const TopSellingProducts = () => {
         }
     };
 
-    if (isLoading) return <div className="h-96 flex items-center justify-center">Loading Products...</div>;
+    if (isLoading) {
+        return (
+            <section className="bg-white pt-6 pb-4 md:py-6 px-4 md:px-24 relative overflow-hidden bg-gradient-to-b from-white to-gray-50/50">
+                <div className="container mx-auto">
+                    <div className="text-center mb-4 md:mb-14 space-y-2">
+                        <div className="skeleton shimmer h-7 md:h-10 w-64 md:w-96 rounded-md mx-auto" />
+                        <div className="skeleton shimmer w-40 md:w-72 h-1.5 rounded-full mx-auto" />
+                    </div>
+
+                    <div className="flex gap-4 md:gap-6 overflow-hidden px-1">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="min-w-[160px] w-[170px] md:min-w-[280px] md:w-[280px] rounded-2xl border border-gray-100 bg-white p-3 md:p-4"
+                            >
+                                <div className="skeleton shimmer aspect-[16/11] rounded-xl mb-3 md:mb-4" />
+                                <div className="skeleton shimmer h-3 md:h-4 w-3/4 rounded mb-2" />
+                                <div className="skeleton shimmer h-3 md:h-4 w-2/4 rounded mb-3 md:mb-4" />
+                                <div className="skeleton shimmer h-7 md:h-9 w-full rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
     if (topProducts.length === 0) return null;
 
     return (

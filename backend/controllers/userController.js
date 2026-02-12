@@ -6,6 +6,21 @@ import generateToken from '../utils/generateToken.js';
 import asyncHandler from 'express-async-handler';
 import { sendOTP, verifyOTP } from '../utils/smsService.js';
 
+const normalizePhone = (phone = '') => String(phone).replace(/\D/g, '').slice(-10);
+
+const escapeRegExp = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const findUserByPhoneFlexible = async (normalizedPhone) => {
+  if (!normalizedPhone) return null;
+  const suffixPattern = `${escapeRegExp(normalizedPhone)}$`;
+  return User.findOne({
+    $or: [
+      { phone: normalizedPhone },
+      { phone: { $regex: suffixPattern } }
+    ]
+  });
+};
+
 const getJwtCookieOptions = () => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -392,10 +407,14 @@ export const sendOtpForLogin = asyncHandler(async (req, res) => {
         throw new Error('Please provide a mobile number');
     }
 
-    const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+    const normalizedPhone = normalizePhone(phone);
+    if (normalizedPhone.length !== 10) {
+        res.status(400);
+        throw new Error('Please provide a valid 10-digit mobile number');
+    }
 
     // Check if user exists and is banned
-    const user = await User.findOne({ phone: normalizedPhone });
+    const user = await findUserByPhoneFlexible(normalizedPhone);
     if (user && user.isBanned) {
         res.status(401);
         throw new Error('This account has been restricted. Please contact support.');
@@ -418,10 +437,14 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
         throw new Error('Please provide phone and OTP');
     }
 
-    const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+    const normalizedPhone = normalizePhone(phone);
+    if (normalizedPhone.length !== 10) {
+        res.status(400);
+        throw new Error('Please provide a valid 10-digit mobile number');
+    }
 
     // First, check if user exists to decide whether to delete OTP on success
-    let user = await User.findOne({ phone: normalizedPhone });
+    let user = await findUserByPhoneFlexible(normalizedPhone);
     const deleteOnSuccess = !!user || (!!name && !!email);
 
     const isValid = await verifyOTP(normalizedPhone, otp, 'Customer', deleteOnSuccess);
@@ -434,7 +457,7 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
     if (!user) {
         // If user doesn't exist and name/email are not provided, signal that it's a new user
         if (!name || !email) {
-            return res.json({ isNewUser: true, phone });
+            return res.json({ isNewUser: true, phone: normalizedPhone });
         }
 
         // Check if email is already taken by another account (without this phone)
@@ -461,6 +484,12 @@ export const verifyOtpForLogin = asyncHandler(async (req, res) => {
     if (user && user.isBanned) {
         res.status(401);
         throw new Error('This account has been restricted. Please contact support.');
+    }
+
+    // Ensure phone used to sign in is always persisted in normalized format.
+    if (user && user.phone !== normalizedPhone) {
+        user.phone = normalizedPhone;
+        await user.save();
     }
 
     // Login successful
