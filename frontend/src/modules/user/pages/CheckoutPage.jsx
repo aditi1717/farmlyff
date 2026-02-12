@@ -117,8 +117,8 @@ const CheckoutPage = () => {
         // Fallback to legacy pack
         const pack = getPackById(item.packId);
         if (pack) {
-            return { 
-                ...item, 
+            return {
+                ...item,
                 ...pack,
                 stock: pack.stock?.quantity || pack.stock || 0
             };
@@ -459,7 +459,7 @@ const CheckoutPage = () => {
             // Not a valid coupon, try as referral code via API
             try {
                 const referralData = await validateReferralMutate(couponCode);
-                
+
                 // Calculate discount based on referral
                 let discount = 0;
                 if (referralData.type === 'percentage') {
@@ -549,7 +549,7 @@ const CheckoutPage = () => {
 
                 // Create Razorpay Order on Backend
                 const orderResponse = await placeOrderMutate({ userId: user?.id, orderData });
-                
+
                 const options = {
                     key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder', // User needs to provide this
                     amount: orderResponse.amount,
@@ -1009,7 +1009,7 @@ const CheckoutPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between text-xl md:text-2xl font-black text-blue-600 pt-2 border-t border-gray-100">
+                                <div className="flex justify-between text-xl md:text-2xl font-black text-primary pt-2 border-t border-gray-100">
                                     <span className="text-base md:text-lg">Total Amount</span>
                                     <span>{formatINR(total)}</span>
                                 </div>

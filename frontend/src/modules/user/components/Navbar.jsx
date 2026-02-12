@@ -58,13 +58,13 @@ const Navbar = () => {
                 return !clearCutoffMs || createdAtMs > clearCutoffMs;
             })
             .map((n) => ({
-            id: `server_${n._id || n.createdAt}`,
-            title: n.heading || 'New Notification',
-            body: n.message || '',
-            createdAt: n.createdAt || new Date().toISOString(),
-            read: true,
-            data: { target: n.target, source: 'server' }
-        }));
+                id: `server_${n._id || n.createdAt}`,
+                title: n.heading || 'New Notification',
+                body: n.message || '',
+                createdAt: n.createdAt || new Date().toISOString(),
+                read: true,
+                data: { target: n.target, source: 'server' }
+            }));
 
         const combined = user?.id
             ? [...(notificationsMap[user.id] || []), ...guestItems, ...serverItems]
@@ -504,7 +504,7 @@ const Navbar = () => {
             </div>
 
             {/* Mobile View Header - Matched to Screenshot */}
-            <div className="flex md:hidden items-center justify-between w-full h-10">
+            <div className="flex md:hidden items-center justify-between w-full h-10 relative">
                 {/* Hamburger */}
                 <button
                     className="p-1 text-black"
@@ -514,7 +514,7 @@ const Navbar = () => {
                 </button>
 
                 {/* Centered Logo */}
-                <Link to="/" className="flex-shrink-0 absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
+                <Link to="/" className="flex-shrink-0 absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center gap-1">
                     <img src={logo} alt="FarmLyf" className="h-6 w-auto object-contain" />
                     {user?.accountType === 'Business' && (
                         <span className="bg-black text-white text-[7px] font-black px-1 py-0.5 rounded uppercase leading-none">Business</span>
@@ -522,7 +522,7 @@ const Navbar = () => {
                 </Link>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
                     <button
                         className="p-1 text-black"
                         onClick={() => setShowMobileSearch((prev) => !prev)}
@@ -530,11 +530,11 @@ const Navbar = () => {
                     >
                         <Search size={22} strokeWidth={2.5} />
                     </button>
-                    <Link to="/cart" className="relative p-1 text-black">
-                        <ShoppingCart size={22} strokeWidth={2.5} />
-                        {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-[#8B0000] text-white text-[8px] font-black h-4 w-4 rounded-full flex items-center justify-center border border-white">
-                                {cartCount}
+                    <Link to="/vault" className="relative p-1 text-black">
+                        <Bookmark size={22} strokeWidth={2.5} fill={savedItemsCount > 0 ? "currentColor" : "none"} />
+                        {savedItemsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                                {savedItemsCount}
                             </span>
                         )}
                     </Link>
