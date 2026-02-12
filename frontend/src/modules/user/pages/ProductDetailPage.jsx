@@ -411,11 +411,39 @@ const ProductDetailPage = () => {
 
     if (isProductLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#fcfcfc]">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <h2 className="text-xl font-bold text-gray-400">Fetching Product Details...</h2>
+            <div className="bg-white min-h-screen pb-8">
+                <div className="container mx-auto px-4 md:px-12 py-3 flex items-center gap-3">
+                    <div className="skeleton shimmer w-7 h-7 rounded-full" />
+                    <div className="skeleton shimmer h-3 w-56 rounded-md" />
                 </div>
+
+                <main className="container mx-auto px-4 md:px-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-5 space-y-4">
+                            <div className="skeleton shimmer rounded-2xl border border-gray-200 h-[420px] md:h-[520px]" />
+                            <div className="flex gap-3 overflow-hidden">
+                                <div className="skeleton shimmer h-16 w-16 rounded-lg shrink-0" />
+                                <div className="skeleton shimmer h-16 w-16 rounded-lg shrink-0" />
+                                <div className="skeleton shimmer h-16 w-16 rounded-lg shrink-0" />
+                                <div className="skeleton shimmer h-16 w-16 rounded-lg shrink-0" />
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-7 space-y-4">
+                            <div className="skeleton shimmer h-4 w-28 rounded-md" />
+                            <div className="skeleton shimmer h-9 w-4/5 rounded-md" />
+                            <div className="skeleton shimmer h-6 w-48 rounded-md" />
+                            <div className="skeleton shimmer h-16 w-full rounded-xl" />
+                            <div className="skeleton shimmer h-12 w-40 rounded-xl" />
+                            <div className="skeleton shimmer h-24 w-full rounded-2xl" />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="skeleton shimmer h-12 rounded-xl" />
+                                <div className="skeleton shimmer h-12 rounded-xl" />
+                            </div>
+                            <div className="skeleton shimmer h-36 w-full rounded-2xl" />
+                        </div>
+                    </div>
+                </main>
             </div>
         );
     }
