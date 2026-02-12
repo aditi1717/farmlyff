@@ -325,7 +325,7 @@ const InfluencerReferralPage = () => {
             {/* Modal - Compact & Clean Version */}
             {showModal && (
                 <div className="fixed inset-0 bg-footerBg/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2rem] w-full max-w-xl overflow-hidden shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
+                    <div className="bg-white rounded-[2rem] w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
                         <div className="p-8 pb-4 flex items-center justify-between border-b border-gray-50">
                             <div className="text-left">
                                 <h2 className="text-xl font-black text-[#1a1a1a] uppercase tracking-tight">
