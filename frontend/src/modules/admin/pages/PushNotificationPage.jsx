@@ -22,18 +22,24 @@ const PushNotificationPage = () => {
     const [resendingIds, setResendingIds] = useState(new Set()); // Track which notifications are being resent
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 1
+    });
 
     // Fetch notification history
     useEffect(() => {
         if (activeTab === 'list') {
-            fetchHistory();
+            fetchHistory(pagination.page);
         }
-    }, [activeTab]);
+    }, [activeTab, pagination.page]);
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (page = 1) => {
         try {
             setHistoryLoading(true);
-            const response = await fetch(`${API_URL}/notifications/history`, {
+            const response = await fetch(`${API_URL}/notifications/history?page=${page}&limit=${pagination.limit}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('farmlyf_token')}`
                 },
@@ -42,7 +48,13 @@ const PushNotificationPage = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                setHistory(data);
+                setHistory(data.notifications);
+                setPagination(prev => ({
+                    ...prev,
+                    total: data.pagination.total,
+                    pages: data.pagination.pages,
+                    page: data.pagination.page
+                }));
             } else {
                 console.error('Failed to fetch notification history');
             }
@@ -205,6 +217,41 @@ const PushNotificationPage = () => {
                                         </div>
                                     </div>
                                 ))
+                            )}
+
+                            {/* Pagination Controls */}
+                            {!historyLoading && pagination.pages > 1 && (
+                                <div className="flex items-center justify-center gap-2 pt-6">
+                                    <button
+                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                                        disabled={pagination.page === 1}
+                                        className="px-4 py-2 text-xs font-black uppercase tracking-widest border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
+                                    >
+                                        Prev
+                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(pagination.pages)].map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setPagination(prev => ({ ...prev, page: i + 1 }))}
+                                                className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-black transition-all ${
+                                                    pagination.page === i + 1
+                                                        ? 'bg-black text-white shadow-lg'
+                                                        : 'hover:bg-gray-50 text-gray-400'
+                                                }`}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.pages, prev.page + 1) }))}
+                                        disabled={pagination.page === pagination.pages}
+                                        className="px-4 py-2 text-xs font-black uppercase tracking-widest border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
