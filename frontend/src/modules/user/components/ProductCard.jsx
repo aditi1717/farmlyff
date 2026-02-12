@@ -105,6 +105,8 @@ const ProductCard = ({ product, showVault = true }) => {
                 <img
                     src={product.image}
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain transition-transform duration-500 group-hover/product:scale-110"
                 />
             </div>

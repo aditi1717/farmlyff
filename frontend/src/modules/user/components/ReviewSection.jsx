@@ -45,6 +45,8 @@ const ReviewSection = () => {
                     <img
                         src={reviewBg}
                         alt="Dry Fruits Background"
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
@@ -81,6 +83,8 @@ const ReviewSection = () => {
                                                 <img
                                                     src={review.image}
                                                     alt={review.name}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>

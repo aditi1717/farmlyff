@@ -109,6 +109,9 @@ const HeroSection = () => {
                                     transition={{ duration: 6, ease: "linear" }}
                                     src={currentSlide.image}
                                     alt={currentSlide.title}
+                                    loading="eager"
+                                    fetchPriority="high"
+                                    decoding="async"
                                     className="w-full h-full object-fill md:object-cover object-center"
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?auto=format&fit=crop&q=80&w=1600';

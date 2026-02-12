@@ -68,7 +68,8 @@ export const useBanners = () => {
             });
             if (!res.ok) throw new Error('Failed to fetch banners');
             return res.json();
-        }
+        },
+        staleTime: 5 * 60 * 1000
     });
 };
 
@@ -152,7 +153,8 @@ const createCRUDHooks = (queryKey, path) => {
                 });
                 if (!res.ok) throw new Error(`Failed to fetch ${queryKey}`);
                 return res.json();
-            }
+            },
+            staleTime: 5 * 60 * 1000
         }),
         useAdd: () => {
             const queryClient = useQueryClient();
@@ -240,6 +242,7 @@ export const useFeaturedSectionByName = (name) => {
             return res.json();
         },
         enabled: !!name,
+        staleTime: 5 * 60 * 1000,
     });
 };
 
@@ -370,7 +373,8 @@ export const useFeaturedReviews = () => {
             });
             if (!res.ok) throw new Error('Failed to fetch testimonials');
             return res.json();
-        }
+        },
+        staleTime: 5 * 60 * 1000
     });
 };
 
@@ -430,5 +434,3 @@ export const useUpdateWebsiteContent = (slug) => {
         onError: (err) => toast.error(err.message)
     });
 };
-
-

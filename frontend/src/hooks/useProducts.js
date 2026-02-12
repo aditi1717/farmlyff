@@ -23,7 +23,8 @@ export const useProducts = () => {
                     reviews: p.reviews || (100 + (seed % 400))
                 };
             });
-        }
+        },
+        staleTime: 5 * 60 * 1000
     });
 };
 
@@ -60,7 +61,8 @@ export const useCategories = () => {
             if (!catRes.ok || !subRes.ok) throw new Error('Failed to fetch categories');
             const categories = await catRes.json();
             return categories;
-        }
+        },
+        staleTime: 5 * 60 * 1000
     });
 };
 

@@ -56,6 +56,8 @@ const AboutSection = () => {
                                 <img
                                     src={displayData.image}
                                     alt="Farmlyf Journey"
+                                    loading="lazy"
+                                    decoding="async"
                                     className="absolute inset-0 w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-black/5" />
