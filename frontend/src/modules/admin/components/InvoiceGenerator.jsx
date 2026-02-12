@@ -31,8 +31,9 @@ export const InvoiceDisplay = React.forwardRef(
 
     const totalQty = list.reduce((a, b) => a + (b.qty || b.quantity || 1), 0);
     const subtotal = list.reduce((a, b) => a + (b.price * (b.qty || b.quantity || 1)), 0);
-    const handlingFee = 0.00;
-    const totalAmount = subtotal + handlingFee;
+    const shipping = Number(order.deliveryCharges || 0);
+    const discount = Number(order.discount || 0);
+    const totalAmount = subtotal + shipping - discount;
 
     return (
       <div ref={ref} className="invoice-root">
@@ -309,16 +310,30 @@ export const InvoiceDisplay = React.forwardRef(
                   </tr>
                 );
               })}
-              <tr>
-                <td colSpan="2"><b>Handling Fee</b></td>
-                <td className="text-center">1</td>
-                <td className="text-right">0.00</td>
-                <td className="text-right">0</td>
-                <td className="text-right">0.00</td>
-                <td className="text-right">0.00</td>
-                <td className="text-right">0.00</td>
-                <td className="text-right">0.00</td>
-              </tr>
+              {shipping > 0 && (
+                <tr>
+                  <td colSpan="2"><b>Shipping Charges</b></td>
+                  <td className="text-center">1</td>
+                  <td className="text-right">{format(shipping)}</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right">{format(shipping)}</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right"><b>{format(shipping)}</b></td>
+                </tr>
+              )}
+              {discount > 0 && (
+                <tr style={{ color: "green" }}>
+                  <td colSpan="2"><b>Discount</b></td>
+                  <td className="text-center">1</td>
+                  <td className="text-right">-{format(discount)}</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right">-{format(discount)}</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right">0.00</td>
+                  <td className="text-right"><b>-{format(discount)}</b></td>
+                </tr>
+              )}
               <tr style={{ background: "#f5f5f5", fontWeight: "bold" }}>
                 <td colSpan="2">TOTAL QTY: {totalQty}</td>
                 <td colSpan="6" className="text-right">TOTAL PRICE:</td>

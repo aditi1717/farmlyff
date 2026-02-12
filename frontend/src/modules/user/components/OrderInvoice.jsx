@@ -18,8 +18,8 @@ const OrderInvoice = ({ order, isOpen, onClose }) => {
     if (!order) return null;
 
     const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.qty), 0);
-    const discount = order.discountAmount || 0;
-    const shipping = order.shippingFee || 0;
+    const discount = order.discount || 0;
+    const shipping = order.deliveryCharges || 0;
     const total = order.amount;
 
     return (
