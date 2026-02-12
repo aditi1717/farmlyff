@@ -275,15 +275,26 @@ const OTPPage = () => {
                 </form>
 
                 {!isNewUser && (
-                    <div className="mt-5 pt-4 border-t border-gray-100 italic">
-                        <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest mb-2">Didn't receive the code?</p>
-                        <button
-                            onClick={handleResend}
-                            disabled={timer > 0}
-                            className={`flex items-center gap-2 mx-auto font-black text-[10px] uppercase tracking-tighter ${timer > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#2c5336] hover:underline'}`}
-                        >
-                            {timer > 0 ? `Resend available in ${timer}s` : 'Resend New Code'}
-                        </button>
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        {timer > 0 ? (
+                            <div className="mb-4">
+                                <span className="inline-flex items-center gap-2 px-6 py-3 bg-[#2c5336]/5 rounded-2xl border border-[#2c5336]/10 animate-pulse transition-all">
+                                    <RefreshCw size={16} className="text-[#2c5336] animate-spin" style={{ animationDuration: '3s' }} />
+                                    <span className="text-[#2c5336] text-sm font-black tracking-widest uppercase">
+                                        Resend in {timer}s
+                                    </span>
+                                </span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleResend}
+                                className="flex items-center gap-2 mx-auto font-black text-sm text-[#2c5336] hover:underline uppercase tracking-widest hover:scale-105 transition-all"
+                            >
+                                <RefreshCw size={18} />
+                                Resend New Code
+                            </button>
+                        )}
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-3 italic">Didn't receive the code?</p>
                     </div>
                 )}
             </motion.div>
