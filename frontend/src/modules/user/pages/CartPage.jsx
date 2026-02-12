@@ -50,9 +50,7 @@ const DUMMY_PRODUCTS = [
 
 import useCartStore from '../../../store/useCartStore';
 import useUserStore from '../../../store/useUserStore';
-import { useProducts, usePack } from '../../../hooks/useProducts';
-import { useUserProfile } from '../../../hooks/useUser';
-import { API_BASE_URL } from '@/lib/apiUrl';
+import { useProducts } from '../../../hooks/useProducts';
 
 
 const CartPage = () => {
@@ -64,12 +62,11 @@ const CartPage = () => {
     }, []);
 
     // Zustand Stores
-    const { getCart, removeFromCart, updateCartQty, addToCart, clearCart, applyCoupon, removeCoupon, getAppliedCoupon } = useCartStore();
+    const { getCart, removeFromCart, updateCartQty, addToCart } = useCartStore();
     const { getSaveForLater, saveForLater, addToSaved: saveForLaterAction, removeFromSaved } = useUserStore();
 
     // Data Hooks
     const { data: products = [] } = useProducts();
-    const { data: userData } = useUserProfile();
 
 
     // Helpers (moved from Context or re-implemented)
@@ -135,10 +132,6 @@ const CartPage = () => {
         navigate('/checkout');
     };
 
-    const [couponCode, setCouponCode] = React.useState('');
-    const [couponError, setCouponError] = React.useState('');
-    const appliedCoupon = getAppliedCoupon(user?.id);
-
     const cartItems = getCart(user?.id);
 
     // Enrich cart items with product details
@@ -193,98 +186,6 @@ const CartPage = () => {
     }).filter(Boolean);
 
     const subtotal = enrichedCart.reduce((acc, item) => acc + (item.price || 0) * item.qty, 0);
-    const shippingItemsPayload = enrichedCart.map((item) => ({
-        id: item.id,
-        productId: item.productId || item.id,
-        name: item.name,
-        qty: Number(item.qty) || 0,
-        price: Number(item.price) || 0,
-        weight: item.weight,
-        sku: item.id
-    }));
-    const shippingItemsSignature = JSON.stringify(shippingItemsPayload);
-    const defaultAddress = userData?.addresses?.find(a => a.isDefault) || userData?.addresses?.[0];
-    const pincodeForQuote = String(defaultAddress?.pincode || '').trim();
-
-    const [shippingQuote, setShippingQuote] = React.useState({
-        loading: false,
-        shippingCharge: 0,
-        source: 'fallback',
-        courierName: null,
-        estimatedDays: null,
-        weight: null,
-        error: ''
-    });
-
-    React.useEffect(() => {
-        if (!enrichedCart.length || pincodeForQuote.length !== 6) {
-            setShippingQuote(prev => ({
-                ...prev,
-                loading: false,
-                shippingCharge: 0,
-                source: 'fallback',
-                courierName: null,
-                estimatedDays: null,
-                weight: null,
-                error: pincodeForQuote ? 'Invalid delivery pincode' : ''
-            }));
-            return;
-        }
-
-        let isCancelled = false;
-        const timer = setTimeout(async () => {
-            setShippingQuote(prev => ({ ...prev, loading: true, error: '' }));
-
-            try {
-                const payload = {
-                    deliveryPincode: pincodeForQuote,
-                    paymentMethod: 'cod',
-                    orderAmount: subtotal,
-                    items: shippingItemsPayload
-                };
-
-                const res = await fetch(`${API_BASE_URL}/shipments/quote`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.message || 'Failed to fetch shipping quote');
-                }
-
-                if (!isCancelled) {
-                    setShippingQuote({
-                        loading: false,
-                        shippingCharge: Number(data.shippingCharge || 0),
-                        source: data.source || 'fallback',
-                        courierName: data.courierName || null,
-                        estimatedDays: data.estimatedDays || null,
-                        weight: data.weight || null,
-                        error: ''
-                    });
-                }
-            } catch (error) {
-                if (!isCancelled) {
-                    setShippingQuote(prev => ({
-                        ...prev,
-                        loading: false,
-                        error: error.message || 'Unable to fetch shipping quote'
-                    }));
-                }
-            }
-        }, 350);
-
-        return () => {
-            isCancelled = true;
-            clearTimeout(timer);
-        };
-    }, [pincodeForQuote, subtotal, shippingItemsSignature, enrichedCart.length]);
-
-    const shippingCharge = Number(shippingQuote.shippingCharge || 0);
-    const total = subtotal + shippingCharge;
 
     if (enrichedCart.length === 0) {
         return (
@@ -393,51 +294,17 @@ const CartPage = () => {
                                     <span>Subtotal</span>
                                     <span className="font-bold text-footerBg">₹{subtotal}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-500">
-                                    <span>Shipping</span>
-                                    <span className={`${shippingCharge > 0 ? 'text-footerBg' : 'text-emerald-500'} font-bold italic`}>
-                                        {shippingQuote.loading ? 'Calculating...' : shippingCharge > 0 ? `Rs ${shippingCharge}` : 'FREE'}
-                                    </span>
-                                </div>
-                                {(shippingQuote.courierName || shippingQuote.error || pincodeForQuote) && (
-                                    <div className="text-[10px] text-gray-400">
-                                        {shippingQuote.loading && <span>Checking live shipping rates...</span>}
-                                        {!shippingQuote.loading && !pincodeForQuote && <span>Add a default address to calculate shipping.</span>}
-                                        {!shippingQuote.loading && pincodeForQuote && shippingQuote.source === 'shiprocket' && (
-                                            <span>
-                                                Live rate via {shippingQuote.courierName || 'Shiprocket'}
-                                                {shippingQuote.estimatedDays ? ` | ETA ${shippingQuote.estimatedDays} day(s)` : ''}
-                                                {shippingQuote.weight ? ` | ${shippingQuote.weight} kg` : ''}
-                                            </span>
-                                        )}
-                                        {!shippingQuote.loading && pincodeForQuote && shippingQuote.source !== 'shiprocket' && (
-                                            <span>
-                                                Standard shipping applied
-                                                {shippingQuote.error ? ` (${shippingQuote.error})` : ''}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
 
                                 <div className="pt-2 md:pt-4 border-t border-gray-100 flex justify-between text-base md:text-xl font-black text-footerBg">
                                     <span>Total Amount</span>
-                                    <span>₹{total}</span>
+                                    <span>₹{subtotal}</span>
                                 </div>
                             </div>
 
 
 
                             <button
-                                onClick={() => navigate('/checkout', {
-                                    state: {
-                                        shippingPreview: {
-                                            shippingCharge,
-                                            source: shippingQuote.source,
-                                            courierName: shippingQuote.courierName,
-                                            estimatedDays: shippingQuote.estimatedDays
-                                        }
-                                    }
-                                })}
+                                onClick={() => navigate('/checkout')}
                                 className="w-full bg-footerBg text-white py-2.5 md:py-4 rounded-lg md:rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg active:scale-95"
                             >
                                 Secure Checkout

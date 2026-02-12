@@ -159,6 +159,23 @@ const CheckoutPage = () => {
         state: '',
         pincode: '',
     });
+    const [selectedAddressId, setSelectedAddressId] = useState('manual');
+
+    const userAddresses = Array.isArray(userData?.addresses) ? userData.addresses : [];
+
+    const getAddressId = (address, index) => String(address?._id || address?.id || `address-${index}`);
+
+    const applyAddressToForm = (address) => {
+        setFormData((prev) => ({
+            ...prev,
+            fullName: address?.fullName || userData?.name || prev.fullName || '',
+            phone: address?.phone || userData?.phone || prev.phone || '',
+            address: address?.address || '',
+            city: address?.city || '',
+            state: address?.state || '',
+            pincode: String(address?.pincode || '')
+        }));
+    };
 
     const isFilled = (value) => typeof value === 'string' && value.trim().length > 0;
     const hasRequiredAddress = (address = {}) => (
@@ -169,7 +186,6 @@ const CheckoutPage = () => {
     );
 
     const getMissingCheckoutFields = () => {
-        const userAddresses = Array.isArray(userData?.addresses) ? userData.addresses : [];
         const hasAnyPhone = isFilled(formData.phone)
             || isFilled(userData?.phone)
             || userAddresses.some(a => isFilled(a?.phone));
@@ -293,18 +309,15 @@ const CheckoutPage = () => {
     useEffect(() => {
         if (userData) {
             // Pre-fill address from saved addresses
-            if (userData.addresses && userData.addresses.length > 0) {
-                const defaultAddr = userData.addresses.find(a => a.isDefault) || userData.addresses[0];
-                setFormData({
-                    fullName: defaultAddr.fullName || userData.name || '',
-                    phone: defaultAddr.phone || userData.phone || '',
-                    address: defaultAddr.address || '',
-                    city: defaultAddr.city || '',
-                    state: defaultAddr.state || '',
-                    pincode: defaultAddr.pincode || '',
-                });
+            if (userAddresses.length > 0) {
+                const defaultAddressIndex = userAddresses.findIndex(a => a.isDefault);
+                const selectedIndex = defaultAddressIndex >= 0 ? defaultAddressIndex : 0;
+                const defaultAddr = userAddresses[selectedIndex];
+                setSelectedAddressId(getAddressId(defaultAddr, selectedIndex));
+                applyAddressToForm(defaultAddr);
             } else {
                 // Fallback to basic user info
+                setSelectedAddressId('manual');
                 setFormData(prev => ({
                     ...prev,
                     fullName: userData.name || '',
@@ -423,6 +436,7 @@ const CheckoutPage = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        setSelectedAddressId('manual');
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -624,22 +638,16 @@ const CheckoutPage = () => {
                 </div>
 
                 {!isProfileComplete && (
-                    <div className="mb-8 p-4 md:p-6 bg-red-50 border border-red-100 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="mb-8 p-4 md:p-6 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-500 shadow-sm">
                                 <X size={20} />
                             </div>
                             <div>
                                 <h4 className="font-bold text-red-800 text-sm md:text-base">Profile Incomplete</h4>
-                                <p className="text-[11px] md:text-sm text-red-600 font-medium">Please add your mobile number and at least one saved address to continue.</p>
+                                <p className="text-[11px] md:text-sm text-red-600 font-medium">Please provide mobile number and delivery address to continue.</p>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => navigate('/profile/settings')}
-                            className="px-6 py-2.5 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-95"
-                        >
-                            Fix Profile
-                        </button>
                     </div>
                 )}
 
@@ -653,84 +661,148 @@ const CheckoutPage = () => {
                                     <Truck size={18} className="text-primary" />
                                     Delivery Details
                                 </h3>
-                                <button
-                                    type="button"
-                                    onClick={handleDetectLocation}
-                                    disabled={detectingLocation}
-                                    className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {detectingLocation ? 'Detecting...' : 'Detect Location'}
-                                </button>
+                                {selectedAddressId === 'manual' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDetectLocation}
+                                        disabled={detectingLocation}
+                                        className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {detectingLocation ? 'Detecting...' : 'Detect Location'}
+                                    </button>
+                                )}
                             </div>
                             <form id="checkout-form" onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
-                                <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Full Name</label>
-                                        <input
-                                            required
-                                            name="fullName"
-                                            value={formData.fullName}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                            placeholder="Ex: John Doe"
-                                        />
+                                {userAddresses.length > 0 && (
+                                    <div className="space-y-2 md:space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Saved Addresses</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedAddressId('manual')}
+                                                className="text-[10px] md:text-xs font-bold text-primary hover:underline uppercase"
+                                            >
+                                                Use Custom
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {userAddresses.map((address, index) => {
+                                                const addressId = getAddressId(address, index);
+                                                const isSelected = selectedAddressId === addressId;
+
+                                                return (
+                                                    <button
+                                                        key={addressId}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedAddressId(addressId);
+                                                            applyAddressToForm(address);
+                                                        }}
+                                                        className={`text-left border rounded-lg p-3 transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div>
+                                                                <p className="text-xs font-bold text-footerBg">{address.fullName || userData?.name || 'Saved Address'}</p>
+                                                                <p className="text-[11px] text-gray-500">{address.phone || userData?.phone || ''}</p>
+                                                            </div>
+                                                            {address.isDefault && (
+                                                                <span className="text-[9px] px-2 py-1 rounded-full bg-primary/10 text-primary font-black uppercase tracking-wider">
+                                                                    Default
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-600 mt-1">
+                                                            {[address.address, address.city, address.state, address.pincode].filter(Boolean).join(', ')}
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Phone</label>
-                                        <input
-                                            required
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                            placeholder="+91"
-                                        />
+                                )}
+
+                                {userAddresses.length === 0 && (
+                                    <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                                        No saved address found. Please fill your delivery details below.
+                                    </p>
+                                )}
+
+                                {(userAddresses.length === 0 || selectedAddressId === 'manual') ? (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                            <div className="space-y-1 text-left">
+                                                <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Full Name</label>
+                                                <input
+                                                    required
+                                                    name="fullName"
+                                                    value={formData.fullName}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                                    placeholder="Ex: John Doe"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 text-left">
+                                                <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Phone</label>
+                                                <input
+                                                    required
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                                    placeholder="+91"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1 text-left">
+                                            <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Detailed Address</label>
+                                            <textarea
+                                                required
+                                                name="address"
+                                                value={formData.address}
+                                                onChange={handleInputChange}
+                                                rows="2"
+                                                className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                                                placeholder="Flat No, Building, Area"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 md:gap-4">
+                                            <div className="space-y-1 text-left">
+                                                <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">City</label>
+                                                <input
+                                                    required
+                                                    name="city"
+                                                    value={formData.city}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 text-left">
+                                                <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Pincode</label>
+                                                <input
+                                                    required
+                                                    name="pincode"
+                                                    value={formData.pincode}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 text-left">
+                                                <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">State</label>
+                                                <input
+                                                    required
+                                                    name="state"
+                                                    value={formData.state}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                                        Using selected saved address for this order.
                                     </div>
-                                </div>
-                                <div className="space-y-1 text-left">
-                                    <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Detailed Address</label>
-                                    <textarea
-                                        required
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleInputChange}
-                                        rows="2"
-                                        className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
-                                        placeholder="Flat No, Building, Area"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 md:gap-4">
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">City</label>
-                                        <input
-                                            required
-                                            name="city"
-                                            value={formData.city}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">Pincode</label>
-                                        <input
-                                            required
-                                            name="pincode"
-                                            value={formData.pincode}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase">State</label>
-                                        <input
-                                            required
-                                            name="state"
-                                            value={formData.state}
-                                            onChange={handleInputChange}
-                                            className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
+                                )}
                             </form>
                         </div>
 
