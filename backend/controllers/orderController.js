@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Referral from '../models/Referral.js';
 import Product from '../models/Product.js';
+import { restockItems } from '../utils/stockUtils.js';
 import Razorpay from 'razorpay';
 import shiprocketService from '../utils/shiprocketService.js';
 import asyncHandler from 'express-async-handler';
@@ -168,46 +169,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
 
     // 5. Restock Items
     if (order.items && order.items.length > 0) {
-        try {
-            for (const item of order.items) {
-                const productId = item.productId;
-                const weight = item.weight; // Using weight to identify variant in this schema
-                const qty = item.qty || 0;
-
-                if (qty <= 0) continue;
-
-                // Find product
-                const product = await Product.findOne({ id: productId });
-                if (!product) {
-                    console.error(`Product ${productId} not found for restocking`);
-                    continue;
-                }
-
-                if (product.variants && product.variants.length > 0) {
-                    // Restock variant
-                    const variant = product.variants.find(v => v.weight === weight || v.id === weight); 
-                    if (variant) {
-                        variant.stock = (variant.stock || 0) + qty;
-                    } else {
-                        console.error(`Variant ${weight} not found for product ${productId} during restocking`);
-                    }
-                } else if (product.stock) {
-                    // Restock base product
-                    product.stock.quantity = (product.stock.quantity || 0) + qty;
-                }
-
-                // Update inStock flag
-                const hasStock = product.variants?.length > 0
-                    ? product.variants.some(v => Number(v.stock || 0) > 0)
-                    : Number(product.stock?.quantity || 0) > 0;
-                product.inStock = hasStock;
-
-                await product.save();
-                console.log(`Restocked ${qty} of product ${productId}${weight ? ` (${weight})` : ''}`);
-            }
-        } catch (restockError) {
-            console.error('Failed to restock items on cancellation:', restockError.message);
-        }
+        await restockItems(order.items);
     }
 
     // Add to status history
@@ -280,6 +242,16 @@ export const updateOrder = asyncHandler(async (req, res) => {
 
     // Add to status history if status changed
     if (status && status !== order.status) {
+      const oldStatus = order.status;
+      order.status = status;
+
+      // Restock if status changed to Cancelled
+      if (status === 'Cancelled' && oldStatus !== 'Cancelled') {
+          if (order.items && order.items.length > 0) {
+              await restockItems(order.items);
+          }
+      }
+
       if (!order.statusHistory) order.statusHistory = [];
       order.statusHistory.push({
         status: status,
