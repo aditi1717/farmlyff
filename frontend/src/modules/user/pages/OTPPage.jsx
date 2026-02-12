@@ -281,7 +281,7 @@ const OTPPage = () => {
                                 <span className="inline-flex items-center gap-2 px-6 py-3 bg-[#2c5336]/5 rounded-2xl border border-[#2c5336]/10 animate-pulse transition-all">
                                     <RefreshCw size={16} className="text-[#2c5336] animate-spin" style={{ animationDuration: '3s' }} />
                                     <span className="text-[#2c5336] text-sm font-black tracking-widest uppercase">
-                                        Resend in {timer}s
+                                        Resend available in {timer}s
                                     </span>
                                 </span>
                             </div>
