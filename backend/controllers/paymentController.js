@@ -7,6 +7,7 @@ import Product from '../models/Product.js';
 import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
 import { validateOrderStock, deductStock } from '../utils/stockUtils.js';
+import { sendAdminOrderNotification } from '../utils/notificationUtils.js';
 
 // Initialize Razorpay
 // Note: These will be undefined until the user adds them to .env
@@ -202,6 +203,13 @@ export const verifyPayment = asyncHandler(async (req, res) => {
             console.log('Shiprocket not configured, skipping shipment creation');
         }
 
+        // Send notification to Admin
+        try {
+            await sendAdminOrderNotification(newOrder);
+        } catch (notifyError) {
+            console.error('Failed to send admin notification:', notifyError.message);
+        }
+
         res.status(200).json({ message: "Payment verified successfully", orderId: newOrder.id });
     } catch (dbError) {
         console.error('DB Order Creation Error after payment verification:', dbError);
@@ -319,6 +327,13 @@ export const createCODOrder = asyncHandler(async (req, res) => {
             }
         } else {
             console.log('Shiprocket not configured, skipping shipment creation');
+        }
+
+        // Send notification to Admin
+        try {
+            await sendAdminOrderNotification(newOrder);
+        } catch (notifyError) {
+            console.error('Failed to send admin notification:', notifyError.message);
         }
 
         res.status(201).json({ message: "Order placed successfully", orderId: newOrder.id });

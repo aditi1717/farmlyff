@@ -320,3 +320,48 @@
   "savedTitle": "Health Benefits Section",
   "benefitsCount": 5
 }
+[2026-02-13T16:22:14.132Z] {
+  "context": "updateHealthBenefitSection",
+  "body": {
+    "title": "Health Benefits Section",
+    "subtitle": "Discover the amazing benefits of premium dry fruits for your health and wellness",
+    "benefits": [
+      {
+        "icon": "Heart",
+        "title": "Heart Health",
+        "description": "Rich in omega-3 fatty acids and antioxidants that support cardiovascular health.",
+        "baseColor": "#006071"
+      },
+      {
+        "icon": "Brain",
+        "title": "Brain Function",
+        "description": "Enhance cognitive function, memory, and mental clarity with essential nutrients.",
+        "baseColor": "#67705B"
+      },
+      {
+        "icon": "Zap",
+        "title": "Energy Boost",
+        "description": "Natural sustained energy from healthy fats and proteins.",
+        "baseColor": "#902D45"
+      },
+      {
+        "icon": "Shield",
+        "title": "Immunity",
+        "description": "Strengthen your immune system with vitamin E and antioxidants.",
+        "baseColor": "#7E3021"
+      },
+      {
+        "icon": "Scale",
+        "title": "Weight Balance",
+        "description": "High protein and fiber content helps maintain healthy weight goals.",
+        "baseColor": "#C08552"
+      }
+    ],
+    "isActive": true
+  }
+}
+[2026-02-13T16:22:15.074Z] {
+  "context": "saveSuccess",
+  "savedTitle": "Health Benefits Section",
+  "benefitsCount": 5
+}
