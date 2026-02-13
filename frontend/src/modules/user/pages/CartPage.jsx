@@ -301,17 +301,19 @@ const CartPage = () => {
                                 </div>
                             </div>
 
-
-
                             <button
-                                onClick={() => navigate('/checkout')}
+                                onClick={() => {
+                                    if (user) {
+                                        navigate('/checkout');
+                                    } else {
+                                        navigate('/login?redirect=/checkout');
+                                    }
+                                }}
                                 className="w-full bg-footerBg text-white py-2.5 md:py-4 rounded-lg md:rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg active:scale-95"
                             >
                                 Secure Checkout
                             </button>
                         </div>
-
-
                     </div>
                 </div>
 

@@ -81,6 +81,8 @@ const OTPPage = () => {
 
         setIsLoading(true);
 
+        const redirectPath = location.state?.redirect || '/';
+
         if (isNewUser) {
             if (!name || !email || !accountType) {
                 toast.error('Please fill in all fields');
@@ -90,7 +92,7 @@ const OTPPage = () => {
             const result = await verifyOtp(phone, fullOtp, name, email, accountType, gstNumber);
             setIsLoading(false);
             if (result.success) {
-                navigate('/');
+                navigate(redirectPath);
             }
         } else {
             const result = await verifyOtp(phone, fullOtp);
@@ -100,7 +102,7 @@ const OTPPage = () => {
                     setIsNewUser(true);
                     toast.success('OTP verified! Please complete your registration.');
                 } else {
-                    navigate('/');
+                    navigate(redirectPath);
                 }
             }
         }

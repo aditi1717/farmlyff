@@ -105,6 +105,7 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/featured-sections', featuredSectionRoutes);
 app.use('/api/trust-signals', trustSignalRoutes);
 app.use('/api/about-section', aboutSectionRoutes);
+
 app.use('/api/health-benefits', healthBenefitSectionRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/page-content', websiteContentRoutes);

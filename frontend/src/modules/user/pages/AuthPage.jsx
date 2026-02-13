@@ -14,6 +14,9 @@ const AuthPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const queryParams = new URLSearchParams(location.search);
+    const redirect = queryParams.get('redirect');
+
     const handleChange = (e) => {
         setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
         setError('');
@@ -33,7 +36,7 @@ const AuthPage = () => {
         setIsLoading(false);
 
         if (res.success) {
-            navigate('/otp-verification', { state: { contact: phone } });
+            navigate('/otp-verification', { state: { contact: phone, redirect } });
         } else {
             setError(res.message);
         }
