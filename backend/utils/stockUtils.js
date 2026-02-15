@@ -1,4 +1,5 @@
 import Product from '../models/Product.js';
+import { sendAdminLowStockNotification } from './notificationUtils.js';
 
 /**
  * Validates if there is enough stock for the given order items.
@@ -151,6 +152,20 @@ export const deductStock = async (orderItems = []) => {
                 }
 
                 appliedDeductions.push({ productId: product.id, variantId: variant.id, qty: item.qty });
+
+                // Check for low stock alert
+                const updatedProduct = await Product.findOne({ id: product.id });
+                if (updatedProduct) {
+                    const updatedVariant = updatedProduct.variants.find(v => String(v.id) === String(variant.id));
+                    const threshold = updatedProduct.lowStockThreshold || 10;
+                    if (updatedVariant && updatedVariant.stock <= threshold) {
+                        try {
+                            await sendAdminLowStockNotification(updatedProduct, variant.id);
+                        } catch (notifyError) {
+                            console.error('Failed to send low stock notification:', notifyError.message);
+                        }
+                    }
+                }
             } else {
                 const updateResult = await Product.updateOne(
                     { id: product.id, 'stock.quantity': { $gte: item.qty } },
@@ -162,6 +177,19 @@ export const deductStock = async (orderItems = []) => {
                 }
 
                 appliedDeductions.push({ productId: product.id, variantId: null, qty: item.qty });
+
+                // Check for low stock alert
+                const updatedProduct = await Product.findOne({ id: product.id });
+                if (updatedProduct) {
+                    const threshold = updatedProduct.lowStockThreshold || 10;
+                    if (updatedProduct.stock?.quantity <= threshold) {
+                        try {
+                            await sendAdminLowStockNotification(updatedProduct);
+                        } catch (notifyError) {
+                            console.error('Failed to send low stock notification:', notifyError.message);
+                        }
+                    }
+                }
             }
         }
     } catch (error) {
@@ -256,3 +284,4 @@ const updateInStockStatus = async (productIds) => {
         }
     }
 };
+
