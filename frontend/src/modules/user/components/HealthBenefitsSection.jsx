@@ -22,10 +22,40 @@ const HealthBenefitsSection = ({ data }) => {
     const sectionData = {
         ...fetchedData,
         benefits: fetchedData.benefits.map(b => {
-            const IconComponent = LucideIcons[b.icon] || Heart;
+            // Enhanced check for URLs/Images
+            const isUrl = b.icon && (
+                b.icon.includes('/') ||
+                b.icon.startsWith('data:') ||
+                /\.(png|jpg|jpeg|svg|webp|gif|bmp|avif)$/i.test(b.icon)
+            );
+
+            let renderedIcon;
+
+            if (isUrl) {
+                // Remove bg/color effect from image, keep size consistent
+                renderedIcon = (
+                    <img
+                        src={b.icon}
+                        alt={b.title}
+                        className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm"
+                        onError={(e) => {
+                            e.target.style.display = 'none'; // Hide if broken
+                            // Note: Fallback to text icon would require state, simpler to just hide or show broken image
+                        }}
+                    />
+                );
+            } else {
+                // Case-insensitive lookup for Lucide icons
+                const iconKey = Object.keys(LucideIcons).find(
+                    key => key.toLowerCase() === (b.icon || '').toLowerCase()
+                );
+                const IconComponent = LucideIcons[iconKey] || LucideIcons[b.icon] || Heart;
+                renderedIcon = React.createElement(IconComponent, { size: 60, strokeWidth: 1.5 });
+            }
+
             return {
                 ...b,
-                icon: React.createElement(IconComponent, { size: 64, strokeWidth: 1.5 }),
+                icon: renderedIcon,
                 borderStyle: { borderColor: b.baseColor || '#006071' },
                 textStyle: { color: b.baseColor || '#006071' }
             };
