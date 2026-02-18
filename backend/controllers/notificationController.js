@@ -154,12 +154,28 @@ export const sendNotification = async (req, res) => {
 // Get notification history
 export const getNotificationHistory = async (req, res) => {
   try {
-    const notifications = await Notification.find()
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .select('heading message target sentCount successCount failureCount status createdAt');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json(notifications);
+    const [notifications, total] = await Promise.all([
+      Notification.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('heading message target sentCount successCount failureCount status createdAt'),
+      Notification.countDocuments()
+    ]);
+
+    res.json({
+      notifications,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('Get notification history error:', error);
     res.status(500).json({ error: error.message });

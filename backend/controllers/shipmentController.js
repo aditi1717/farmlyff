@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import shiprocketService from '../utils/shiprocketService.js';
 import Order from '../models/Order.js';
+import { restockItems } from '../utils/stockUtils.js';
 
 // @desc    Get shipping quote for checkout
 // @route   POST /api/shipments/quote
@@ -105,9 +106,18 @@ export const shiprocketWebhook = asyncHandler(async (req, res) => {
     };
 
     const newStatus = statusMapping[webhookData.current_status];
-    if (newStatus) {
+    if (newStatus && newStatus !== order.status) {
+      const oldStatus = order.status;
       order.status = newStatus;
       order.deliveryStatus = newStatus;
+
+      // Restock if cancelled
+      if (newStatus === 'Cancelled' && oldStatus !== 'Cancelled') {
+          if (order.items && order.items.length > 0) {
+              await restockItems(order.items);
+          }
+      }
+
       order.statusHistory.push({
         status: newStatus,
         timestamp: new Date(),

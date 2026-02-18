@@ -162,10 +162,6 @@ const ProductCard = ({ product, showVault = true }) => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (!user) {
-                                    navigate('/login');
-                                    return;
-                                }
                                 const itemId = hasVariants ? product.variants[0].id : product.id;
                                 const stockAvailable = hasVariants ? (product.variants[0].stock || 0) : (product.stock?.quantity || 0);
 

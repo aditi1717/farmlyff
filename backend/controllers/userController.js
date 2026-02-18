@@ -191,7 +191,7 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
             // Create the admin record if it doesn't exist but they are logged in via backdoor
             user = new Admin({
                 email: 'admin@farmlyf.com',
-                name: req.body.name || 'Super Admin',
+                name: 'Super Admin',
                 password: 'admin' // Initial password if created this way
             });
         }
@@ -371,18 +371,24 @@ export const toggleBanUser = async (req, res) => {
 // @access  Private
 export const updateFcmToken = asyncHandler(async (req, res) => {
     const { token } = req.body;
-    
     if (!token) {
         res.status(400);
         throw new Error('FCM token is required');
     }
 
-    // Skip FCM token storage for backdoor admin (they send notifications, not receive)
-    if (req.user.id === 'admin_01') {
-        return res.json({ message: 'Admin FCM token acknowledged (not stored)' });
+    let user;
+    if (req.user.role === 'admin') {
+        user = await Admin.findOne({ email: req.user.email });
+        if (!user && req.user.email === 'admin@farmlyf.com') {
+            user = new Admin({
+                email: 'admin@farmlyf.com',
+                name: 'Super Admin',
+                password: 'admin'
+            });
+        }
+    } else {
+        user = await User.findOne({ id: req.user.id });
     }
-
-    const user = await User.findOne({ id: req.user.id });
 
     if (user) {
         user.fcmToken = token;

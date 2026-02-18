@@ -2,22 +2,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
-// import { useShop } from '../../../context/ShopContext'; // Removed
 import { useNavigate, Link } from 'react-router-dom';
 import { Bookmark, ShoppingCart, Trash2, ArrowRight, ShoppingBag, ArrowLeft } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { PACKS } from '../../../mockData/data'; // keeping mock data usage if needed, or replace
 import useUserStore from '../../../store/useUserStore';
 import useCartStore from '../../../store/useCartStore';
 import { useProducts } from '../../../hooks/useProducts';
 
 const VaultPage = () => {
     const { user } = useAuth();
-    // const { saveForLater, moveToCartFromSaved, removeFromSaved, getPackById } = useShop();
     const navigate = useNavigate();
     
     const { getSaveForLater, removeFromSaved } = useUserStore();
-    const addItemToCart = useCartStore(state => state.addItem);
+    const { addToCart } = useCartStore();
     const { data: products = [] } = useProducts();
 
     const savedItems = user ? getSaveForLater(user.id) : [];
@@ -25,27 +22,23 @@ const VaultPage = () => {
     // Helper to find pack
     const getPackById = (packId) => {
          for(let p of products) {
-            // Check product itself (if no variants or base id)
             if(p.id === packId) return p;
-            // Check variants
             const v = p.variants?.find(v => v.id === packId);
             if(v) return { ...v, product: p };
         }
-        return null; // or try PACKS mock data if fallback needed
+        return null;
     };
 
     const handleMoveToCart = (packId) => {
         const pack = getPackById(packId);
         if(pack) {
-            // We need to match what addToCart expects. 
-            // ProductCard uses: addItemToCart(user.id, { ...item, id: itemId })
-            addItemToCart(user.id, { ...pack, id: packId });
-            removeFromSaved(user.id, packId);
+            addToCart(user?.id, packId, 1);
+            removeFromSaved(user?.id, packId);
         }
     };
 
     const handleRemove = (packId) => {
-        removeFromSaved(user.id, packId);
+        removeFromSaved(user?.id, packId);
     };
 
     if (!user) {
@@ -95,11 +88,10 @@ const VaultPage = () => {
                             const packData = getPackById(item.packId);
                             if (!packData) return null;
 
-                            // Flatten variant data into product card format
                             const productCardData = packData.product ? {
-                                ...packData.product, // base product info
-                                ...packData,         // specific variant info (price etc wins)
-                                id: packData.product.id // keep product id for navigation
+                                ...packData.product,
+                                ...packData,
+                                id: packData.product.id
                             } : packData;
 
                             return (

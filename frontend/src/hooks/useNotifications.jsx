@@ -124,6 +124,39 @@ export const useNotifications = () => {
     }
   }, [user, notificationPermission, hasNotificationApi]);
 
+  const playBuzzer = () => {
+    if (!hasWindow) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const audioCtx = new AudioContext();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      // "Buzzer" sound: rising square wave
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); 
+      oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+      oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.2);
+      oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+      
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.8);
+      
+      // Close context after playing to free resources
+      setTimeout(() => audioCtx.close(), 1000);
+    } catch (e) {
+      console.warn('Audio alert failed (user may need to interact with page first):', e);
+    }
+  };
+
   // Listen for foreground messages (continuous)
   useEffect(() => {
     if (notificationPermission !== 'granted') return;
@@ -131,6 +164,11 @@ export const useNotifications = () => {
     const unsubscribe = onMessageListener((payload) => {
       console.log('Foreground notification received:', payload);
       const { title, body } = persistIncomingNotification(payload);
+
+      // If it's a new order for admin, play the buzzer
+      if (payload?.data?.type === 'NEW_ORDER' && user?.role === 'admin') {
+        playBuzzer();
+      }
 
       // Show a native notification in foreground so users see it even when actively browsing.
       showForegroundSystemNotification(payload);
